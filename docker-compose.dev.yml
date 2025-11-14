@@ -1,0 +1,25 @@
+version: '3.8'
+
+# Development-specific overrides
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: builder  # Use builder stage for development
+    volumes:
+      - .:/app  # Mount entire project for hot reload
+      - /app/.venv  # Exclude virtual environment
+    environment:
+      - PRODUCTION=false
+      - DEBUG=true
+      - LOG_LEVEL=DEBUG
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload --log-level debug
+
+  db:
+    ports:
+      - "5432:5432"  # Expose database port for local development
+
+  redis:
+    ports:
+      - "6379:6379"  # Expose Redis port for local development

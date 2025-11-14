@@ -1,0 +1,43 @@
+# Web Framework
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+pydantic==2.5.2
+pydantic-settings==2.1.0
+
+# Database
+sqlalchemy==2.0.23
+asyncpg==0.29.0
+alembic==1.13.0
+redis==5.0.1
+
+# AI/ML
+openai==1.5.0
+anthropic==0.8.0
+google-generativeai==0.3.0
+langchain==0.0.350
+sentence-transformers==2.2.2
+pinecone-client==2.2.4
+
+# OCR
+pytesseract==0.3.10
+pdf2image==1.16.3
+PyPDF2==3.0.1
+python-docx==1.1.0
+
+# NLP (Korean)
+konlpy==0.6.0
+kiwipiepy==0.16.1
+
+# Web Scraping
+beautifulsoup4==4.12.2
+selenium==4.16.0
+aiohttp==3.9.1
+
+# Utilities
+python-multipart==0.0.6
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+python-dotenv==1.0.0
+tenacity==8.2.3
+httpx==0.25.2
+PyJWT==2.8.0
