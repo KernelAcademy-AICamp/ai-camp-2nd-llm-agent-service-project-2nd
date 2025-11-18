@@ -129,30 +129,32 @@ class StorageManager:
             # 5. 각 메시지 처리 및 저장
             chunks_stored = 0
             for message in messages:
+                # 청크 메타데이터 생성 (chunk_id 미리 생성)
+                chunk = EvidenceChunk(
+                    file_id=file_meta.file_id,
+                    content=message.content,
+                    timestamp=message.timestamp,
+                    sender=message.sender,
+                    case_id=case_id
+                )
+
                 # 임베딩 생성
                 embedding = get_embedding(message.content)
 
-                # 벡터 저장
+                # 벡터 저장 (chunk_id 포함)
                 vector_id = self.vector_store.add_evidence(
                     text=message.content,
                     embedding=embedding,
                     metadata={
                         "file_id": file_meta.file_id,
                         "sender": message.sender,
-                        "case_id": case_id
+                        "case_id": case_id,
+                        "chunk_id": chunk.chunk_id  # 청크 ID 포함
                     }
                 )
 
-                # 청크 메타데이터 생성 및 저장
-                chunk = EvidenceChunk(
-                    file_id=file_meta.file_id,
-                    content=message.content,
-                    timestamp=message.timestamp,
-                    sender=message.sender,
-                    vector_id=vector_id,
-                    case_id=case_id
-                )
-
+                # vector_id 설정 후 저장
+                chunk.vector_id = vector_id
                 self.metadata_store.save_chunk(chunk)
                 chunks_stored += 1
 
