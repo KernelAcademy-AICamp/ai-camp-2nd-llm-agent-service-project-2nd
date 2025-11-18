@@ -11,6 +11,8 @@ from src.service_rag.legal_parser import (
     StatuteParser,
     CaseLawParser
 )
+from src.service_rag.legal_vectorizer import LegalVectorizer
+from src.service_rag.legal_search import LegalSearchEngine
 
 __all__ = [
     "Statute",
@@ -20,4 +22,6 @@ __all__ = [
     "LegalParser",
     "StatuteParser",
     "CaseLawParser",
+    "LegalVectorizer",
+    "LegalSearchEngine",
 ]
