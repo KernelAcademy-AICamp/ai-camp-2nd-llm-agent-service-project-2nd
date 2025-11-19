@@ -1,0 +1,19 @@
+[MESSAGES CONTROL]
+# Disable TODO warnings (fixme) and false positive no-member errors
+disable=fixme,no-member
+
+[MASTER]
+# Add current directory to Python path
+init-hook='import sys; sys.path.append(".")'
+
+[FORMAT]
+# Maximum line length
+max-line-length=120
+
+[BASIC]
+# Good variable names which should always be accepted
+good-names=i,j,k,ex,_,id,db,pk,sk
+
+[DESIGN]
+# Maximum number of arguments for function / method
+max-args=10
