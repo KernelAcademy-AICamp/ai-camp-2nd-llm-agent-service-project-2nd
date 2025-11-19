@@ -27,13 +27,38 @@
 - Main branch is **production-ready only**
 - Main changes require **P (PM/Frontend) approval** via PR
 
-### 2. Allowed Git Operations
+### 2. Push Approval - ALWAYS ASK USER FIRST
+
+**🚨 CRITICAL RULE (2025-11-19):**
+> **NEVER push to GitHub without user approval!**
+
+**YOU MUST ALWAYS:**
+- ✅ Ask user: "Push할까요?" before ANY `git push`
+- ✅ Wait for explicit user confirmation
+- ✅ User decides when to push, not you
+
+**REASON:**
+- User wants deliberate, controlled pushes
+- Local commits = safe experimentation
+- Push = team impact, needs careful timing
+- User approval = final safety check
+
+**Example Workflow:**
+```
+[After local commit]
+Claude: "로컬 커밋 완료했습니다. Push할까요?"
+User: "아니야, 아직 안 돼" → ❌ Don't push
+User: "좋아, push 해줘" → ✅ Proceed with push
+```
+
+### 3. Allowed Git Operations
 
 **YOU CAN SAFELY:**
-- ✅ `git push origin dev` - Free to push to dev branch
+- ✅ `git commit` - Commit locally anytime (no approval needed)
 - ✅ `git checkout dev` - Work on dev branch
 - ✅ `git checkout -b feat/ai-xxx` - Create feature branches
-- ✅ `git merge feat/xxx` into dev - Merge features to dev
+- ✅ `git merge feat/xxx` into dev - Merge features to dev locally
+- ✅ `git push origin dev` - **ONLY after user approval** ⚠️
 - ✅ Create PR (dev → main) - **But cannot approve/merge it yourself**
 
 ---
