@@ -19,6 +19,12 @@ export default function EvidenceTable({ items }: EvidenceTableProps) {
 
     const getStatusBadge = (status: EvidenceStatus) => {
         switch (status) {
+            case 'uploading':
+                return (
+                    <span className="flex items-center text-xs font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded-full">
+                        <Loader2 className="w-3 h-3 mr-1 animate-spin" /> 업로드 중
+                    </span>
+                );
             case 'completed':
                 return (
                     <span className="flex items-center text-xs font-medium text-success-green bg-green-50 px-2 py-1 rounded-full">
@@ -35,6 +41,12 @@ export default function EvidenceTable({ items }: EvidenceTableProps) {
                 return (
                     <span className="flex items-center text-xs font-medium text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
                         <Clock className="w-3 h-3 mr-1" /> 대기 중
+                    </span>
+                );
+            case 'review_needed':
+                return (
+                    <span className="flex items-center text-xs font-medium text-orange-600 bg-orange-50 px-2 py-1 rounded-full">
+                        <AlertCircle className="w-3 h-3 mr-1" /> 검토 필요
                     </span>
                 );
             case 'failed':

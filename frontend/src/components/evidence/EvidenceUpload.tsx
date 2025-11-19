@@ -58,7 +58,7 @@ export default function EvidenceUpload({ onUpload }: EvidenceUploadProps) {
                     <UploadCloud className={`w-8 h-8 ${isDragging ? 'text-accent' : 'text-gray-400'}`} />
                 </div>
                 <h3 className="text-lg font-medium text-gray-900">
-                    파일을 여기에 드래그하거나 클릭하여 업로드
+                    파일을 끌어다 놓거나 클릭하여 업로드
                 </h3>
                 <p className="mt-1 text-sm text-gray-500">
                     PDF, 이미지, 음성, 텍스트 파일 지원
