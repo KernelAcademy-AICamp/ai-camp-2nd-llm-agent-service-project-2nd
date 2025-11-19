@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import ClientEvidencePortal from '@/pages/portal';
 
@@ -58,6 +58,29 @@ describe('Plan 3.7 - Client Evidence Submission Portal', () => {
             expect(screen.getByText('contract.pdf')).toBeInTheDocument();
             expect(screen.getByText('evidence-photo.png')).toBeInTheDocument();
         });
+    });
+
+    test('shows an uploading indicator before the success confirmation is rendered', async () => {
+        jest.useFakeTimers();
+        render(<ClientEvidencePortal />);
+
+        const fileInput = screen.getByLabelText('증거 파일 업로드') as HTMLInputElement;
+        const files = [new File(['dummy'], 'timeline.xlsx', { type: 'application/vnd.ms-excel' })];
+
+        fireEvent.change(fileInput, { target: { files } });
+
+        const uploadingStatus = screen.getByRole('status');
+        expect(uploadingStatus).toHaveTextContent(/업로드 중/i);
+
+        act(() => {
+            jest.advanceTimersByTime(1500);
+        });
+
+        await waitFor(() => {
+            expect(screen.getByText(/파일 1개가 안전하게 전송되었습니다\./)).toBeInTheDocument();
+        });
+
+        jest.useRealTimers();
     });
 
     test('personalizes the guidance copy with firm and case names plus encryption reassurance', () => {

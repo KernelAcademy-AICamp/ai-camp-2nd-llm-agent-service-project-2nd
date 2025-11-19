@@ -1,7 +1,7 @@
-import { UploadCloud, ShieldCheck } from 'lucide-react';
+import { UploadCloud, ShieldCheck, Loader2 } from 'lucide-react';
 import clsx from 'clsx';
 
-type UploadStatus = 'idle' | 'success' | 'error';
+type UploadStatus = 'idle' | 'uploading' | 'success' | 'error';
 
 interface ClientUploadCardProps {
     status: UploadStatus;
@@ -16,6 +16,10 @@ const FEEDBACK_TEXT: Record<UploadStatus, (count: number) => { message: string; 
     idle: () => ({
         message: '업로드 준비되었습니다. 증거 파일을 선택해 주세요.',
         tone: 'text-gray-500',
+    }),
+    uploading: (count) => ({
+        message: `${count}개 파일 업로드 중... 안전하게 암호화되는 중입니다.`,
+        tone: 'text-accent font-semibold',
     }),
     success: (count) => ({
         message: `파일 ${count}개가 안전하게 전송되었습니다.`,
@@ -116,6 +120,12 @@ export default function ClientUploadCard({ status, uploadedCount, uploadedFiles,
                 )}
             >
                 <p className={feedback.tone}>{feedback.message}</p>
+                {status === 'uploading' && (
+                    <div className="mt-3 flex items-center justify-center text-xs text-gray-500" role="status">
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin text-accent" />
+                        <span>업로드 중...</span>
+                    </div>
+                )}
             </div>
         </div>
     );
