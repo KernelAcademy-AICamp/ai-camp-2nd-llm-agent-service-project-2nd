@@ -6,7 +6,10 @@ type UploadStatus = 'idle' | 'success' | 'error';
 interface ClientUploadCardProps {
     status: UploadStatus;
     uploadedCount: number;
+    uploadedFiles: string[];
     onSelectFiles: (files: File[]) => void;
+    firmName: string;
+    caseName: string;
 }
 
 const FEEDBACK_TEXT: Record<UploadStatus, (count: number) => { message: string; tone: string }> = {
@@ -24,7 +27,7 @@ const FEEDBACK_TEXT: Record<UploadStatus, (count: number) => { message: string; 
     }),
 };
 
-export default function ClientUploadCard({ status, uploadedCount, onSelectFiles }: ClientUploadCardProps) {
+export default function ClientUploadCard({ status, uploadedCount, uploadedFiles, onSelectFiles, firmName, caseName }: ClientUploadCardProps) {
     const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const files = event.target.files ? Array.from(event.target.files) : [];
         onSelectFiles(files);
@@ -41,8 +44,14 @@ export default function ClientUploadCard({ status, uploadedCount, onSelectFiles 
                 </div>
                 <div>
                     <h1 className="text-2xl font-bold text-deep-trust-blue">의뢰인 증거 제출 포털</h1>
-                    <p className="text-gray-500 mt-2">
-                        아래 안내에 따라 증거 파일을 안전하게 업로드해 주세요. 업로드가 완료되면 담당 변호사가 즉시 확인합니다.
+                    <p className="text-gray-600 mt-2">
+                        {`${firmName}의 '${caseName}'을 위한 증거 제출 페이지입니다.`}
+                    </p>
+                    <p className="text-gray-500">
+                        모든 파일은 종단간 암호화되어 담당 변호사에게만 안전하게 전송됩니다.
+                    </p>
+                    <p className="text-sm text-gray-500">
+                        안내: 아래 영역에 파일을 끌어다 놓거나 클릭하여 업로드할 수 있습니다.
                     </p>
                 </div>
             </header>
@@ -76,6 +85,27 @@ export default function ClientUploadCard({ status, uploadedCount, onSelectFiles 
                     증거 파일 업로드
                 </span>
             </label>
+
+            <div className="space-y-2" aria-live="polite">
+                {uploadedFiles.length > 0 ? (
+                    <div
+                        data-testid="uploaded-files-list"
+                        className="rounded-2xl border border-gray-100 bg-white px-5 py-4"
+                    >
+                        <p className="text-sm font-medium text-deep-trust-blue mb-2">업로드된 파일</p>
+                        <ul className="space-y-1 text-sm text-gray-700">
+                            {uploadedFiles.map((name) => (
+                                <li key={name} className="flex items-center gap-2">
+                                    <span className="inline-block w-2 h-2 rounded-full bg-success-green" aria-hidden="true" />
+                                    <span>{name}</span>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                ) : (
+                    <p className="text-sm text-gray-400 text-center">업로드된 파일이 여기 표시됩니다.</p>
+                )}
+            </div>
 
             <div
                 data-testid="upload-feedback"
