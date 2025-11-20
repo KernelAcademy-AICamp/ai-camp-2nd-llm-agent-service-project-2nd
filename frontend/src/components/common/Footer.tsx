@@ -15,6 +15,8 @@ const Footer = () => {
           <a href="#" className="hover:text-gray-900">개인정보 처리방침</a>
           <span>|</span>
           <a href="#" className="hover:text-gray-900">연락처</a>
+          <span>|</span>
+          <a href="#" className="hover:text-gray-900">사이트맵</a>
         </div>
         <p className="text-xs">
           © {currentYear} LEH, Inc. All rights reserved.

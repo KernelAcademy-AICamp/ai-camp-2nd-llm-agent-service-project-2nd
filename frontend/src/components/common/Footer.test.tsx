@@ -16,4 +16,11 @@ describe('plan 3.9: Footer 컴포넌트', () => {
     const year = new Date().getFullYear();
     expect(screen.getByText(new RegExp(`© ${year} LEH, Inc. All rights reserved.`, 'i'))).toBeInTheDocument();
   });
+
+  it('Footer에 사이트맵 링크가 포함되어야 한다.', () => {
+    render(<Footer />);
+
+    // 사이트맵 링크 존재 여부 확인
+    expect(screen.getByText(/사이트맵/i)).toBeInTheDocument();
+  });
 });
