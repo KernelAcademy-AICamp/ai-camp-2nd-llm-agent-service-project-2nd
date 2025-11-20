@@ -27,44 +27,44 @@
 
 ### 1.1 인증 / 권한
 
-- [ ] `POST /auth/login` 성공 시 JWT 발급 및 만료 시간 필드 포함
-- [ ] 잘못된 자격증명으로 로그인 시 401, 에러 메시지는 “일반적인 문구”여야 한다 (민감 정보 노출 금지)
-- [ ] 사건 상세 API 호출 시, JWT의 `sub` 와 `case_members` 권한을 검사하지 않으면 403을 반환해야 한다.
+- [x] `POST /auth/login` 성공 시 JWT 발급 및 만료 시간 필드 포함
+- [x] 잘못된 자격증명으로 로그인 시 401, 에러 메시지는 "일반적인 문구"여야 한다 (민감 정보 노출 금지)
+- [x] 사건 상세 API 호출 시, JWT의 `sub` 와 `case_members` 권한을 검사하지 않으면 403을 반환해야 한다.
 
 ### 1.2 사건 관리 (Cases)
 
-- [ ] `POST /cases` 호출 시 사건이 RDS `cases` 테이블에 저장되고, 응답 JSON의 `id`, `title`, `status` 가 DB 값과 일치해야 한다.
-- [ ] `GET /cases` 는 현재 사용자에게 접근 권한이 있는 사건만 반환해야 한다 (`case_members` 기반).
-- [ ] `DELETE /cases/{case_id}` 호출 시:
+- [x] `POST /cases` 호출 시 사건이 RDS `cases` 테이블에 저장되고, 응답 JSON의 `id`, `title`, `status` 가 DB 값과 일치해야 한다.
+- [x] `GET /cases` 는 현재 사용자에게 접근 권한이 있는 사건만 반환해야 한다 (`case_members` 기반).
+- [x] `DELETE /cases/{case_id}` 호출 시:
   - 사건 상태가 `closed` 로 변경되어야 하고,
   - 해당 사건의 OpenSearch 인덱스(`case_rag_{case_id}`) 삭제 요청이 서비스 레이어에서 호출되어야 한다 (통합 테스트에서는 mock으로 검증).
 
 ### 1.3 Evidence Upload (Presigned URL, S3)
 
-- [ ] `POST /evidence/presigned-url` 은 유효한 `case_id`, `filename`, `content_type` 를 받으면:
+- [x] `POST /evidence/presigned-url` 은 유효한 `case_id`, `filename`, `content_type` 를 받으면:
   - `upload_url` 과 `fields` 를 포함한 구조를 반환해야 한다.
   - `fields.key` 는 `cases/{case_id}/raw/` 접두어로 시작해야 한다.
-- [ ] 존재하지 않거나 권한 없는 `case_id` 로 Presigned URL을 요청하면 404를 반환해야 한다.
-- [ ] Presigned URL의 만료 시간이 **5분 이내**인지 확인하는 유닛 테스트가 있어야 한다 (실제 AWS 호출 대신 서명 파라미터 검사).
+- [x] 존재하지 않거나 권한 없는 `case_id` 로 Presigned URL을 요청하면 404를 반환해야 한다.
+- [x] Presigned URL의 만료 시간이 **5분 이내**인지 확인하는 유닛 테스트가 있어야 한다 (실제 AWS 호출 대신 서명 파라미터 검사).
 
 ### 1.4 Evidence 메타 조회 (DynamoDB)
 
-- [ ] `GET /cases/{case_id}/evidence` 호출 시:
+- [x] `GET /cases/{case_id}/evidence` 호출 시:
   - DynamoDB에서 `case_id` 로 조회된 evidence 목록을 `timestamp` 기준으로 정렬해 반환해야 한다.
   - 삭제 플래그(`deleted = true`) 가 있는 항목은 리스트에서 제외해야 한다.
-- [ ] `GET /evidence/{evidence_id}` 는:
+- [x] `GET /evidence/{evidence_id}` 는:
   - `summary`, `labels`, `timestamp`, `download_url` 을 포함해야 하고
   - `download_url` 은 짧은 유효기간의 S3 Presigned URL 이어야 한다 (형태만 테스트).
 
 ### 1.5 Draft Preview (RAG + GPT-4o)
 
-- [ ] `POST /cases/{case_id}/draft-preview` 호출 시:
+- [x] `POST /cases/{case_id}/draft-preview` 호출 시:
   - 사건에 증거가 하나도 없으면 400을 반환해야 한다.
   - 최소 1개 이상의 evidence가 있을 경우, `draft_text` 와 `citations` 배열이 포함된 JSON을 반환해야 한다.
-- [ ] Draft 생성 시 사용되는 Prompt 문자열에는:
+- [x] Draft 생성 시 사용되는 Prompt 문자열에는:
   - **RAG 기반 사실 인용 지시**,
   - **Hallucination 금지 규칙**,
-  - **“최종 결정은 변호사가 한다”** 류의 책임 한계 문구가 포함되어야 한다 (문자열 포함 여부 테스트).
+  - **"최종 결정은 변호사가 한다"** 류의 책임 한계 문구가 포함되어야 한다 (문자열 포함 여부 테스트).
 
 ---
 
