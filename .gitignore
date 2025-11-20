@@ -94,6 +94,7 @@ Thumbs.db
 *.swp
 *.swo
 *.orig
+.agent/
 
 
 ###################################
@@ -169,3 +170,5 @@ uploads/
 ###################################
 # Personal CLAUDE.md at root (docs/guides/claude.md is tracked)
 /CLAUDE.md
+
+.agent/
