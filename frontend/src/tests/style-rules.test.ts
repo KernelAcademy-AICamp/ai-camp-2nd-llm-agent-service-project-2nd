@@ -1,5 +1,5 @@
-import fs from 'fs';
-import path from 'path';
+import * as fs from 'fs';
+import * as path from 'path';
 
 describe('Frontend Style Rules', () => {
     const projectRoot = path.resolve(__dirname, '../../');
@@ -28,6 +28,6 @@ describe('Frontend Style Rules', () => {
         const tailwindConfigPath = path.join(projectRoot, 'tailwind.config.js');
         const configContent = fs.readFileSync(tailwindConfigPath, 'utf-8');
 
-        expect(configContent).toMatch(/fontFamily:\s*{[^}]*sans:\s*\["var\(--font-pretendard\)"/s);
+        expect(configContent).toMatch(/fontFamily:\s*{[^}]*sans:\s*\["var\(--font-pretendard\)"/);
     });
 });

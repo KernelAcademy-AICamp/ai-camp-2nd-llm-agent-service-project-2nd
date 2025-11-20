@@ -87,16 +87,34 @@ class PresignedUrlResponse(BaseModel):
 
 
 class EvidenceSummary(BaseModel):
-    """Evidence summary schema"""
+    """Evidence summary schema (for list view)"""
+    id: str
+    case_id: str
+    type: str  # text, image, audio, video, pdf
+    filename: str
+    created_at: datetime
+    status: str  # pending, processing, done, error
+
+
+class EvidenceDetail(BaseModel):
+    """Evidence detail schema (for detail view with AI analysis)"""
     id: str
     case_id: str
     type: str
     filename: str
-    timestamp: datetime
-    speaker: Optional[str]
-    labels: list[str]
-    summary: str
+    s3_key: str
+    content_type: str
+    created_at: datetime
     status: str
+
+    # AI analysis results (available when status="done")
+    ai_summary: Optional[str] = None
+    labels: Optional[list[str]] = None
+    insights: Optional[list[str]] = None
+    content: Optional[str] = None  # Full STT/OCR text
+    speaker: Optional[str] = None  # For audio/video
+    timestamp: Optional[datetime] = None  # Event timestamp in evidence
+    opensearch_id: Optional[str] = None  # RAG index reference
 
 
 # ============================================

@@ -167,9 +167,9 @@ app.include_router(auth.router, prefix="/auth", tags=["Authentication"])
 from app.api import cases
 app.include_router(cases.router, prefix="/cases", tags=["Cases"])
 
-# TODO: 증거 라우터
-# from app.api import evidence
-# app.include_router(evidence.router, prefix="/evidence", tags=["Evidence"])
+# 증거 라우터
+from app.api import evidence
+app.include_router(evidence.router, prefix="/evidence", tags=["Evidence"])
 
 # TODO: Draft 라우터
 # from app.api import draft

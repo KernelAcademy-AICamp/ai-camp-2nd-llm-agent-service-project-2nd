@@ -19,7 +19,7 @@ describe('CaseCard', () => {
 
         expect(screen.getByText('Test Case')).toBeInTheDocument();
         expect(screen.getByText('Test Client')).toBeInTheDocument();
-        expect(screen.getByText('OPEN')).toBeInTheDocument();
+        expect(screen.getByText('진행 중')).toBeInTheDocument();
         expect(screen.getByText('증거 5건')).toBeInTheDocument();
         expect(screen.getByText('준비됨')).toBeInTheDocument();
     });

@@ -8,6 +8,7 @@ from .error_handler import (
     PermissionError,
     NotFoundError,
     ConflictError,
+    ValidationError,
     register_exception_handlers
 )
 from .security import SecurityHeadersMiddleware, HTTPSRedirectMiddleware
@@ -18,6 +19,7 @@ __all__ = [
     "PermissionError",
     "NotFoundError",
     "ConflictError",
+    "ValidationError",
     "register_exception_handlers",
     "SecurityHeadersMiddleware",
     "HTTPSRedirectMiddleware"

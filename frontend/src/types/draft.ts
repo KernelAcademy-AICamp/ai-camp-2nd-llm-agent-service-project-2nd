@@ -8,3 +8,9 @@ export interface DraftPreviewState {
     draftText: string;
     citations: DraftCitation[];
 }
+
+export interface DraftTemplate {
+    id: string;
+    name: string;
+    updatedAt: string;
+}

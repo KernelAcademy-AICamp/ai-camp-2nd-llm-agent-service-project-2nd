@@ -3,6 +3,8 @@ Cases API endpoints
 POST /cases - Create new case
 GET /cases - List cases for current user
 GET /cases/{id} - Get case detail
+GET /cases/{id}/evidence - List evidence for a case
+POST /cases/{id}/draft-preview - Generate draft preview
 PUT /cases/{id} - Update case
 DELETE /cases/{id} - Soft delete case
 """
@@ -12,8 +14,16 @@ from sqlalchemy.orm import Session
 from typing import List
 
 from app.db.session import get_db
-from app.db.schemas import CaseCreate, CaseOut
+from app.db.schemas import (
+    CaseCreate,
+    CaseOut,
+    EvidenceSummary,
+    DraftPreviewRequest,
+    DraftPreviewResponse
+)
 from app.services.case_service import CaseService
+from app.services.evidence_service import EvidenceService
+from app.services.draft_service import DraftService
 from app.core.dependencies import get_current_user_id
 
 
@@ -87,6 +97,90 @@ def get_case(
     """
     case_service = CaseService(db)
     return case_service.get_case_by_id(case_id, user_id)
+
+
+@router.get("/{case_id}/evidence", response_model=List[EvidenceSummary])
+def list_case_evidence(
+    case_id: str,
+    user_id: str = Depends(get_current_user_id),
+    db: Session = Depends(get_db)
+):
+    """
+    Get list of all evidence for a case
+
+    **Path Parameters:**
+    - case_id: Case ID
+
+    **Response:**
+    - 200: List of evidence summary (may be empty)
+    - Each item contains: id, type, filename, status, created_at
+
+    **Errors:**
+    - 401: Not authenticated
+    - 403: User does not have access to case
+    - 404: Case not found
+
+    **Authentication:**
+    - Requires valid JWT token
+    - User must be a member of the case
+
+    **Notes:**
+    - Returns evidence in reverse chronological order (newest first)
+    - Only returns metadata, not full file content
+    - AI analysis results available when status="done"
+    """
+    evidence_service = EvidenceService(db)
+    return evidence_service.get_evidence_list(case_id, user_id)
+
+
+@router.post("/{case_id}/draft-preview", response_model=DraftPreviewResponse)
+def generate_draft_preview(
+    case_id: str,
+    request: DraftPreviewRequest,
+    user_id: str = Depends(get_current_user_id),
+    db: Session = Depends(get_db)
+):
+    """
+    Generate draft preview using RAG + GPT-4o
+
+    **Path Parameters:**
+    - case_id: Case ID
+
+    **Request Body:**
+    - sections: List of sections to generate (default: ["청구취지", "청구원인"])
+    - language: Language code (default: "ko")
+    - style: Writing style (default: "법원 제출용_표준")
+
+    **Response:**
+    - 200: Draft preview generated successfully
+    - draft_text: Generated draft text
+    - citations: List of evidence citations used
+    - generated_at: Timestamp of generation
+
+    **Errors:**
+    - 401: Not authenticated
+    - 403: User does not have access to case
+    - 404: Case not found
+
+    **Authentication:**
+    - Requires valid JWT token
+    - User must be a member of the case
+
+    **Process:**
+    1. Retrieve evidence metadata from DynamoDB
+    2. Perform semantic search in OpenSearch (RAG)
+    3. Build GPT-4o prompt with RAG context
+    4. Generate draft text
+    5. Extract citations
+
+    **Important:**
+    - This is a PREVIEW ONLY - not auto-submitted
+    - Requires lawyer review and approval
+    - Based on AI analysis of evidence
+    - May require manual editing
+    """
+    draft_service = DraftService(db)
+    return draft_service.generate_draft_preview(case_id, request, user_id)
 
 
 @router.delete("/{case_id}", status_code=status.HTTP_204_NO_CONTENT)

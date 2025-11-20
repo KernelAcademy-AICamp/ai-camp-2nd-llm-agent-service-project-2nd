@@ -73,6 +73,16 @@ class ConflictError(LEHException):
         )
 
 
+class ValidationError(LEHException):
+    """Validation error (400)"""
+    def __init__(self, message: str = "Validation error"):
+        super().__init__(
+            code="VALIDATION_ERROR",
+            message=message,
+            status_code=status.HTTP_400_BAD_REQUEST
+        )
+
+
 async def leh_exception_handler(request: Request, exc: LEHException) -> JSONResponse:
     """
     Handler for LEH-specific exceptions

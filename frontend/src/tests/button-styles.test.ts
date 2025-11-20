@@ -1,5 +1,5 @@
-import fs from 'fs';
-import path from 'path';
+import * as fs from 'fs';
+import * as path from 'path';
 
 describe('Button Style Rules', () => {
     const projectRoot = path.resolve(__dirname, '../../');
@@ -9,7 +9,7 @@ describe('Button Style Rules', () => {
         const cssContent = fs.readFileSync(globalsCssPath, 'utf-8');
 
         // Check for .btn-primary class definition
-        const btnPrimaryMatch = cssContent.match(/\.btn-primary\s*{([^}]*)}/s);
+        const btnPrimaryMatch = cssContent.match(/\.btn-primary\s*{([^}]*)}/);
         expect(btnPrimaryMatch).not.toBeNull();
 
         if (btnPrimaryMatch) {
@@ -24,7 +24,7 @@ describe('Button Style Rules', () => {
         const configContent = fs.readFileSync(tailwindConfigPath, 'utf-8');
 
         // Check that accent color is defined as #1ABC9C
-        expect(configContent).toMatch(/accent:\s*{[^}]*DEFAULT:\s*["']#1ABC9C["']/s);
+        expect(configContent).toMatch(/accent:\s*{[^}]*DEFAULT:\s*["']#1ABC9C["']/);
     });
 
     test('Destructive action buttons should use semantic-error color (#E74C3C)', () => {
@@ -32,7 +32,7 @@ describe('Button Style Rules', () => {
         const cssContent = fs.readFileSync(globalsCssPath, 'utf-8');
 
         // Check for .btn-danger class definition
-        const btnDangerMatch = cssContent.match(/\.btn-danger\s*{([^}]*)}/s);
+        const btnDangerMatch = cssContent.match(/\.btn-danger\s*{([^}]*)}/);
         expect(btnDangerMatch).not.toBeNull();
 
         if (btnDangerMatch) {

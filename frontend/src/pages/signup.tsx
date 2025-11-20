@@ -50,7 +50,6 @@ const SignupPage: NextPage = () => {
     } else {
       setErrors({});
       // TODO: 회원가입 API 호출
-      console.log('Form submitted successfully');
     }
   };
 

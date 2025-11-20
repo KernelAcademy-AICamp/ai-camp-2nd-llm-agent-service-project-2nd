@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { Evidence } from '@/types/evidence';
 import { X, FileText, Image, Mic, Video, File, Check } from 'lucide-react';
+import { DraftTemplate } from '@/types/draft';
 
 interface DraftGenerationModalProps {
     isOpen: boolean;
     onClose: () => void;
     onGenerate: (selectedEvidenceIds: string[]) => void;
     evidenceList: Evidence[];
+    templates?: DraftTemplate[];
 }
 
 export default function DraftGenerationModal({
@@ -14,8 +16,13 @@ export default function DraftGenerationModal({
     onClose,
     onGenerate,
     evidenceList,
+    templates = [
+        { id: 'default', name: '기본 양식', updatedAt: '2024-05-01' },
+        { id: 'custom-1', name: '이혼 소송 답변서 v1', updatedAt: '2024-05-10' },
+    ],
 }: DraftGenerationModalProps) {
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
+    const [selectedTemplateId, setSelectedTemplateId] = useState<string>(templates[0]?.id ?? 'default');
 
     if (!isOpen) return null;
 
@@ -55,6 +62,24 @@ export default function DraftGenerationModal({
                     <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
                         <X className="w-6 h-6" />
                     </button>
+                </div>
+
+                <div className="px-6 pt-4 space-y-3">
+                    <label className="flex flex-col text-sm text-gray-700">
+                        <span className="font-medium mb-1">템플릿 선택</span>
+                        <select
+                            aria-label="템플릿 선택"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent bg-white text-sm"
+                            value={selectedTemplateId}
+                            onChange={(e) => setSelectedTemplateId(e.target.value)}
+                        >
+                            {templates.map((template) => (
+                                <option key={template.id} value={template.id}>
+                                    {template.name}
+                                </option>
+                            ))}
+                        </select>
+                    </label>
                 </div>
 
                 <div className="p-4 border-b border-gray-100 bg-gray-50 flex justify-between items-center">

@@ -157,15 +157,20 @@ export default function EvidenceTable({ items }: EvidenceTableProps) {
                             </th>
                         </tr>
                     </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                        {filteredItems.map((item) => (
-                            <tr key={item.id} className="hover:bg-gray-50 transition-colors">
+                    <tbody className="divide-y divide-gray-200">
+                        {filteredItems.map((item, index) => {
+                            const zebraBackground = index % 2 === 0 ? 'bg-white' : 'bg-gray-50/70';
+                            return (
+                            <tr key={item.id} className={`group transition-colors ${zebraBackground} hover:bg-accent/5`}>
                                 <td className="px-6 py-4 whitespace-nowrap">
                                     {getTypeIcon(item.type)}
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap">
                                     <div className="text-sm font-medium text-gray-900">{item.filename}</div>
                                     <div className="text-xs text-gray-500">{(item.size / 1024 / 1024).toFixed(2)} MB</div>
+                                    <div className="text-[11px] text-gray-400 hidden group-hover:block mt-1">
+                                        클릭하여 상세 · 타임라인 연결 옵션 보기
+                                    </div>
                                 </td>
                                 <td className="px-6 py-4">
                                     <div className="text-sm text-gray-500 truncate max-w-xs">
@@ -179,12 +184,15 @@ export default function EvidenceTable({ items }: EvidenceTableProps) {
                                     {getStatusBadge(item.status)}
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                    <button className="text-gray-400 hover:text-gray-600">
+                                    <button
+                                        className="text-gray-400 hover:text-gray-600 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
+                                        aria-label={`${item.filename} 추가 작업`}
+                                    >
                                         <MoreVertical className="w-5 h-5" />
                                     </button>
                                 </td>
                             </tr>
-                        ))}
+                        )})}
                     </tbody>
                 </table>
             </div>

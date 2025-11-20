@@ -94,7 +94,7 @@ PRD, 아키텍처, 설계 문서, 코드, 그리고 협업 규칙을 한 번에 
 ### 4.2 레포 클론
 
 bash
-git clone https://github.com/ORG/REPO.git
+git clone `https://github.com/ORG/REPO.git`
 cd REPO
 `
 
@@ -134,7 +134,7 @@ pip install -r requirements.txt
 # alembic upgrade head
 
 uvicorn backend.main:app --reload
-# 기본: http://localhost:8000
+# 기본: `http://localhost:8000`
 
 
 ---
@@ -163,7 +163,7 @@ python worker/main.py
 bash
 cd frontend
 npm install
-npm run dev   # 기본: http://localhost:5173
+npm run dev   # 기본: `http://localhost:5173`
 
 
 - `.env` 내 `VITE_API_BASE_URL`(또는 NEXT_PUBLIC_API_BASE_URL)이 FastAPI 주소와 일치해야 한다.
@@ -196,7 +196,7 @@ npm run dev   # 기본: http://localhost:5173
 ### 4.2 레포 클론
 
 ```bash
-git clone https://github.com/ORG/REPO.git
+git clone `https://github.com/ORG/REPO.git`
 cd REPO
 ````
 

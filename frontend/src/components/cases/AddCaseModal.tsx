@@ -19,7 +19,6 @@ const AddCaseModal: React.FC<AddCaseModalProps> = ({ isOpen, onClose }) => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     // TODO: API 호출로 사건 등록
-    console.log('Case submitted:', { title, clientName, description });
     onClose();
   };
 
