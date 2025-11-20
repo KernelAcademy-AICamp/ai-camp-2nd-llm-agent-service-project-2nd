@@ -146,4 +146,19 @@ describe('Plan 3.6 - Draft Tab requirements on the case detail page', () => {
             expect(downloadDraftAsDocx).toHaveBeenCalledWith(expect.any(String), 'case-draft-tab', 'hwp');
         });
     });
+
+    describe('Plan 3.13 - Template 선택 옵션', () => {
+        test('Draft 생성 모달에서 업로드된 템플릿을 선택할 수 있는 컨트롤이 있어야 한다', async () => {
+            renderCaseDetail();
+
+            const generateButton = screen.getByRole('button', { name: /초안 (재)?생성/i });
+            fireEvent.click(generateButton);
+
+            expect(await screen.findByText(/Draft 생성 옵션/i)).toBeInTheDocument();
+
+            const templateSelect = screen.getByRole('combobox', { name: /템플릿 선택/i });
+            expect(templateSelect).toBeInTheDocument();
+            expect(screen.getByRole('option', { name: /기본 양식/i })).toBeInTheDocument();
+        });
+    });
 });
