@@ -26,11 +26,17 @@ from app.middleware import (
 # ============================================
 # Logging Configuration
 # ============================================
+from app.core.logging_filter import SensitiveDataFilter
+
 logging.basicConfig(
     level=getattr(logging, settings.LOG_LEVEL.upper()),
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+# Apply sensitive data filter to root logger
+root_logger = logging.getLogger()
+root_logger.addFilter(SensitiveDataFilter())
 
 
 # ============================================

@@ -24,9 +24,11 @@ from src.storage.metadata_store import MetadataStore
 from src.storage.vector_store import VectorStore
 from src.analysis.summarizer import EvidenceSummarizer
 from src.analysis.article_840_tagger import Article840Tagger
+from src.utils.logging_filter import SensitiveDataFilter
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
+logger.addFilter(SensitiveDataFilter())
 
 
 def route_parser(file_extension: str) -> Optional[Any]:
