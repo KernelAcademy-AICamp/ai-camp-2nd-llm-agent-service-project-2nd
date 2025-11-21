@@ -37,8 +37,12 @@ temp/
 ###################################
 # 2. AI Worker / LLM 파이프라인
 ###################################
-# 특정 폴더만 제외 (AI Worker 내부)
-ai_worker/storage/
+# Storage 데이터 파일만 제외 (Python 코드는 포함)
+ai_worker/**/storage/*.db
+ai_worker/**/storage/*.sqlite3
+ai_worker/**/storage/data/
+
+# 기타 AI Worker 제외 폴더
 ai_worker/.cache/
 ai_worker/workflows/local_debug/
 
