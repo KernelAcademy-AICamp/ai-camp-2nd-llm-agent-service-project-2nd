@@ -274,14 +274,17 @@
 
 ---
 
-## 4. 보안 관련 테스트 (전 계층 공통)
+## 4. 보안 관련 테스트 (전 계층 공통) ✅ **완료**
 
-- [ ] HTTP 응답 헤더에는:
+- [x] HTTP 응답 헤더에는:
   - 최소한 `Content-Security-Policy`, `X-Content-Type-Options`, `X-Frame-Options` 가 설정되어야 한다 (백엔드 유닛/통합 테스트).
-- [ ] 로그 기록 시:
+  - ✅ **구현 완료**: Phase 3.1 - HTTP Security Headers 테스트 (`backend/tests/test_security_headers.py`)
+- [x] 로그 기록 시:
   - JWT 토큰, 비밀번호, 주민등록번호 등 민감정보가 로그에 포함되지 않는지 검증하는 테스트가 있어야 한다 (샘플 로그 캡처 후 assert).
-- [ ] GitHub 레포 코드/설정에서:
+  - ✅ **구현 완료**: Phase 3.2 - AI Worker + Backend 민감정보 로깅 필터 (`ai_worker/src/utils/logging_filter.py`, `backend/app/core/logging_filter.py`)
+- [x] GitHub 레포 코드/설정에서:
   - `OPENAI_API_KEY`, DB 비밀번호 등 비밀값이 **하드코딩**되어 있지 않은지 검사하는 정적 체크 스크립트 테스트를 추가해야 한다.
+  - ✅ **구현 완료**: Phase 3.3 - Hardcoded Secrets Detection (`scripts/check_hardcoded_secrets.py`, 10 tests passing)
 
 ---
 
