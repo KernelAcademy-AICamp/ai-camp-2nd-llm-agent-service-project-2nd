@@ -11,8 +11,10 @@ import traceback
 import uuid
 from datetime import datetime, timezone
 import logging
+from app.core.logging_filter import SensitiveDataFilter
 
 logger = logging.getLogger(__name__)
+logger.addFilter(SensitiveDataFilter())
 
 
 class LEHException(Exception):
