@@ -321,7 +321,7 @@
     - 4️⃣ 초안 다운로드 (HWP/DOCX)
   - 각 단계마다 작은 애니메이션 또는 아이콘
 
-- [ ] **7. AI Transparency & Security**
+- [x] **7. AI Transparency & Security**
   - 제목: "법률 컴플라이언스 준수"
   - 2-Column 레이아웃:
     - 좌측: AI 투명성
