@@ -37,8 +37,19 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
             response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
 
         # Content Security Policy (CSP)
-        # Adjust as needed for your frontend
-        response.headers["Content-Security-Policy"] = "default-src 'self'"
+        # In development, allow CDN resources for Swagger UI
+        # In production, adjust as needed for your frontend
+        if settings.APP_ENV == "local":
+            # Allow Swagger UI CDN resources
+            response.headers["Content-Security-Policy"] = (
+                "default-src 'self'; "
+                "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+                "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+                "img-src 'self' data: https://fastapi.tiangolo.com; "
+                "font-src 'self' data:"
+            )
+        else:
+            response.headers["Content-Security-Policy"] = "default-src 'self'"
 
         # Referrer Policy
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"

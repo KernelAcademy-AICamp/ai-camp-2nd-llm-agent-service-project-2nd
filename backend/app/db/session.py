@@ -31,11 +31,10 @@ def init_db():
     global engine, SessionLocal
 
     try:
-        # Use SQLite for local development/testing
-        # In production, use settings.database_url_computed for PostgreSQL
-        database_url = "sqlite:///./leh_local.db"
+        # Use PostgreSQL from environment settings
+        database_url = settings.database_url_computed
 
-        logger.info(f"Initializing database with URL: {database_url}")
+        logger.info(f"Initializing database with URL: {database_url.split('@')[0]}@...")
 
         engine = create_engine(
             database_url,

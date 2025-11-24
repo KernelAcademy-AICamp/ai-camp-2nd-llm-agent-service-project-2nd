@@ -1,16 +1,14 @@
 """
 S3 utilities for presigned URL generation
-Mock implementation for development/testing
-
-In production, replace with real boto3 calls:
-    import boto3
-    s3_client = boto3.client('s3')
-    return s3_client.generate_presigned_post(...)
+Real AWS boto3 implementation
 """
 
 from typing import Dict
 from app.core.config import settings
-import uuid
+import boto3
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def generate_presigned_upload_url(
@@ -34,39 +32,38 @@ def generate_presigned_upload_url(
     Security:
         - Max expiration is 300 seconds (5 minutes) per SECURITY_COMPLIANCE.md
         - Validates expires_in parameter
+        - Max file size: 100MB
     """
     # Security: Enforce max expiration
     if expires_in > 300:
         expires_in = 300
 
-    # Mock implementation
-    # TODO: Replace with boto3 when AWS is configured
-    # s3_client = boto3.client('s3', region_name=settings.AWS_REGION)
-    # return s3_client.generate_presigned_post(
-    #     Bucket=bucket,
-    #     Key=key,
-    #     Fields={"Content-Type": content_type},
-    #     Conditions=[
-    #         {"Content-Type": content_type},
-    #         ["content-length-range", 0, 104857600]  # 100MB max
-    #     ],
-    #     ExpiresIn=expires_in
-    # )
+    try:
+        # Real AWS S3 client
+        s3_client = boto3.client('s3', region_name=settings.AWS_REGION)
 
-    # Mock response matching AWS S3 presigned POST structure
-    return {
-        "upload_url": f"https://{bucket}.s3.{settings.AWS_REGION}.amazonaws.com/",
-        "fields": {
-            "key": key,
-            "Content-Type": content_type,
-            "policy": "mock-policy-base64",
-            "x-amz-algorithm": "AWS4-HMAC-SHA256",
-            "x-amz-credential": f"mock-credential/{settings.AWS_REGION}/s3/aws4_request",
-            "x-amz-date": "20250120T000000Z",
-            "x-amz-signature": "mock-signature"
-        },
-        "expires_in": expires_in  # Add for testing purposes
-    }
+        response = s3_client.generate_presigned_post(
+            Bucket=bucket,
+            Key=key,
+            Fields={"Content-Type": content_type},
+            Conditions=[
+                {"Content-Type": content_type},
+                ["content-length-range", 0, 104857600]  # 100MB max
+            ],
+            ExpiresIn=expires_in
+        )
+
+        logger.info(f"Generated presigned POST URL for bucket={bucket}, key={key}")
+
+        # boto3 returns 'url' and 'fields', but we need 'upload_url' and 'fields'
+        return {
+            "upload_url": response["url"],
+            "fields": response["fields"]
+        }
+
+    except Exception as e:
+        logger.error(f"Failed to generate presigned POST URL: {e}")
+        raise
 
 
 def generate_presigned_download_url(
@@ -92,14 +89,19 @@ def generate_presigned_download_url(
     if expires_in > 300:
         expires_in = 300
 
-    # Mock implementation
-    # TODO: Replace with boto3 when AWS is configured
-    # s3_client = boto3.client('s3', region_name=settings.AWS_REGION)
-    # return s3_client.generate_presigned_url(
-    #     'get_object',
-    #     Params={'Bucket': bucket, 'Key': key},
-    #     ExpiresIn=expires_in
-    # )
+    try:
+        # Real AWS S3 client
+        s3_client = boto3.client('s3', region_name=settings.AWS_REGION)
 
-    # Mock response
-    return f"https://{bucket}.s3.{settings.AWS_REGION}.amazonaws.com/{key}?mock-signature=true&expires={expires_in}"
+        url = s3_client.generate_presigned_url(
+            'get_object',
+            Params={'Bucket': bucket, 'Key': key},
+            ExpiresIn=expires_in
+        )
+
+        logger.info(f"Generated presigned GET URL for bucket={bucket}, key={key}")
+        return url
+
+    except Exception as e:
+        logger.error(f"Failed to generate presigned GET URL: {e}")
+        raise
