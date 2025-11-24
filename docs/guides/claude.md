@@ -18,7 +18,33 @@ AI 에이전트는 **시니어 소프트웨어 엔지니어**로서 행동해야
 
 ---
 
-# 2. TDD CYCLE — 반드시 지켜야 하는 절차
+# 2. ENVIRONMENT REQUIREMENTS — 개발 환경 요구사항
+
+프로젝트 전체는 **Python 3.14**를 사용한다.
+
+## **Python 버전**
+
+- **프로젝트 표준**: Python 3.14
+- **Backend (FastAPI)**: Python 3.14
+- **AI Worker (AWS Lambda)**: Python 3.14
+- **로컬 개발 환경**: Python 3.14
+
+## **일관성 유지**
+
+- 모든 Dockerfile은 Python 3.14 이미지 사용
+- 가상환경 생성 시 Python 3.14 사용
+- CI/CD 파이프라인에서 Python 3.14 지정
+- 의존성 패키지는 Python 3.14 호환 버전 사용
+
+## **금지 사항**
+
+- ❌ 다른 Python 버전 사용 (3.11, 3.12, 3.13 등)
+- ❌ 버전 혼용 (일부는 3.14, 일부는 다른 버전)
+- ❌ Python 버전 명시 없는 Dockerfile
+
+---
+
+# 3. TDD CYCLE — 반드시 지켜야 하는 절차
 
 AI는 아래 순서를 절대 어겨서는 안 된다.
 

@@ -1,7 +1,7 @@
 # ai_worker/Dockerfile
 
 # AWS Lambda용 Python 공식 이미지를 사용 (RIC 포함)
-FROM public.ecr.aws/lambda/python:3.11
+FROM public.ecr.aws/lambda/python:3.14
 
 # 의존성 파일 복사 및 설치
 COPY requirements.txt ${LAMBDA_TASK_ROOT}
