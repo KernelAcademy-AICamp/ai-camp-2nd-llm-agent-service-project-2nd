@@ -379,7 +379,7 @@
   - `/login` → Login Page (기존 `/`에서 이동)
   - Navigation Guard: 로그인 상태면 `/cases`로 자동 리디렉션
 
-- [ ] **성능 최적화**
+- [x] **성능 최적화**
   - Hero 이미지: WebP 포맷, lazy loading
   - 스크린샷: Blur placeholder (next/image)
   - 스크롤 애니메이션: Intersection Observer API 사용
