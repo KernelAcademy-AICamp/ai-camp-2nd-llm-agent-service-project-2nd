@@ -54,10 +54,9 @@ async def lifespan(_app: FastAPI):
     logger.info("📍 Debug mode: %s", settings.APP_DEBUG)
     logger.info("📍 CORS origins: %s", settings.cors_origins_list)
 
-    # TODO: Initialize database connection pool
-    # TODO: Test AWS service connections (S3, DynamoDB, OpenSearch)
-    # TODO: Initialize OpenAI client
-    # TODO: Load any required ML models or embeddings
+    # Note: Database connection pool is managed per-request via get_db()
+    # Note: AWS services (S3, DynamoDB, OpenSearch) currently use mock implementations
+    # Note: OpenAI client is initialized on-demand in utils/openai_client.py
 
     logger.info("✅ Startup complete")
 
@@ -65,9 +64,7 @@ async def lifespan(_app: FastAPI):
 
     # Shutdown
     logger.info("👋 Legal Evidence Hub API shutting down...")
-    # TODO: Close database connections
-    # TODO: Clean up any background tasks
-    # TODO: Flush logs
+    # Note: Database connections and logs are automatically cleaned up by FastAPI/SQLAlchemy
 
     logger.info("✅ Shutdown complete")
 
@@ -109,9 +106,8 @@ app.add_middleware(
     expose_headers=["X-Request-ID"]
 )
 
-# TODO: Add JWT authentication middleware (after auth system is implemented)
-# TODO: Add Audit Log middleware (after database is connected)
-# TODO: Add Rate Limiting middleware (optional, for production)
+# Note: JWT authentication is handled per-endpoint via get_current_user_id() dependency
+# Note: Rate limiting can be added later if needed for production
 
 
 # ============================================
@@ -177,13 +173,8 @@ app.include_router(cases.router, prefix="/cases", tags=["Cases"])
 from app.api import evidence
 app.include_router(evidence.router, prefix="/evidence", tags=["Evidence"])
 
-# TODO: Draft 라우터
-# from app.api import draft
-# app.include_router(draft.router, prefix="/draft", tags=["Draft"])
-
-# TODO: 검색 라우터 (RAG 기반)
-# from app.api import search
-# app.include_router(search.router, prefix="/search", tags=["Search"])
+# Note: Draft endpoints are integrated into cases router (POST /cases/{case_id}/draft-preview)
+# Note: RAG search is integrated into draft generation service (draft_service.py)
 
 
 # ============================================

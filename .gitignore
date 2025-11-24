@@ -1,31 +1,41 @@
-# ================================
-#   🚨 Paralegal (LEH) – SECURITY FIRST
-#   GitHub 업로드 금지 파일 총정리
-# ================================
+# ==============================================================================
+# 🚨 LEH Project - HYBRID .gitignore
+# Security First + Project Specific + Optimized Defaults
+# ==============================================================================
 
-###################################
-# 1. Python (Backend – FastAPI)
-###################################
-# Python 컴파일 파일 (확장자 기반)
-*.pyc
-*.pyo
-*.pyd
-*.so
-*.pickle
-*.pkl
-*.pt
-*.bin
+# ==============================================================================
+# 1. SECURITY & CREDENTIALS (ABSOLUTE BLOCK)
+# ==============================================================================
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.cert
+*.crt
+*.p12
+secrets.json
+credentials.json
+*.api_key
+*.token
+# AWS / Cloud Configs
+.aws/
+~/.aws/
+*.tfvars
 
-# Python 폴더 패턴
+# ==============================================================================
+# 2. PYTHON (Backend & AI Worker)
+# ==============================================================================
+# Byte-compiled / Optimized / DLL files
 __pycache__/
-*.egg-info/
-*.cache/
-.pytest_cache/
+*.py[cod]
+*.class
 
-# 가상환경 (필수 폴더 패턴)
+# Virtual Environments
+.venv/
 venv/
 env/
-.venv/
+ENV/
 .python-version
 
 # 로그 및 임시 파일
@@ -59,113 +69,109 @@ ai_worker/workflows/local_debug/
 .env
 .env.*
 !.env.example
-
-*.secrets
-secrets.json
-secret.yaml
-secret.key
-credentials/
-config/secret/
-*.pem
-*.key
-*.crt
-
-
-###################################
-# 4. Frontend (Next.js / Node)
-###################################
-node_modules/
-.next/
-dist/
+# Distribution / Packaging
 build/
+dist/
+*.egg-info/
+.eggs/
+
+# Unit Test / Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+coverage.xml
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+
+# ==============================================================================
+# 3. NODE.JS & NEXT.JS (Frontend)
+# ==============================================================================
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Next.js Build Output
+.next/
 out/
-.npm
-.pnpm-store/
-yarn-error.log
-npm-debug.log
-*.lock
 
+# Production Build
+build/
+dist/
 
-###################################
-# 5. OS & IDE 설정 – 개발자 환경 파일
-###################################
-.DS_Store
-Thumbs.db
-.vscode/
+# Debug Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ==============================================================================
+# 4. IDE & EDITOR (Collaboration Friendly)
+# ==============================================================================
+# VS Code - Ignore personal settings, allow shared configs
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
+
+# JetBrains (IntelliJ, PyCharm)
 .idea/
+
+# Fleet
 .fleet/
+
+# Vim / Emacs / OS
+*~
 *.swp
 *.swo
-*.orig
-.agent/
+.DS_Store
+Thumbs.db
+Desktop.ini
 
+# ==============================================================================
+# 5. PROJECT SPECIFIC (LEH) - CAREFULLY SCOPED
+# ==============================================================================
+# AI Worker Data & Temp
+ai_worker/data/
+ai_worker/temp/
+ai_worker/.cache/
 
-###################################
-# 6. AWS / Terraform / Infra 보안
-###################################
-# AWS credential files
-.aws/
-~/.aws/
+# Evidence Files (Raw uploads)
+# Note: We track docs/pdf, so we only ignore raw evidence uploads
+evidence_raw/
+uploads/
 
-# Terraform sensitive
-*.tfvars
-*.tfstate
-*.tfstate.*
-crash.log
-terraform.tfstate
-terraform.tfstate.backup
-
-# CDK
-cdk.out/
-
-# CloudFormation temp
-*.template.json
-
-
-###################################
-# 7. Docker
-###################################
-docker-compose.override.yml
+# Docker
 docker-data/
 *.pid
 *.sock
 
+# Agent & Personal Configs
+.agent/
+.claude/
+/CLAUDE.md
 
-###################################
-# 8. Database / Storage / Evidence Files
-###################################
-# 법률 증거 파일 저장 폴더만 제외
-evidence_raw/
-uploads/
+# 개인 파일들 담아주세요
+.local/
 
-# 문서 파일 (확장자 기반)
-*.pdf
-*.docx
-*.xlsx
-*.pptx
-*.zip
-*.hwp
-
-# SQLite (local test)
-*.db
-*.sqlite3
-
-
-###################################
-# 9. Logs, Reports, Debug Dumps (확장자 기반)
-###################################
+# ==============================================================================
+# 6. FILE EXTENSIONS (CAUTION: Only generic binaries/logs)
+# ==============================================================================
+# Logs & Databases
 *.log
+*.sqlite3
+*.db
 *.dump
-*.bak
 
-
-###################################
-# 10. Misc – 민감한 개발 산출물
-###################################
-*.bak
-*.tmp
-*.old
-*.backup
+# Binary / Media (Locally generated)
+# Note: PDFs in 'docs/' folders SHOULD be tracked.
+# Only ignore these if they are in root or temp folders, but gitignore is recursive.
+# Strategy: Ignore specific heavy media folders instead of global extensions if possible.
+# For now, keeping global ignore for heavy binaries to prevent accidental commit,
+# but using ! to allow specific documentation paths if needed.
 
 
 ###################################
@@ -181,3 +187,4 @@ docs/guides/claude.md
 .claude/
 
 .agent/
+*.pdf
