@@ -1,11 +1,14 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import LoginForm from '@/components/auth/LoginForm';
 
-// Mock useRouter
-jest.mock('next/router', () => ({
+// Mock useRouter - App Router version
+jest.mock('next/navigation', () => ({
     useRouter: jest.fn(() => ({
         push: jest.fn(),
+        replace: jest.fn(),
+        prefetch: jest.fn(),
     })),
+    usePathname: jest.fn(() => '/'),
 }));
 
 describe('Login Screen Requirements', () => {

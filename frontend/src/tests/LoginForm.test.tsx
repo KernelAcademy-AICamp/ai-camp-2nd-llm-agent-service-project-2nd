@@ -2,12 +2,17 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import LoginForm from '@/components/auth/LoginForm';
 import '@testing-library/jest-dom';
 
-// Mock useRouter
-jest.mock('next/router', () => ({
+// Mock useRouter - App Router version
+jest.mock('next/navigation', () => ({
     useRouter() {
         return {
             push: jest.fn(),
+            replace: jest.fn(),
+            prefetch: jest.fn(),
         };
+    },
+    usePathname() {
+        return '/';
     },
 }));
 
