@@ -285,7 +285,7 @@
   - 스크롤 시 배경 블러 효과 (backdrop-blur)
   - Sticky position, shadow on scroll
 
-- [ ] **2. Hero Section**
+- [x] **2. Hero Section**
   - 헤드라인: "증거 정리 시간 90% 단축" (큰 폰트, Deep Trust Blue)
   - 서브헤드라인: "AI가 이혼 소송 증거를 자동 분석하고 초안을 작성합니다"
   - CTA 버튼: "무료로 시작하기" (Primary, 눈에 띄는 위치)
