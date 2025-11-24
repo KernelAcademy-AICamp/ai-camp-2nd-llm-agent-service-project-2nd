@@ -171,8 +171,11 @@ uploads/
 ###################################
 # 11. Personal Local Files
 ###################################
-# Personal CLAUDE.md at root (docs/guides/claude.md is tracked)
+# Personal CLAUDE.md (prevent accidental commits)
 /CLAUDE.md
+/claude.md
+docs/guides/CLAUDE.md
+docs/guides/claude.md
 
 # Personal Claude configuration directory
 .claude/
