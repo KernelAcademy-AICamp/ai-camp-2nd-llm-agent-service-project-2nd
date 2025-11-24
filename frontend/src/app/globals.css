@@ -1,0 +1,72 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Design System Colors */
+    --deep-trust-blue: #2C3E50;
+    --clarity-teal: #1ABC9C;
+    --calm-grey: #F8F9FA;
+    --accent: #3498DB;
+  }
+
+  body {
+    @apply bg-white text-gray-900;
+    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  }
+}
+
+@layer components {
+  /* Primary Button */
+  .btn-primary {
+    @apply bg-accent text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-600 transition-colors;
+  }
+
+  /* Secondary Button */
+  .btn-secondary {
+    @apply bg-white text-accent border-2 border-accent px-6 py-3 rounded-lg font-semibold hover:bg-blue-50 transition-colors;
+  }
+
+  /* Text Colors */
+  .text-deep-trust-blue {
+    color: var(--deep-trust-blue);
+  }
+
+  .text-clarity-teal {
+    color: var(--clarity-teal);
+  }
+
+  .text-accent {
+    color: var(--accent);
+  }
+
+  /* Background Colors */
+  .bg-deep-trust-blue {
+    background-color: var(--deep-trust-blue);
+  }
+
+  .bg-clarity-teal {
+    background-color: var(--clarity-teal);
+  }
+
+  .bg-calm-grey {
+    background-color: var(--calm-grey);
+  }
+
+  .bg-accent {
+    background-color: var(--accent);
+  }
+}
+
+@layer utilities {
+  /* Smooth Scroll */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Focus Visible */
+  .focus-visible {
+    @apply outline-none ring-2 ring-accent ring-offset-2;
+  }
+}
