@@ -36,7 +36,14 @@ export default function CaseCard({ caseData, onStatusChange }: CaseCardProps) {
 
     return (
         <Link href={`/cases/${caseData.id}`}>
-            <div className="card p-6 h-full flex flex-col justify-between group cursor-pointer hover:ring-2 hover:ring-accent/50 hover:shadow-md transition-all duration-300 bg-calm-grey">
+            <div className="relative card p-6 h-full flex flex-col justify-between group cursor-pointer bg-calm-grey border border-gray-200 rounded-lg overflow-hidden transition-all duration-300 hover:shadow-lg">
+                {/* Border Beam Glow Effect - Magic UI Style */}
+                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none">
+                    <div className="absolute inset-[-2px] bg-gradient-to-r from-transparent via-accent to-transparent rounded-lg blur-sm animate-border-beam"></div>
+                </div>
+
+                {/* Content wrapper to ensure proper z-index layering */}
+                <div className="relative z-10 flex flex-col h-full justify-between">
                 <div>
                     <div className="flex justify-between items-start mb-4">
                         <div>
@@ -109,6 +116,7 @@ export default function CaseCard({ caseData, onStatusChange }: CaseCardProps) {
                         )}
                     </div>
                 </div>
+                </div> {/* End of content wrapper */}
             </div>
         </Link>
     );

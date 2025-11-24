@@ -18,6 +18,19 @@ module.exports = {
       fontFamily: {
         sans: ["var(--font-pretendard)", "sans-serif"],
       },
+      keyframes: {
+        'border-beam': {
+          '0%, 100%': {
+            transform: 'translateX(-100%)',
+          },
+          '50%': {
+            transform: 'translateX(100%)',
+          },
+        },
+      },
+      animation: {
+        'border-beam': 'border-beam 3s linear infinite',
+      },
     },
   },
   plugins: [],
