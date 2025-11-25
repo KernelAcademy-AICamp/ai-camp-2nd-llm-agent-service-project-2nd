@@ -1,0 +1,150 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  LEH AI Worker - Evidence Processing Lambda
+  Processes uploaded evidence files (images, PDFs, audio, video, text)
+  and stores parsed data in DynamoDB/OpenSearch
+
+Globals:
+  Function:
+    Timeout: 300
+    MemorySize: 1024
+    Runtime: python3.12
+    Architectures:
+      - x86_64
+
+Parameters:
+  Environment:
+    Type: String
+    Default: dev
+    AllowedValues:
+      - dev
+      - staging
+      - prod
+    Description: Deployment environment
+
+  OpenAIApiKey:
+    Type: String
+    NoEcho: true
+    Description: OpenAI API Key for embeddings and analysis
+
+Resources:
+  # S3 Bucket for Evidence Files
+  EvidenceBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub 'leh-evidence-${Environment}-${AWS::AccountId}'
+      NotificationConfiguration:
+        LambdaConfigurations:
+          - Event: s3:ObjectCreated:*
+            Function: !GetAtt AIWorkerFunction.Arn
+            Filter:
+              S3Key:
+                Rules:
+                  - Name: prefix
+                    Value: cases/
+
+  # DynamoDB Table for Metadata
+  MetadataTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub 'leh-evidence-metadata-${Environment}'
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: PK
+          AttributeType: S
+        - AttributeName: SK
+          AttributeType: S
+        - AttributeName: GSI1PK
+          AttributeType: S
+        - AttributeName: GSI1SK
+          AttributeType: S
+        - AttributeName: GSI2PK
+          AttributeType: S
+        - AttributeName: GSI2SK
+          AttributeType: S
+      KeySchema:
+        - AttributeName: PK
+          KeyType: HASH
+        - AttributeName: SK
+          KeyType: RANGE
+      GlobalSecondaryIndexes:
+        - IndexName: GSI1
+          KeySchema:
+            - AttributeName: GSI1PK
+              KeyType: HASH
+            - AttributeName: GSI1SK
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+        - IndexName: GSI2
+          KeySchema:
+            - AttributeName: GSI2PK
+              KeyType: HASH
+            - AttributeName: GSI2SK
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+
+  # Lambda Function
+  AIWorkerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub 'leh-ai-worker-${Environment}'
+      CodeUri: .
+      Handler: handler.handle
+      Description: Process evidence files uploaded to S3
+      Environment:
+        Variables:
+          ENVIRONMENT: !Ref Environment
+          DYNAMODB_TABLE_EVIDENCE_METADATA: !Ref MetadataTable
+          OPENSEARCH_ENDPOINT: !Sub '{{resolve:ssm:/leh/${Environment}/opensearch-endpoint}}'
+          OPENAI_API_KEY: !Ref OpenAIApiKey
+          USE_DYNAMODB: 'true'
+          USE_OPENSEARCH: 'true'
+      Policies:
+        - S3ReadPolicy:
+            BucketName: !Ref EvidenceBucket
+        - DynamoDBCrudPolicy:
+            TableName: !Ref MetadataTable
+        - Statement:
+            - Effect: Allow
+              Action:
+                - es:ESHttpGet
+                - es:ESHttpPost
+                - es:ESHttpPut
+                - es:ESHttpDelete
+              Resource: !Sub 'arn:aws:es:${AWS::Region}:${AWS::AccountId}:domain/leh-*'
+      Events:
+        S3Event:
+          Type: S3
+          Properties:
+            Bucket: !Ref EvidenceBucket
+            Events: s3:ObjectCreated:*
+            Filter:
+              S3Key:
+                Rules:
+                  - Name: prefix
+                    Value: cases/
+
+  # Lambda Permission for S3 Invocation
+  AIWorkerFunctionPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref AIWorkerFunction
+      Action: lambda:InvokeFunction
+      Principal: s3.amazonaws.com
+      SourceArn: !GetAtt EvidenceBucket.Arn
+
+Outputs:
+  AIWorkerFunctionArn:
+    Description: Lambda Function ARN
+    Value: !GetAtt AIWorkerFunction.Arn
+
+  EvidenceBucketName:
+    Description: S3 Bucket for evidence files
+    Value: !Ref EvidenceBucket
+
+  MetadataTableName:
+    Description: DynamoDB table for metadata
+    Value: !Ref MetadataTable
