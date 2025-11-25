@@ -38,7 +38,7 @@ LEH 프로젝트의 모든 문서를 역할별로 정리했습니다.
 - [UI_IMPROVEMENTS.md](guides/UI_IMPROVEMENTS.md): Magic UI 통합 가이드
 
 ## AI Agent References (`docs/guides/`) [AI]
-- [claude_example.md](guides/claude_example.md): AI 에이전트 규칙 (TDD, Tidy First)
+- [TDD_RULES.md](guides/TDD_RULES.md): AI 에이전트 규칙 (TDD, Tidy First)
 - [plan.md](guides/plan.md): TDD 개발 계획 및 체크리스트
 - [test_template.md](guides/test_template.md): 테스트 작성 템플릿
 - [auto_test_clipping.md](guides/auto_test_clipping.md): 테스트 자동 필터링
