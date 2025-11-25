@@ -100,6 +100,11 @@ out/
 build/
 dist/
 
+# Playwright
+playwright-report/
+playwright/.cache/
+test-results/
+
 # Debug Logs
 npm-debug.log*
 yarn-debug.log*
