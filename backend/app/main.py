@@ -19,7 +19,8 @@ from app.core.config import settings
 from app.middleware import (
     register_exception_handlers,
     SecurityHeadersMiddleware,
-    HTTPSRedirectMiddleware
+    HTTPSRedirectMiddleware,
+    AuditLogMiddleware
 )
 
 
@@ -96,7 +97,10 @@ app.add_middleware(HTTPSRedirectMiddleware)
 # 2. Security Headers
 app.add_middleware(SecurityHeadersMiddleware)
 
-# 3. CORS (Must be after security headers)
+# 3. Audit Log Middleware (Must be before CORS to log all requests)
+app.add_middleware(AuditLogMiddleware)
+
+# 4. CORS (Must be after security headers and audit log)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins_list,

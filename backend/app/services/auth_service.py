@@ -79,7 +79,9 @@ class AuthService:
             id=user.id,
             email=user.email,
             name=user.name,
-            role=user.role
+            role=user.role,
+            status=user.status,
+            created_at=user.created_at
         )
 
         return TokenResponse(
