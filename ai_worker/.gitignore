@@ -33,3 +33,7 @@ venv/
 *.egg-info/
 dist/
 build/
+
+# Demo/local data
+demo_data/
+local_db/
