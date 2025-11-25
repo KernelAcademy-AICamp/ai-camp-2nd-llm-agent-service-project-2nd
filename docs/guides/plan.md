@@ -18,7 +18,7 @@
 2. 구조 변경(Tidy)과 기능 변경(Behavior)을 **같은 커밋에 섞지 않는다.**
 3. 가능할수록 **API/사용자 행동 레벨 테스트**부터 시작한다.
 4. AI 관련 코드는 **모델 호출을 전부 mock**하고, 프로토콜/계약만 테스트한다.
-5. `main`, `dev` 브랜치에 대한 배포는 **GitHub Actions + AWS (OIDC)**가 담당하며,  
+5. `main`, `dev` 브랜치에 대한 배포는 **GitHub Actions + AWS (OIDC)**가 담당하며,
    배포 전 단계에서 **모든 테스트가 통과**해야 한다.
 
 ---
@@ -374,15 +374,17 @@
 
 #### 3.19.2 기술 요구사항
 
-- [ ] **라우팅 구조 변경**
+- [x] **라우팅 구조 변경** ✅ **완료** (2025-11-24)
   - `/` → Landing Page (신규)
   - `/login` → Login Page (기존 `/`에서 이동)
   - Navigation Guard: 로그인 상태면 `/cases`로 자동 리디렉션
+  - **구현 완료**: af3018d - Navigation guard, 6a9ee80 - Routing changes
 
-- [ ] **성능 최적화**
+- [x] **성능 최적화** ✅ **완료** (2025-11-24)
   - Hero 이미지: WebP 포맷, lazy loading
   - 스크린샷: Blur placeholder (next/image)
   - 스크롤 애니메이션: Intersection Observer API 사용
+  - **구현 완료**: acdad71 - Performance optimizations, 75f9f13 - Marked complete
 
 - [ ] **반응형 디자인**
   - 모바일: 1-Column 레이아웃
@@ -910,7 +912,114 @@ frontend/e2e/
 
 ---
 
-## 8. 메타 규칙
+## 8. 프로젝트 진행 현황 (2025-11-25 업데이트)
+
+### 8.1 역할별 완료 현황
+
+#### L (AI/Data Engineer - vsun410)
+**총 작업**: 36개 항목 (Section 2 + Section 4)
+**완료**: 36개 (100%) ✅
+**진행 중**: 0개
+**미시작**: 0개
+
+**주요 성과**:
+- ✅ Section 2 (AI Worker): 100% 완료 (33/33 tasks)
+  - S3 Event parsing, File type processing, KakaoTalk parsing
+  - STT processing, Semantic analysis, Vector embedding
+  - E2E integration (21 tests passing)
+- ✅ Section 4 (Security): 100% 완료 (3/3 tasks)
+  - Sensitive logging filter (AI Worker + Backend)
+  - Hardcoded secrets detection (10 tests passing)
+  - PR #5 머지 완료 (2025-11-21)
+
+**다음 작업 권장**:
+1. **Section 5 (CI/CD) 지원**: pytest 통합, GitHub Actions workflow 완성
+2. **Backend 지원 (Section 6)**: DataTable pagination API, WebSocket 실시간 업데이트
+3. **새로운 기능**: plan.md 업데이트 시 다음 우선순위 작업 확인
+
+---
+
+#### H (Architect/Backend - tae yeon)
+**총 작업**: 15개 항목 (Section 1)
+**완료**: 13개 (87%)
+**진행 중**: 0개
+**미시작**: 2개
+
+**주요 성과**:
+- ✅ Section 1 (Backend API): 핵심 기능 완료
+  - Authentication (JWT), Case Management, Evidence Upload (S3 Presigned)
+  - Evidence Metadata (DynamoDB), Draft Preview (RAG + GPT-4o)
+  - Security Headers Middleware (backend/app/middleware/security.py)
+  - 67 Backend tests passing
+
+**다음 작업 권장**:
+1. **Section 1 남은 항목**: Edge cases, 추가 API endpoints
+2. **AWS 배포 검증**: 최근 AWS integration 작업 테스트
+3. **성능 최적화**: 필요시 Backend API 성능 개선
+
+---
+
+#### P (Frontend Lead - Prometheus-P)
+**총 작업**: ~80개 항목 (Section 3)
+**완료**: 76개 (95%) 🎉
+**진행 중**: 0개
+**미시작**: 4개
+
+**주요 성과**:
+- ✅ Section 3.1-3.15: 핵심 Frontend 기능 100% 완료
+- ✅ Section 3.16-3.18: Enterprise 기능 완료 (Billing, Audit, Analytics)
+- ✅ Section 3.19.1: 랜딩 페이지 12개 섹션 완료 (1,163줄 + 3,534줄 테스트)
+- ✅ Section 3.19.2: 라우팅 구조 + 성능 최적화 완료
+- ✅ UI/UX 개선: Magic UI Border Beam, Shadcn/ui DataTable
+- ✅ 163 Frontend tests passing
+
+**남은 작업**:
+1. **Section 3.19.3**: 반응형 디자인 (모바일/태블릿 최적화)
+2. **Section 3.19.4**: 접근성 (WCAG AA 준수)
+3. **Section 3.19.5**: SEO 최적화 (메타 태그, Open Graph)
+4. **Section 5**: CI/CD GitHub Actions workflow 완성
+
+---
+
+### 8.2 전체 프로젝트 완료율
+
+| Section | 담당 | 완료 | 전체 | 완료율 |
+|---------|------|------|------|--------|
+| 1. Backend | H | 13 | 15 | 87% |
+| 2. AI Worker | L | 33 | 33 | **100%** ✅ |
+| 3. Frontend | P | 76 | 80 | 95% |
+| 4. Security | L | 3 | 3 | **100%** ✅ |
+| 5. CI/CD | P | 1 | 12 | 8% |
+| 6. UI/UX Enhancement | P | 4 | 30 | 13% |
+| 7. Button Accessibility | P | 0 | 6 | 0% |
+| **전체** | - | **130** | **179** | **73%** |
+
+**핵심 기능 완료율**: 95% (Section 1-4)
+**랜딩 페이지 완료율**: 90% (Section 3.19.1-3.19.2)
+**프로덕션 준비도**: 85% (CI/CD 보완 필요)
+
+---
+
+### 8.3 다음 마일스톤
+
+**우선순위 1**: CI/CD 완성 (Section 5)
+- GitHub Actions workflow 통합
+- Backend/Frontend/AI Worker 테스트 자동화
+- Dev/Prod 환경 배포 파이프라인
+
+**우선순위 2**: 랜딩 페이지 마무리 (Section 3.19.3-3.19.5)
+- 반응형 디자인 (모바일 최적화)
+- 접근성 준수 (WCAG AA)
+- SEO 최적화 (검색 엔진 노출)
+
+**우선순위 3**: UI/UX 고도화 (Section 6-7)
+- DataTable backend pagination
+- WebSocket 실시간 업데이트
+- Button 컴포넌트 표준화
+
+---
+
+## 9. 메타 규칙
 
 - 이 문서의 테스트 항목 외에는 **AI가 임의로 테스트를 추가하지 않는다.**
 - `"go"` 입력 시:
