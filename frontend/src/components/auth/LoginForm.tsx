@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { login } from '@/lib/api/auth';
 
 export default function LoginForm() {
     const router = useRouter();
@@ -16,16 +17,20 @@ export default function LoginForm() {
         setLoading(true);
 
         try {
-            // TODO: Implement actual API call
-            // const response = await login(email, password);
+            const response = await login(email, password);
 
-            // Mock login for UI testing
-            if (email === 'test@example.com' && password === 'password') {
-                router.push('/cases');
-            } else {
-                setError('아이디 또는 비밀번호를 확인해 주세요.');
+            if (response.error || !response.data) {
+                setError(response.error || '아이디 또는 비밀번호를 확인해 주세요.');
+                return;
             }
+
+            // Store auth token in localStorage
+            localStorage.setItem('authToken', response.data.access_token);
+
+            // Redirect to cases page
+            router.push('/cases');
         } catch (err) {
+            console.error('Login error:', err);
             setError('로그인 중 오류가 발생했습니다.');
         } finally {
             setLoading(false);
