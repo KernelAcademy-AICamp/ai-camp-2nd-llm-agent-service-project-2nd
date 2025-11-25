@@ -14,9 +14,9 @@ def temp_vector_db(tmp_path):
     """임시 ChromaDB 디렉토리"""
     db_path = tmp_path / "chromadb_test"
     yield str(db_path)
-    # 테스트 후 정리
+    # 테스트 후 정리 (Windows 파일 잠금 문제 무시)
     if db_path.exists():
-        shutil.rmtree(db_path)
+        shutil.rmtree(db_path, ignore_errors=True)
 
 
 @pytest.fixture

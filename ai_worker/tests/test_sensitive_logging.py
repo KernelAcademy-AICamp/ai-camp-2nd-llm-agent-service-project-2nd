@@ -177,7 +177,7 @@ class TestSensitiveDataLogging:
         """
         S3 이벤트에 포함된 사용자 IP 주소가 마스킹되어야 함
 
-        handler.py:182에서 S3 이벤트 전체를 로깅하므로 민감 메타데이터 노출 위험
+        handler.py에서 S3 이벤트 전체를 로깅하므로 민감 메타데이터 노출 위험
         """
         caplog.set_level(logging.INFO)
 
@@ -199,25 +199,23 @@ class TestSensitiveDataLogging:
 
         with patch('handler.boto3'), \
              patch('handler.PDFParser') as mock_parser_class, \
-             patch('handler.MetadataStore') as mock_metadata_class, \
-             patch('handler.VectorStore') as mock_vector_class, \
+             patch('handler.get_metadata_store') as mock_get_metadata, \
+             patch('handler.get_vector_store') as mock_get_vector, \
+             patch('handler.get_embedding') as mock_get_embedding, \
              patch('handler.Article840Tagger'):
 
-            # Configure mocks to return JSON-serializable data
+            # Configure mocks
             mock_parser = MagicMock()
-            mock_parser.parse.return_value = {
-                "content": "test content",
-                "metadata": {}
-            }
+            mock_parser.parse.return_value = []  # Empty result to skip processing
             mock_parser_class.return_value = mock_parser
 
             mock_metadata = MagicMock()
-            mock_metadata.save_evidence_file.return_value = {"file_id": "test-id"}
-            mock_metadata_class.return_value = mock_metadata
+            mock_get_metadata.return_value = mock_metadata
 
             mock_vector = MagicMock()
-            mock_vector.index_chunks.return_value = None
-            mock_vector_class.return_value = mock_vector
+            mock_get_vector.return_value = mock_vector
+
+            mock_get_embedding.return_value = [0.1] * 768
 
             # When: Lambda handler 호출
             handle(event, {})
