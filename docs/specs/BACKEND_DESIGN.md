@@ -47,17 +47,17 @@ backend/
 │   │   ├── session.py           # DB 연결(RDS)
 │   │   ├── models.py            # SQLAlchemy 모델
 │   │   └── schemas.py           # Pydantic 스키마
-│   ├── routers/
+│   ├── api/
 │   │   ├── auth.py              # 로그인/회원 API
 │   │   ├── cases.py             # 사건 CRUD
 │   │   ├── evidence.py          # Presigned URL / 조회
 │   │   ├── draft.py             # Draft Preview API
-│   │   └── search.py            # 사건 RAG 검색 API
+│   │   └── search.py            # 사건 RAG 검색 API [미구현]
 │   ├── services/
 │   │   ├── case_service.py      # 사건 관련 비즈니스 로직
 │   │   ├── evidence_service.py  # S3 연동 및 Dynamo 조회
 │   │   ├── draft_service.py     # Draft 생성(LLM 호출)
-│   │   └── search_service.py    # OpenSearch 쿼리
+│   │   └── search_service.py    # OpenSearch 쿼리 [미구현]
 │   ├── utils/
 │   │   ├── s3.py                # Presigned URL 생성기
 │   │   ├── dynamo.py            # DynamoDB Helper

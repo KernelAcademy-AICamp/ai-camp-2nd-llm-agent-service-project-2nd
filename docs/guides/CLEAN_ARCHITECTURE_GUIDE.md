@@ -112,6 +112,8 @@ Frontend  →  Backend(FastAPI) → S3 / DynamoDB / OpenSearch / RDS
 
 # 4. 폴더 구조 규칙
 
+> **See also:** [FOLDER_STRUCTURE.md](FOLDER_STRUCTURE.md) - 전체 폴더 구조 상세
+
 ## 4.1 Backend (FastAPI)
 
 backend/app/
@@ -173,6 +175,8 @@ frontend/src/
 ---
 
 # 5. 패턴 적용 지침 (Design Patterns)
+
+> **See also:** [DESIGN_PATTERNS.md](DESIGN_PATTERNS.md) - 디자인 패턴 상세 가이드
 
 Backend와 Worker는 다음 패턴을 강제한다.
 

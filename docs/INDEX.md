@@ -24,8 +24,13 @@ LEH 프로젝트의 모든 문서를 역할별로 정리했습니다.
 - [ROLLOUT_STRATEGY.md](business/ROLLOUT_STRATEGY.md): 출시 전략
 - [TERMS_AND_PRIVACY.md](business/TERMS_AND_PRIVACY.md): 이용약관/개인정보
 
+## Shared Guides (`docs/guides/`) [Human] - NEW
+- [DESIGN_PATTERNS.md](guides/DESIGN_PATTERNS.md): 공통 디자인 패턴 (Strategy, Adapter, Factory, CQRS)
+- [FOLDER_STRUCTURE.md](guides/FOLDER_STRUCTURE.md): 프로젝트 폴더 구조 (Backend, AI Worker, Frontend)
+- [TESTING_STRATEGY.md](guides/TESTING_STRATEGY.md): 테스트 전략 통합 (TDD, Unit, Integration)
+
 ## Development Guides (`docs/guides/`) [Human]
-- [CLEAN_ARCHITECTURE_GUIDE.md](guides/CLEAN_ARCHITECTURE_GUIDE.md): 아키텍처 패턴
+- [CLEAN_ARCHITECTURE_GUIDE.md](guides/CLEAN_ARCHITECTURE_GUIDE.md): 아키텍처 원칙
 - [BACKEND_SERVICE_REPOSITORY_GUIDE.md](guides/BACKEND_SERVICE_REPOSITORY_GUIDE.md): 백엔드 서비스/리포지토리
 - [AI_WORKER_PATTERN_GUIDE.md](guides/AI_WORKER_PATTERN_GUIDE.md): AI 워커 패턴
 - [FRONTEND_CLEAN_CODE.md](guides/FRONTEND_CLEAN_CODE.md): 프론트엔드 클린코드

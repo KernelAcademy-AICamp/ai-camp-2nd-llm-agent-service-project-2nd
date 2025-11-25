@@ -5,7 +5,7 @@ This document outlines the technical environment, dependencies, and infrastructu
 ## 1. Core Technology Stack
 
 ### Backend (`/backend`)
-- **Language:** Python 3.14 
+- **Language:** Python 3.11+ 
 - **Framework:** FastAPI (>=0.110)
 - **Server:** Uvicorn (ASGI)
 - **Database ORM:** SQLAlchemy 2.0+
@@ -22,7 +22,7 @@ This document outlines the technical environment, dependencies, and infrastructu
 - **Testing:** Jest, React Testing Library
 
 ### AI Worker (`/ai_worker`)
-- **Language:** Python 3.14
+- **Language:** Python 3.11+
 - **Key Libraries:**
     - `openai`: LLM integration
     - `opensearch-py`: Vector search
@@ -56,7 +56,7 @@ The project uses Docker for containerization.
 ## 3. Development Environment Setup
 
 ### Prerequisites
-- Python 3.10+
+- Python 3.11+ (권장)
 - Node.js 18+
 - Docker & Docker Compose
 - Git
