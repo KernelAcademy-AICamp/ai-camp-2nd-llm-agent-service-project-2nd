@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/router';
 import Head from 'next/head';
 import { Plus } from 'lucide-react';
 import CaseCard from '@/components/cases/CaseCard';
@@ -37,8 +38,29 @@ const MOCK_CASES: Case[] = [
 ];
 
 export default function CasesPage() {
+    const router = useRouter();
     const [cases] = useState<Case[]>(MOCK_CASES);
     const [isModalOpen, setIsModalOpen] = useState(false); // 모달 상태 추가
+    const [isAuthChecking, setIsAuthChecking] = useState(true);
+
+    // Navigation Guard: Check if user is authenticated
+    useEffect(() => {
+        const token = localStorage.getItem('authToken');
+        if (!token) {
+            router.replace('/login');
+        } else {
+            setIsAuthChecking(false);
+        }
+    }, [router]);
+
+    // Show nothing while checking auth to prevent content flash
+    if (isAuthChecking) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-calm-grey">
+                <div className="text-gray-500">로딩 중...</div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-calm-grey">
