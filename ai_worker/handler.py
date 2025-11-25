@@ -22,6 +22,8 @@ from src.parsers import (
 from src.parsers.text import TextParser
 from src.storage.metadata_store import MetadataStore
 from src.storage.vector_store import VectorStore
+from src.storage.schemas import EvidenceFile, EvidenceChunk
+from src.storage.storage_manager import get_embedding
 from src.analysis.summarizer import EvidenceSummarizer
 from src.analysis.article_840_tagger import Article840Tagger
 from src.utils.logging_filter import SensitiveDataFilter
@@ -110,32 +112,64 @@ def route_and_process(bucket_name: str, object_key: str) -> Dict[str, Any]:
         parsed_result = parser.parse(local_path)
         logger.info(f"Parsed {object_key} with {parser.__class__.__name__}")
 
-        # 메타데이터 저장 (DynamoDB)
-        metadata_store = MetadataStore()
-        file_metadata = metadata_store.save_evidence_file(
-            case_id=bucket_name,  # S3 bucket을 case_id로 사용
-            file_path=object_key,
-            file_type=file_extension,
-            source_type=parsed_result[0].metadata.get("source_type", "unknown") if parsed_result else "unknown"
-        )
-        logger.info(f"Saved metadata for {object_key}: file_id={file_metadata['file_id']}")
+        if not parsed_result:
+            return {
+                "status": "skipped",
+                "reason": "No content parsed from file",
+                "file": object_key
+            }
 
-        # 벡터 임베딩 및 저장 (Qdrant/OpenSearch)
-        vector_store = VectorStore()
+        # 메타데이터 저장 (로컬: SQLite, 프로덕션: DynamoDB로 마이그레이션 예정)
+        metadata_store = MetadataStore(db_path="/tmp/metadata.db")
+
+        # EvidenceFile 객체 생성 (올바른 방식)
+        file_meta = EvidenceFile(
+            filename=file_path.name,
+            file_type=file_extension,
+            total_messages=len(parsed_result),
+            case_id=bucket_name,
+            filepath=object_key
+        )
+        metadata_store.save_file(file_meta)
+        logger.info(f"Saved metadata for {object_key}: file_id={file_meta.file_id}")
+
+        # 벡터 임베딩 및 저장 (로컬: ChromaDB, 프로덕션: OpenSearch로 마이그레이션 예정)
+        vector_store = VectorStore(persist_directory="/tmp/chromadb")
         chunk_ids = []
+
         for idx, message in enumerate(parsed_result):
-            chunk_id = vector_store.add_evidence(
-                case_id=bucket_name,
-                file_id=file_metadata['file_id'],
+            # 청크 메타데이터 생성
+            chunk = EvidenceChunk(
+                file_id=file_meta.file_id,
                 content=message.content,
+                timestamp=message.timestamp,
+                sender=message.sender,
+                case_id=bucket_name
+            )
+
+            # 임베딩 생성 (실제 OpenAI API 호출)
+            embedding = get_embedding(message.content)
+
+            # 올바른 시그니처로 벡터 저장: add_evidence(text, embedding, metadata)
+            vector_id = vector_store.add_evidence(
+                text=message.content,
+                embedding=embedding,
                 metadata={
+                    "file_id": file_meta.file_id,
+                    "chunk_id": chunk.chunk_id,
+                    "case_id": bucket_name,
                     "sender": message.sender,
                     "timestamp": message.timestamp.isoformat() if message.timestamp else None,
                     "chunk_index": idx,
                     **message.metadata
                 }
             )
-            chunk_ids.append(chunk_id)
+
+            # vector_id 설정 후 청크 저장
+            chunk.vector_id = vector_id
+            metadata_store.save_chunk(chunk)
+            chunk_ids.append(vector_id)
+
         logger.info(f"Indexed {len(chunk_ids)} chunks to vector store")
 
         # 분석 엔진 실행 (Summarizer + Article 840 Tagger)
@@ -162,7 +196,7 @@ def route_and_process(bucket_name: str, object_key: str) -> Dict[str, Any]:
             "file": object_key,
             "parser_type": parser.__class__.__name__,
             "bucket": bucket_name,
-            "file_id": file_metadata['file_id'],
+            "file_id": file_meta.file_id,
             "chunks_indexed": len(chunk_ids),
             "tags": tags_list
         }

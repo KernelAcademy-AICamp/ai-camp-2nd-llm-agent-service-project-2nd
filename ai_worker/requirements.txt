@@ -7,8 +7,11 @@ pydantic>=2.5.0
 
 # AWS SDKs
 boto3>=1.34                    # S3, DynamoDB, Lambda
-opensearch-py>=2.5             # OpenSearch (replaces ChromaDB for AWS)
+opensearch-py>=2.5             # OpenSearch (프로덕션용, Phase 5에서 마이그레이션)
 redis>=5.0                     # Cache/Session management
+
+# Vector Store (로컬 개발용, 프로덕션은 OpenSearch 사용)
+chromadb>=0.4.0                # VectorStore에서 사용 (REQUIRED)
 
 # AI & LLM
 langchain>=0.1.0               # LLM orchestration
@@ -20,9 +23,9 @@ PyPDF2>=3.0.1                  # PDF text extraction
 # Media Processing (Audio/Video)
 ffmpeg-python>=0.2.0           # Audio/Video manipulation
 
-# OCR (Image Processing)
-# pytesseract>=0.3.10          # Tesseract OCR (optional, for ImageOCRParser)
-# Pillow>=10.1.0                # Image processing (optional)
+# OCR (Image Processing) - ImageVisionParser에서 사용 (REQUIRED)
+pytesseract>=0.3.10            # Tesseract OCR
+Pillow>=10.1.0                 # Image processing
 
 # Testing
 pytest>=7.4.3
