@@ -932,10 +932,22 @@ frontend/e2e/
   - Hardcoded secrets detection (10 tests passing)
   - PR #5 머지 완료 (2025-11-21)
 
-**다음 작업 권장**:
-1. **Section 5 (CI/CD) 지원**: pytest 통합, GitHub Actions workflow 완성
-2. **Backend 지원 (Section 6)**: DataTable pagination API, WebSocket 실시간 업데이트
-3. **새로운 기능**: plan.md 업데이트 시 다음 우선순위 작업 확인
+**L의 작업 완료 상태** (2025-11-25 기준):
+- ✅ Section 2 (AI Worker): 100% 완료
+- ✅ Section 4 (Security): 100% 완료
+- ✅ SAM 템플릿 및 배포 스크립트 완료
+- ✅ 테스트 커버리지: 80.09% (334 passed, 5 skipped)
+- ✅ 로컬 E2E 테스트 성공 (실제 파일 사용)
+
+**⚠️ L 작업 완료 후 대기 중인 항목** (H 인프라 의존):
+- 실제 DynamoDB 연동 테스트 → H가 테이블 생성 필요
+- 실제 OpenSearch 연동 테스트 → H가 도메인 생성 필요
+- Lambda 프로덕션 배포 → AWS CLI/SAM CLI + 자격증명 필요
+
+**다음 작업 (H 인프라 준비 후)**:
+1. `sam deploy --config-env dev` 실행
+2. S3 → Lambda → DynamoDB/OpenSearch 연동 검증
+3. CloudWatch 로그로 실제 처리 확인
 
 ---
 
@@ -956,6 +968,35 @@ frontend/e2e/
 1. **Section 1 남은 항목**: Edge cases, 추가 API endpoints
 2. **AWS 배포 검증**: 최근 AWS integration 작업 테스트
 3. **성능 최적화**: 필요시 Backend API 성능 개선
+
+**⚠️ AI Worker 연동을 위해 H가 준비해야 할 인프라**:
+1. **DynamoDB 테이블 생성**
+   - 테이블명: `leh-evidence-metadata-{env}`
+   - PK: `PK` (String), SK: `SK` (String)
+   - GSI1, GSI2 인덱스 (case_id 기반 조회용)
+   - IAM 역할에 Lambda 접근 권한 부여
+
+2. **OpenSearch 도메인 생성**
+   - 도메인명: `leh-{env}`
+   - 벡터 검색 인덱스: `case_rag_{case_id}`
+   - 1536차원 벡터 필드 매핑
+   - Lambda에서 접근 가능한 VPC/Security Group 설정
+
+3. **S3 버킷 이벤트 트리거 설정**
+   - 버킷: `leh-evidence-{env}-{account}`
+   - 이벤트: `s3:ObjectCreated:*`
+   - 접두어 필터: `cases/`
+   - Lambda 함수 연결
+
+4. **SSM Parameter Store**
+   - `/leh/{env}/opensearch-endpoint`: OpenSearch 엔드포인트 URL
+   - `/leh/{env}/dynamodb-table`: DynamoDB 테이블명
+
+**연동 테스트 순서**:
+1. H가 위 인프라 생성 완료
+2. L의 AI Worker Lambda 배포 (`sam deploy --config-env dev`)
+3. 테스트 파일 S3 업로드 → Lambda 트리거 확인
+4. DynamoDB/OpenSearch 데이터 저장 확인
 
 ---
 
