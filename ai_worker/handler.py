@@ -20,8 +20,7 @@ from src.parsers import (
     VideoParser
 )
 from src.parsers.text import TextParser
-from src.storage.metadata_store import MetadataStore
-from src.storage.vector_store import VectorStore
+from src.storage import get_metadata_store, get_vector_store, get_storage_info
 from src.storage.schemas import EvidenceFile, EvidenceChunk
 from src.storage.storage_manager import get_embedding
 from src.analysis.summarizer import EvidenceSummarizer
@@ -119,8 +118,8 @@ def route_and_process(bucket_name: str, object_key: str) -> Dict[str, Any]:
                 "file": object_key
             }
 
-        # 메타데이터 저장 (로컬: SQLite, 프로덕션: DynamoDB로 마이그레이션 예정)
-        metadata_store = MetadataStore(db_path="/tmp/metadata.db")
+        # 메타데이터 저장 (환경에 따라 SQLite 또는 DynamoDB 자동 선택)
+        metadata_store = get_metadata_store(local_db_path="/tmp/metadata.db")
 
         # EvidenceFile 객체 생성 (올바른 방식)
         file_meta = EvidenceFile(
@@ -133,8 +132,8 @@ def route_and_process(bucket_name: str, object_key: str) -> Dict[str, Any]:
         metadata_store.save_file(file_meta)
         logger.info(f"Saved metadata for {object_key}: file_id={file_meta.file_id}")
 
-        # 벡터 임베딩 및 저장 (로컬: ChromaDB, 프로덕션: OpenSearch로 마이그레이션 예정)
-        vector_store = VectorStore(persist_directory="/tmp/chromadb")
+        # 벡터 임베딩 및 저장 (환경에 따라 ChromaDB 또는 OpenSearch 자동 선택)
+        vector_store = get_vector_store(local_persist_dir="/tmp/chromadb")
         chunk_ids = []
 
         for idx, message in enumerate(parsed_result):
