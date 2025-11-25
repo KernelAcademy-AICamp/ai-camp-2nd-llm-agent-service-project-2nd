@@ -1101,7 +1101,132 @@ cd frontend && npm run dev
 
 ---
 
-## 9. 메타 규칙
+## 9. Frontend-Backend 통합 테스트 계획
+
+> **목적:** Mock 인증 제거 후 실제 백엔드 API와 프론트엔드 연동 검증
+> **상태:** 🔴 계획 단계
+
+### 9.1 사전 준비 작업
+
+#### 9.1.1 Mock 제거 체크리스트
+
+| 파일 | 작업 | 상태 |
+|------|------|------|
+| `frontend/.env.local` | `NEXT_PUBLIC_USE_MOCK_AUTH=false` 설정 | ⬜ |
+| `frontend/src/components/auth/LoginForm.tsx` | `USE_MOCK` 조건 제거 (실제 API만 사용) | ⬜ |
+| `frontend/src/app/signup/page.tsx` | 실제 회원가입 API 연동 (`POST /auth/signup`) | ⬜ |
+| `frontend/src/pages/cases/index.tsx` | JWT 토큰 유효성 검증 추가 (만료 체크) | ⬜ |
+
+#### 9.1.2 환경 설정
+
+```bash
+# Backend (.env)
+DATABASE_URL=postgresql://user:pass@localhost/leh_db
+JWT_SECRET_KEY=<secure-random-key>
+
+# Frontend (.env.local)
+NEXT_PUBLIC_API_BASE_URL=http://localhost:8000
+NEXT_PUBLIC_USE_MOCK_AUTH=false
+```
+
+### 9.2 통합 테스트 시나리오
+
+#### 9.2.1 인증 플로우 (Authentication)
+
+| # | 테스트 케이스 | 예상 결과 | 상태 |
+|---|--------------|----------|------|
+| 1 | 회원가입 → 자동 로그인 | JWT 발급, /cases 리디렉션 | ⬜ |
+| 2 | 로그인 (유효한 자격증명) | JWT 발급, /cases 리디렉션 | ⬜ |
+| 3 | 로그인 (잘못된 비밀번호) | 401, 일반 에러 메시지 | ⬜ |
+| 4 | 로그인 (존재하지 않는 이메일) | 401, 일반 에러 메시지 | ⬜ |
+| 5 | 로그아웃 | 토큰 삭제, /login 리디렉션 | ⬜ |
+| 6 | 만료된 토큰으로 API 호출 | 401, /login 리디렉션 | ⬜ |
+
+#### 9.2.2 케이스 관리 (Cases)
+
+| # | 테스트 케이스 | 예상 결과 | 상태 |
+|---|--------------|----------|------|
+| 1 | 케이스 목록 조회 | 사용자의 케이스 목록 표시 | ⬜ |
+| 2 | 새 케이스 생성 | 케이스 생성, 목록 갱신 | ⬜ |
+| 3 | 케이스 상세 조회 | 케이스 정보 + 증거 목록 | ⬜ |
+| 4 | 케이스 상태 변경 | 상태 업데이트, UI 반영 | ⬜ |
+
+#### 9.2.3 증거 관리 (Evidence)
+
+| # | 테스트 케이스 | 예상 결과 | 상태 |
+|---|--------------|----------|------|
+| 1 | Presigned URL 요청 | S3 업로드 URL 반환 | ⬜ |
+| 2 | 파일 업로드 (S3 Direct) | 업로드 성공, 메타데이터 저장 | ⬜ |
+| 3 | 증거 목록 조회 | 타임라인 형식으로 표시 | ⬜ |
+| 4 | 증거 상세 (AI 분석 결과) | Article 840 태그 포함 | ⬜ |
+
+### 9.3 Playwright E2E 테스트 확장
+
+#### 9.3.1 새로운 테스트 파일 구조
+
+```
+frontend/e2e/
+├── auth.spec.ts          # 기존 (Mock 모드)
+├── auth-real.spec.ts     # 실제 API 연동 테스트
+├── cases.spec.ts         # 케이스 CRUD 테스트
+├── evidence.spec.ts      # 증거 업로드/조회 테스트
+└── fixtures/
+    └── test-user.ts      # 테스트 사용자 데이터
+```
+
+#### 9.3.2 테스트 실행 명령
+
+```bash
+# Mock 모드 테스트 (백엔드 불필요)
+NEXT_PUBLIC_USE_MOCK_AUTH=true npm run test:e2e
+
+# 실제 API 테스트 (백엔드 필요)
+NEXT_PUBLIC_USE_MOCK_AUTH=false npm run test:e2e -- --grep "@real-api"
+```
+
+### 9.4 통합 테스트 실행 절차
+
+```bash
+# 1. 백엔드 서비스 시작
+cd backend && uvicorn app.main:app --reload
+
+# 2. 데이터베이스 마이그레이션
+cd backend && alembic upgrade head
+
+# 3. 프론트엔드 서비스 시작 (Mock 비활성화)
+cd frontend
+echo "NEXT_PUBLIC_USE_MOCK_AUTH=false" >> .env.local
+npm run dev
+
+# 4. E2E 테스트 실행
+npm run test:e2e
+
+# 5. 수동 QA 테스트
+# - http://localhost:3000/signup → 회원가입
+# - http://localhost:3000/login → 로그인
+# - http://localhost:3000/cases → 케이스 목록
+```
+
+### 9.5 예상 이슈 및 해결 방안
+
+| 이슈 | 원인 | 해결 방안 |
+|------|------|----------|
+| CORS 에러 | 프론트엔드-백엔드 도메인 불일치 | `CORS_ORIGINS`에 `localhost:3000` 추가 |
+| 401 Unauthorized | JWT 토큰 미전송 | `Authorization` 헤더 추가 확인 |
+| 토큰 만료 | JWT expiry 짧음 | 프론트엔드에서 refresh 로직 구현 |
+| DB 연결 실패 | PostgreSQL 미실행 | Docker 또는 로컬 PostgreSQL 시작 |
+
+### 9.6 성공 기준
+
+- [ ] 회원가입 → 로그인 → 케이스 생성 → 증거 업로드 전체 플로우 성공
+- [ ] Playwright E2E 테스트 9개 모두 통과 (실제 API 모드)
+- [ ] 에러 시 사용자 친화적 메시지 표시
+- [ ] 네트워크 지연 시 로딩 상태 표시
+- [ ] 보안: JWT 토큰 HTTP-only 쿠키 저장 검토
+
+---
+
+## 10. 메타 규칙
 
 - 이 문서의 테스트 항목 외에는 **AI가 임의로 테스트를 추가하지 않는다.**
 - `"go"` 입력 시:
