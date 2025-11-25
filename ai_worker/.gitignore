@@ -1,0 +1,35 @@
+# Test data directories (ChromaDB, SQLite)
+test_chromadb_*/
+test_data_*/
+tmp/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# Coverage reports
+htmlcov/
+.coverage
+coverage.xml
+*.cover
+
+# Local databases
+*.db
+*.sqlite
+
+# IDE
+.vscode/
+.idea/
+
+# Environment
+.env
+.venv/
+env/
+venv/
+
+# Build artifacts
+*.egg-info/
+dist/
+build/
