@@ -136,15 +136,57 @@ Resources:
       Principal: s3.amazonaws.com
       SourceArn: !GetAtt EvidenceBucket.Arn
 
+  # CloudWatch Log Group with Retention
+  AIWorkerLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/aws/lambda/leh-ai-worker-${Environment}'
+      RetentionInDays: 30
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Project
+          Value: LEH-AI-Worker
+
+  # Dead Letter Queue for Failed Events
+  DeadLetterQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub 'leh-ai-worker-dlq-${Environment}'
+      MessageRetentionPeriod: 1209600  # 14 days
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Project
+          Value: LEH-AI-Worker
+
 Outputs:
   AIWorkerFunctionArn:
     Description: Lambda Function ARN
     Value: !GetAtt AIWorkerFunction.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-FunctionArn'
 
   EvidenceBucketName:
     Description: S3 Bucket for evidence files
     Value: !Ref EvidenceBucket
+    Export:
+      Name: !Sub '${AWS::StackName}-BucketName'
 
   MetadataTableName:
     Description: DynamoDB table for metadata
     Value: !Ref MetadataTable
+    Export:
+      Name: !Sub '${AWS::StackName}-TableName'
+
+  DeadLetterQueueUrl:
+    Description: Dead Letter Queue URL for failed events
+    Value: !Ref DeadLetterQueue
+    Export:
+      Name: !Sub '${AWS::StackName}-DLQUrl'
+
+  LogGroupName:
+    Description: CloudWatch Log Group name
+    Value: !Ref AIWorkerLogGroup
+    Export:
+      Name: !Sub '${AWS::StackName}-LogGroup'
