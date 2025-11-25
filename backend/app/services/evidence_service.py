@@ -11,7 +11,9 @@ from app.db.schemas import (
     PresignedUrlRequest,
     PresignedUrlResponse,
     EvidenceSummary,
-    EvidenceDetail
+    EvidenceDetail,
+    Article840Tags,
+    Article840Category
 )
 from app.repositories.case_repository import CaseRepository
 from app.repositories.case_member_repository import CaseMemberRepository
@@ -19,6 +21,7 @@ from app.utils.s3 import generate_presigned_upload_url
 from app.utils.dynamo import get_evidence_by_case, get_evidence_by_id
 from app.core.config import settings
 from app.middleware import NotFoundError, PermissionError
+from typing import Optional
 
 
 class EvidenceService:
@@ -30,6 +33,37 @@ class EvidenceService:
         self.db = db
         self.case_repo = CaseRepository(db)
         self.member_repo = CaseMemberRepository(db)
+
+    @staticmethod
+    def _parse_article_840_tags(evidence_data: dict) -> Optional[Article840Tags]:
+        """
+        Parse Article 840 tags from DynamoDB evidence data
+
+        Args:
+            evidence_data: DynamoDB evidence item
+
+        Returns:
+            Article840Tags if available, None otherwise
+        """
+        tags_data = evidence_data.get("article_840_tags")
+        if not tags_data:
+            return None
+
+        try:
+            # Parse categories from string values to Article840Category enum
+            categories = [
+                Article840Category(cat)
+                for cat in tags_data.get("categories", [])
+            ]
+
+            return Article840Tags(
+                categories=categories,
+                confidence=tags_data.get("confidence", 0.0),
+                matched_keywords=tags_data.get("matched_keywords", [])
+            )
+        except (ValueError, KeyError):
+            # Invalid category value or malformed data
+            return None
 
     def generate_upload_presigned_url(
         self,
@@ -84,13 +118,19 @@ class EvidenceService:
             evidence_temp_id=evidence_temp_id
         )
 
-    def get_evidence_list(self, case_id: str, user_id: str) -> List[EvidenceSummary]:
+    def get_evidence_list(
+        self,
+        case_id: str,
+        user_id: str,
+        categories: Optional[List[Article840Category]] = None
+    ) -> List[EvidenceSummary]:
         """
         Get list of evidence for a case
 
         Args:
             case_id: Case ID
             user_id: User ID requesting access
+            categories: Filter by Article 840 categories (optional)
 
         Returns:
             List of evidence summary
@@ -112,17 +152,30 @@ class EvidenceService:
         evidence_list = get_evidence_by_case(case_id)
 
         # Convert to EvidenceSummary schema
-        return [
+        summaries = [
             EvidenceSummary(
                 id=evidence["id"],
                 case_id=evidence["case_id"],
                 type=evidence["type"],
                 filename=evidence["filename"],
                 created_at=datetime.fromisoformat(evidence["created_at"]),
-                status=evidence.get("status", "pending")
+                status=evidence.get("status", "pending"),
+                article_840_tags=self._parse_article_840_tags(evidence)
             )
             for evidence in evidence_list
         ]
+
+        # Apply category filter if specified
+        if categories:
+            summaries = [
+                summary for summary in summaries
+                if summary.article_840_tags and any(
+                    cat in summary.article_840_tags.categories
+                    for cat in categories
+                )
+            ]
+
+        return summaries
 
     def get_evidence_detail(self, evidence_id: str, user_id: str) -> EvidenceDetail:
         """
@@ -149,6 +202,15 @@ class EvidenceService:
         if not self.member_repo.has_access(case_id, user_id):
             raise PermissionError("You do not have access to this case")
 
+        # Parse Article 840 tags
+        article_840_tags = self._parse_article_840_tags(evidence)
+
+        # Map categories to labels (for backward compatibility)
+        labels = evidence.get("labels", [])
+        if article_840_tags and article_840_tags.categories:
+            # Convert Article840Category enum to string values
+            labels = [cat.value for cat in article_840_tags.categories]
+
         # Convert to EvidenceDetail schema
         return EvidenceDetail(
             id=evidence["id"],
@@ -160,10 +222,11 @@ class EvidenceService:
             created_at=datetime.fromisoformat(evidence["created_at"]),
             status=evidence.get("status", "pending"),
             ai_summary=evidence.get("ai_summary"),
-            labels=evidence.get("labels", []),
+            labels=labels,
             insights=evidence.get("insights", []),
             content=evidence.get("content"),
             speaker=evidence.get("speaker"),
             timestamp=datetime.fromisoformat(evidence["timestamp"]) if evidence.get("timestamp") else None,
-            opensearch_id=evidence.get("opensearch_id")
+            opensearch_id=evidence.get("opensearch_id"),
+            article_840_tags=article_840_tags
         )

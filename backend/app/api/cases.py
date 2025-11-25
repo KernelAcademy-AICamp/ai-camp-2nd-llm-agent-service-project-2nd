@@ -9,9 +9,9 @@ PUT /cases/{id} - Update case
 DELETE /cases/{id} - Soft delete case
 """
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, status, Query
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
 
 from app.db.session import get_db
 from app.db.schemas import (
@@ -19,7 +19,8 @@ from app.db.schemas import (
     CaseOut,
     EvidenceSummary,
     DraftPreviewRequest,
-    DraftPreviewResponse
+    DraftPreviewResponse,
+    Article840Category
 )
 from app.services.case_service import CaseService
 from app.services.evidence_service import EvidenceService
@@ -102,6 +103,7 @@ def get_case(
 @router.get("/{case_id}/evidence", response_model=List[EvidenceSummary])
 def list_case_evidence(
     case_id: str,
+    categories: Optional[List[Article840Category]] = Query(None, description="Filter by Article 840 categories"),
     user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db)
 ):
@@ -111,9 +113,19 @@ def list_case_evidence(
     **Path Parameters:**
     - case_id: Case ID
 
+    **Query Parameters:**
+    - categories: Filter by Article 840 categories (optional, multiple allowed)
+      - adultery: 배우자의 부정행위
+      - desertion: 악의의 유기
+      - mistreatment_by_inlaws: 배우자 직계존속의 부당대우
+      - harm_to_own_parents: 자기 직계존속 피해
+      - unknown_whereabouts: 생사불명 3년
+      - irreconcilable_differences: 혼인 지속 곤란사유
+      - general: 일반 증거
+
     **Response:**
     - 200: List of evidence summary (may be empty)
-    - Each item contains: id, type, filename, status, created_at
+    - Each item contains: id, type, filename, status, created_at, article_840_tags
 
     **Errors:**
     - 401: Not authenticated
@@ -127,10 +139,11 @@ def list_case_evidence(
     **Notes:**
     - Returns evidence in reverse chronological order (newest first)
     - Only returns metadata, not full file content
-    - AI analysis results available when status="done"
+    - AI analysis results (including article_840_tags) available when status="done"
+    - Filtering by categories returns only evidence tagged with at least one of the specified categories
     """
     evidence_service = EvidenceService(db)
-    return evidence_service.get_evidence_list(case_id, user_id)
+    return evidence_service.get_evidence_list(case_id, user_id, categories=categories)
 
 
 @router.post("/{case_id}/draft-preview", response_model=DraftPreviewResponse)

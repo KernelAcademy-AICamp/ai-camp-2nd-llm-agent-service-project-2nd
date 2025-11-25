@@ -105,13 +105,13 @@
   - 신규 사용자 생성 후 JWT 토큰을 발급해야 한다.
 - [x] Signup 요청 시 이용약관 동의(`accept_terms`)가 `true`가 아니면 400을 반환해야 한다.
 
-### 1.9 Article 840 태그 연동
+### 1.9 Article 840 태그 연동 ✅
 
-- [ ] `GET /evidence/{evidence_id}` 응답에 Article 840 태그 정보 포함:
+- [x] `GET /evidence/{evidence_id}` 응답에 Article 840 태그 정보 포함:
   - DynamoDB에서 `article_840_tags` 필드를 조회해야 한다.
   - 응답 스키마에 `article_840_tags` 필드를 추가해야 한다 (categories, confidence, matched_keywords).
   - `labels` 필드에 `categories` 배열을 매핑해야 한다.
-- [ ] `GET /cases/{case_id}/evidence` 호출 시:
+- [x] `GET /cases/{case_id}/evidence` 호출 시:
   - 각 증거 항목에 Article 840 태그 정보가 포함되어야 한다.
   - 유책사유별 필터링 쿼리 파라미터(`categories`)를 지원해야 한다.
 

@@ -6,6 +6,7 @@ Separated from SQLAlchemy models per BACKEND_SERVICE_REPOSITORY_GUIDE.md
 from pydantic import BaseModel, EmailStr, Field
 from typing import Optional
 from datetime import datetime
+from enum import Enum
 from app.db.models import UserRole, UserStatus, CaseStatus
 
 
@@ -138,6 +139,28 @@ class CaseSummary(BaseModel):
 # ============================================
 # Evidence Schemas
 # ============================================
+class Article840Category(str, Enum):
+    """
+    민법 840조 이혼 사유 카테고리
+
+    Korean Civil Code Article 840 - Grounds for Divorce
+    """
+    ADULTERY = "adultery"  # 제1호: 배우자의 부정행위
+    DESERTION = "desertion"  # 제2호: 악의의 유기
+    MISTREATMENT_BY_INLAWS = "mistreatment_by_inlaws"  # 제3호: 배우자 직계존속의 부당대우
+    HARM_TO_OWN_PARENTS = "harm_to_own_parents"  # 제4호: 자기 직계존속 피해
+    UNKNOWN_WHEREABOUTS = "unknown_whereabouts"  # 제5호: 생사불명 3년
+    IRRECONCILABLE_DIFFERENCES = "irreconcilable_differences"  # 제6호: 혼인 지속 곤란사유
+    GENERAL = "general"  # 일반 증거 (특정 조항에 해당하지 않음)
+
+
+class Article840Tags(BaseModel):
+    """Article 840 tagging result schema"""
+    categories: list[Article840Category] = Field(default_factory=list)
+    confidence: float = Field(default=0.0, ge=0.0, le=1.0)
+    matched_keywords: list[str] = Field(default_factory=list)
+
+
 class PresignedUrlRequest(BaseModel):
     """Presigned URL request schema"""
     case_id: str
@@ -160,6 +183,7 @@ class EvidenceSummary(BaseModel):
     filename: str
     created_at: datetime
     status: str  # pending, processing, done, error
+    article_840_tags: Optional[Article840Tags] = None  # Article 840 tagging
 
 
 class EvidenceDetail(BaseModel):
@@ -175,12 +199,13 @@ class EvidenceDetail(BaseModel):
 
     # AI analysis results (available when status="done")
     ai_summary: Optional[str] = None
-    labels: Optional[list[str]] = None
+    labels: Optional[list[str]] = None  # Mapped from article_840_tags.categories
     insights: Optional[list[str]] = None
     content: Optional[str] = None  # Full STT/OCR text
     speaker: Optional[str] = None  # For audio/video
     timestamp: Optional[datetime] = None  # Event timestamp in evidence
     opensearch_id: Optional[str] = None  # RAG index reference
+    article_840_tags: Optional[Article840Tags] = None  # Article 840 tagging
 
 
 # ============================================
