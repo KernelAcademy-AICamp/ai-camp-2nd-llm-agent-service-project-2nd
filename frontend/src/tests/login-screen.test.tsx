@@ -1,5 +1,6 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import LoginForm from '@/components/auth/LoginForm';
+import { login } from '@/lib/api/auth';
 
 // Mock useRouter - App Router version
 jest.mock('next/navigation', () => ({
@@ -11,7 +12,16 @@ jest.mock('next/navigation', () => ({
     usePathname: jest.fn(() => '/'),
 }));
 
+// Mock auth API
+jest.mock('@/lib/api/auth', () => ({
+    login: jest.fn(),
+}));
+
 describe('Login Screen Requirements', () => {
+    beforeEach(() => {
+        jest.clearAllMocks();
+    });
+
     test('로그인 화면에는 이메일 입력, 비밀번호 입력, 로그인 버튼만 존재해야 한다', () => {
         render(<LoginForm />);
 
@@ -31,6 +41,12 @@ describe('Login Screen Requirements', () => {
     });
 
     test('잘못된 자격증명일 경우 일반적인 에러 메시지만 보여야 한다', async () => {
+        // Mock login failure
+        (login as jest.Mock).mockResolvedValue({
+            error: '아이디 또는 비밀번호를 확인해 주세요.',
+            data: null
+        });
+
         render(<LoginForm />);
 
         const emailInput = screen.getByLabelText(/이메일/i);
