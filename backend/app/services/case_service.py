@@ -5,11 +5,19 @@ Implements Service pattern per BACKEND_SERVICE_REPOSITORY_GUIDE.md
 
 from sqlalchemy.orm import Session
 from typing import List
-from app.db.models import Case
-from app.db.schemas import CaseCreate, CaseOut
+from app.db.models import Case, CaseMemberRole, User
+from app.db.schemas import (
+    CaseCreate,
+    CaseOut,
+    CaseMemberAdd,
+    CaseMemberOut,
+    CaseMemberPermission,
+    CaseMembersListResponse
+)
 from app.repositories.case_repository import CaseRepository
 from app.repositories.case_member_repository import CaseMemberRepository
-from app.middleware import NotFoundError, PermissionError
+from app.repositories.user_repository import UserRepository
+from app.middleware import NotFoundError, PermissionError, ValidationError
 
 
 class CaseService:
@@ -21,6 +29,23 @@ class CaseService:
         self.db = db
         self.case_repo = CaseRepository(db)
         self.member_repo = CaseMemberRepository(db)
+        self.user_repo = UserRepository(db)
+
+    @staticmethod
+    def _permission_to_role(permission: CaseMemberPermission) -> CaseMemberRole:
+        """Convert CaseMemberPermission to CaseMemberRole"""
+        if permission == CaseMemberPermission.READ_WRITE:
+            return CaseMemberRole.MEMBER
+        return CaseMemberRole.VIEWER
+
+    @staticmethod
+    def _role_to_permission(role: CaseMemberRole) -> CaseMemberPermission:
+        """Convert CaseMemberRole to CaseMemberPermission"""
+        if role == CaseMemberRole.OWNER:
+            return CaseMemberPermission.READ_WRITE
+        elif role == CaseMemberRole.MEMBER:
+            return CaseMemberPermission.READ_WRITE
+        return CaseMemberPermission.READ
 
     def create_case(self, case_data: CaseCreate, user_id: str) -> CaseOut:
         """
@@ -119,3 +144,104 @@ class CaseService:
         # This will be implemented when OpenSearch integration is added
 
         self.db.commit()
+
+    def add_case_members(
+        self,
+        case_id: str,
+        members: List[CaseMemberAdd],
+        user_id: str
+    ) -> CaseMembersListResponse:
+        """
+        Add multiple members to a case
+
+        Args:
+            case_id: Case ID
+            members: List of members to add
+            user_id: User ID requesting the operation
+
+        Returns:
+            Updated list of all case members
+
+        Raises:
+            NotFoundError: Case not found or user not found
+            PermissionError: User is not owner or admin
+            ValidationError: Invalid member data
+        """
+        # Check if case exists
+        case = self.case_repo.get_by_id(case_id)
+        if not case:
+            raise NotFoundError("Case")
+
+        # Check if requester is owner or admin
+        is_owner = self.member_repo.is_owner(case_id, user_id)
+        requester = self.user_repo.get_by_id(user_id)
+
+        if not is_owner and (not requester or requester.role.value != "admin"):
+            raise PermissionError("Only case owner or admin can add members")
+
+        # Validate all users exist
+        for member in members:
+            user = self.user_repo.get_by_id(member.user_id)
+            if not user:
+                raise NotFoundError(f"User {member.user_id}")
+
+        # Convert permissions to roles and add members
+        members_to_add = [
+            (member.user_id, self._permission_to_role(member.permission))
+            for member in members
+        ]
+
+        self.member_repo.add_members_batch(case_id, members_to_add)
+        self.db.commit()
+
+        # Return updated member list
+        return self.get_case_members(case_id, user_id)
+
+    def get_case_members(
+        self,
+        case_id: str,
+        user_id: str
+    ) -> CaseMembersListResponse:
+        """
+        Get all members of a case
+
+        Args:
+            case_id: Case ID
+            user_id: User ID requesting the list
+
+        Returns:
+            List of case members with user information
+
+        Raises:
+            NotFoundError: Case not found
+            PermissionError: User does not have access to case
+        """
+        # Check if case exists
+        case = self.case_repo.get_by_id(case_id)
+        if not case:
+            raise NotFoundError("Case")
+
+        # Check if user has access
+        if not self.member_repo.has_access(case_id, user_id):
+            raise PermissionError("You do not have access to this case")
+
+        # Get all members
+        members = self.member_repo.get_all_members(case_id)
+
+        # Convert to response schema
+        member_outs = []
+        for member in members:
+            user = self.user_repo.get_by_id(member.user_id)
+            if user:
+                member_outs.append(CaseMemberOut(
+                    user_id=user.id,
+                    name=user.name,
+                    email=user.email,
+                    permission=self._role_to_permission(member.role),
+                    role=member.role
+                ))
+
+        return CaseMembersListResponse(
+            members=member_outs,
+            total=len(member_outs)
+        )

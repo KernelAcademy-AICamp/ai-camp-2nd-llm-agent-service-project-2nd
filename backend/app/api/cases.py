@@ -20,7 +20,9 @@ from app.db.schemas import (
     EvidenceSummary,
     DraftPreviewRequest,
     DraftPreviewResponse,
-    Article840Category
+    Article840Category,
+    AddCaseMembersRequest,
+    CaseMembersListResponse
 )
 from app.services.case_service import CaseService
 from app.services.evidence_service import EvidenceService
@@ -224,3 +226,86 @@ def delete_case(
     case_service = CaseService(db)
     case_service.delete_case(case_id, user_id)
     return None
+
+
+@router.post("/{case_id}/members", response_model=CaseMembersListResponse, status_code=status.HTTP_201_CREATED)
+def add_case_members(
+    case_id: str,
+    request: AddCaseMembersRequest,
+    user_id: str = Depends(get_current_user_id),
+    db: Session = Depends(get_db)
+):
+    """
+    Add members to a case
+
+    **Path Parameters:**
+    - case_id: Case ID
+
+    **Request Body:**
+    - members: List of members to add
+      - user_id: User ID to add
+      - permission: Permission level (read or read_write)
+
+    **Response:**
+    - 201: Members added successfully
+    - Returns updated list of all case members
+    - Each member includes: user_id, name, email, permission, role
+
+    **Errors:**
+    - 401: Not authenticated
+    - 403: User is not case owner or admin
+    - 404: Case not found or user not found
+
+    **Authentication:**
+    - Requires valid JWT token
+    - Only case owner or admin can add members
+
+    **Permission Mapping:**
+    - read: Viewer role (can only view)
+    - read_write: Member role (can view and edit)
+
+    **Notes:**
+    - Multiple members can be added in a single request
+    - If member already exists, their permission will be updated
+    - Case owner always has read_write permission
+    """
+    case_service = CaseService(db)
+    return case_service.add_case_members(case_id, request.members, user_id)
+
+
+@router.get("/{case_id}/members", response_model=CaseMembersListResponse, status_code=status.HTTP_200_OK)
+def get_case_members(
+    case_id: str,
+    user_id: str = Depends(get_current_user_id),
+    db: Session = Depends(get_db)
+):
+    """
+    Get all members of a case
+
+    **Path Parameters:**
+    - case_id: Case ID
+
+    **Response:**
+    - 200: List of case members
+    - Each member includes: user_id, name, email, permission, role
+    - total: Total number of members
+
+    **Errors:**
+    - 401: Not authenticated
+    - 403: User does not have access to case
+    - 404: Case not found
+
+    **Authentication:**
+    - Requires valid JWT token
+    - User must be a member of the case
+
+    **Permission Levels:**
+    - read: Viewer role (can only view)
+    - read_write: Member/Owner role (can view and edit)
+
+    **Notes:**
+    - Returns all members including owner
+    - Owner's permission is always read_write
+    """
+    case_service = CaseService(db)
+    return case_service.get_case_members(case_id, user_id)

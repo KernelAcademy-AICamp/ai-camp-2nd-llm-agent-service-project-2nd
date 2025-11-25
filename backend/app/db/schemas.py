@@ -4,10 +4,10 @@ Separated from SQLAlchemy models per BACKEND_SERVICE_REPOSITORY_GUIDE.md
 """
 
 from pydantic import BaseModel, EmailStr, Field
-from typing import Optional
+from typing import Optional, List
 from datetime import datetime
 from enum import Enum
-from app.db.models import UserRole, UserStatus, CaseStatus
+from app.db.models import UserRole, UserStatus, CaseStatus, CaseMemberRole
 
 
 # ============================================
@@ -134,6 +134,44 @@ class CaseSummary(BaseModel):
     updated_at: datetime
     evidence_count: int = 0
     draft_status: str = "none"  # none | partial | ready
+
+
+# ============================================
+# Case Member Schemas
+# ============================================
+class CaseMemberPermission(str, Enum):
+    """Case member permission level"""
+    READ = "read"  # Viewer - can only view
+    READ_WRITE = "read_write"  # Member - can view and edit
+
+
+class CaseMemberAdd(BaseModel):
+    """Schema for adding a member to a case"""
+    user_id: str
+    permission: CaseMemberPermission = Field(default=CaseMemberPermission.READ)
+
+
+class CaseMemberOut(BaseModel):
+    """Schema for case member output"""
+    user_id: str
+    name: str
+    email: str
+    permission: CaseMemberPermission
+    role: CaseMemberRole  # Actual DB role (owner/member/viewer)
+
+    class Config:
+        from_attributes = True
+
+
+class AddCaseMembersRequest(BaseModel):
+    """Request schema for adding multiple members to a case"""
+    members: List[CaseMemberAdd]
+
+
+class CaseMembersListResponse(BaseModel):
+    """Response schema for listing case members"""
+    members: List[CaseMemberOut]
+    total: int
 
 
 # ============================================

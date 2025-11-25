@@ -115,14 +115,14 @@
   - 각 증거 항목에 Article 840 태그 정보가 포함되어야 한다.
   - 유책사유별 필터링 쿼리 파라미터(`categories`)를 지원해야 한다.
 
-### 1.10 케이스 공유
+### 1.10 케이스 공유 ✅
 
-- [ ] `POST /cases/{case_id}/members` 호출 시:
+- [x] `POST /cases/{case_id}/members` 호출 시:
   - 여러 팀원을 동시에 추가할 수 있어야 한다 (`members: List[CaseMemberAdd]`).
   - 각 멤버의 권한 레벨(`permission`: read / read_write)을 설정해야 한다.
   - 케이스 소유자 또는 Admin만 호출 가능해야 한다.
   - `case_members` 테이블에 추가된 멤버를 저장해야 한다.
-- [ ] `GET /cases/{case_id}/members` 호출 시:
+- [x] `GET /cases/{case_id}/members` 호출 시:
   - 해당 케이스의 모든 멤버 목록을 반환해야 한다.
   - 각 멤버의 이름, 이메일, 권한 레벨을 포함해야 한다.
 
