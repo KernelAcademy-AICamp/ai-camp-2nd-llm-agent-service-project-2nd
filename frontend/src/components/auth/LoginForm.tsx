@@ -17,21 +17,7 @@ export default function LoginForm() {
         setLoading(true);
 
         try {
-            // TODO: Replace with real API call when backend is ready
-            // Mock authentication for development
-            const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK_AUTH !== 'false';
-
-            if (USE_MOCK) {
-                // Mock: Accept any email/password combination
-                await new Promise(resolve => setTimeout(resolve, 500)); // Simulate network delay
-
-                const mockToken = `mock-jwt-token-${Date.now()}`;
-                localStorage.setItem('authToken', mockToken);
-                router.push('/cases');
-                return;
-            }
-
-            // Real API call
+            // Real API call to backend
             const response = await login(email, password);
 
             if (response.error || !response.data) {
@@ -40,6 +26,7 @@ export default function LoginForm() {
             }
 
             // Store auth token in localStorage
+            // TODO: Consider HTTP-only cookie for better security
             localStorage.setItem('authToken', response.data.access_token);
 
             // Redirect to cases page

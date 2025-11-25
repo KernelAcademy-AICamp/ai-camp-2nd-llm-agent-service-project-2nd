@@ -18,16 +18,8 @@ jest.mock('@/lib/api/auth', () => ({
 }));
 
 describe('Login Screen Requirements', () => {
-    const originalEnv = process.env;
-
     beforeEach(() => {
         jest.clearAllMocks();
-        // Disable mock auth mode for testing real API behavior
-        process.env = { ...originalEnv, NEXT_PUBLIC_USE_MOCK_AUTH: 'false' };
-    });
-
-    afterEach(() => {
-        process.env = originalEnv;
     });
 
     test('로그인 화면에는 이메일 입력, 비밀번호 입력, 로그인 버튼만 존재해야 한다', () => {

@@ -5,13 +5,14 @@
  * Features:
  * - Signup form for new users
  * - 14-day free trial emphasis
- * - Mock signup for development (TODO: Replace with real API)
+ * - Real API integration with backend
  */
 
 'use client';
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { signup } from '@/lib/api/auth';
 
 export default function SignupPage() {
   const router = useRouter();
@@ -19,29 +20,45 @@ export default function SignupPage() {
   const [email, setEmail] = useState('');
   const [lawFirm, setLawFirm] = useState('');
   const [password, setPassword] = useState('');
+  const [acceptTerms, setAcceptTerms] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    // Client-side validation
+    if (password.length < 8) {
+      setError('비밀번호는 8자 이상이어야 합니다.');
+      return;
+    }
+
+    if (!acceptTerms) {
+      setError('이용약관에 동의해주세요.');
+      return;
+    }
+
     setLoading(true);
 
     try {
-      // TODO: Replace with real API call when backend is ready
-      // Mock signup for development
-      await new Promise(resolve => setTimeout(resolve, 500)); // Simulate network delay
+      // Real API call to backend
+      const response = await signup({
+        name,
+        email,
+        password,
+        law_firm: lawFirm || undefined,
+        accept_terms: acceptTerms,
+      });
 
-      // Validate password length
-      if (password.length < 8) {
-        setError('비밀번호는 8자 이상이어야 합니다.');
+      if (response.error || !response.data) {
+        setError(response.error || '회원가입 중 오류가 발생했습니다.');
         return;
       }
 
-      // Mock: Create user and auto-login
-      const mockToken = `mock-jwt-token-${Date.now()}`;
-      localStorage.setItem('authToken', mockToken);
-      localStorage.setItem('mockUser', JSON.stringify({ name, email, lawFirm }));
+      // Store auth token
+      // TODO: Consider HTTP-only cookie for better security
+      localStorage.setItem('authToken', response.data.access_token);
 
       // Redirect to cases page
       router.push('/cases');
@@ -125,6 +142,21 @@ export default function SignupPage() {
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent"
               placeholder="8자 이상"
             />
+          </div>
+
+          <div className="flex items-center">
+            <input
+              id="accept-terms"
+              name="accept-terms"
+              type="checkbox"
+              checked={acceptTerms}
+              onChange={(e) => setAcceptTerms(e.target.checked)}
+              className="h-4 w-4 text-accent focus:ring-accent border-gray-300 rounded"
+            />
+            <label htmlFor="accept-terms" className="ml-2 block text-sm text-gray-700">
+              <a href="/terms" className="text-accent hover:underline">이용약관</a> 및{' '}
+              <a href="/privacy" className="text-accent hover:underline">개인정보처리방침</a>에 동의합니다
+            </label>
           </div>
 
           {error && (

@@ -50,3 +50,37 @@ export async function logout(): Promise<ApiResponse<void>> {
     method: 'POST',
   });
 }
+
+export interface SignupRequest {
+  name: string;
+  email: string;
+  password: string;
+  law_firm?: string;
+  accept_terms: boolean;
+}
+
+export interface SignupResponse {
+  access_token: string;
+  token_type: string;
+  user: {
+    id: string;
+    email: string;
+    name: string;
+    role: string;
+  };
+}
+
+/**
+ * Register a new user
+ */
+export async function signup(
+  data: SignupRequest
+): Promise<ApiResponse<SignupResponse>> {
+  return apiRequest<SignupResponse>('/auth/signup', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(data),
+  });
+}

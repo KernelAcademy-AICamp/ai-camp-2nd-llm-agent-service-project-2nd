@@ -23,16 +23,8 @@ jest.mock('@/lib/api/auth', () => ({
 }));
 
 describe('LoginForm', () => {
-    const originalEnv = process.env;
-
     beforeEach(() => {
         jest.clearAllMocks();
-        // Disable mock auth mode for testing real API behavior
-        process.env = { ...originalEnv, NEXT_PUBLIC_USE_MOCK_AUTH: 'false' };
-    });
-
-    afterEach(() => {
-        process.env = originalEnv;
     });
 
     it('renders login form correctly', () => {
