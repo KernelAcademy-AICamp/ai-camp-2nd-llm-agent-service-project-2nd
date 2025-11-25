@@ -34,6 +34,7 @@ class Settings(BaseSettings):
         default="http://localhost:3000,http://localhost:5173",
         env="CORS_ALLOW_ORIGINS"
     )
+    FRONTEND_URL: str = Field(default="http://localhost:3000", env="FRONTEND_URL")
 
     @property
     def cors_origins_list(self) -> List[str]:

@@ -3,9 +3,9 @@ User Repository - Data access layer for User model
 Per BACKEND_SERVICE_REPOSITORY_GUIDE.md pattern
 """
 
-from typing import Optional
+from typing import Optional, List
 from sqlalchemy.orm import Session
-from app.db.models import User, UserRole
+from app.db.models import User, UserRole, UserStatus
 from app.core.security import hash_password
 
 
@@ -79,3 +79,51 @@ class UserRepository:
             True if user exists, False otherwise
         """
         return self.session.query(User).filter(User.email == email).count() > 0
+
+    def get_all(
+        self,
+        email: Optional[str] = None,
+        name: Optional[str] = None,
+        role: Optional[UserRole] = None,
+        status: Optional[UserStatus] = None
+    ) -> List[User]:
+        """
+        Get all users with optional filters
+
+        Args:
+            email: Filter by email (partial match)
+            name: Filter by name (partial match)
+            role: Filter by role
+            status: Filter by status
+
+        Returns:
+            List of User objects matching filters
+        """
+        query = self.session.query(User)
+
+        if email:
+            query = query.filter(User.email.ilike(f"%{email}%"))
+        if name:
+            query = query.filter(User.name.ilike(f"%{name}%"))
+        if role:
+            query = query.filter(User.role == role)
+        if status:
+            query = query.filter(User.status == status)
+
+        return query.order_by(User.created_at.desc()).all()
+
+    def soft_delete(self, user_id: str) -> Optional[User]:
+        """
+        Soft delete user by setting status to INACTIVE
+
+        Args:
+            user_id: User's ID
+
+        Returns:
+            Updated User object if found, None otherwise
+        """
+        user = self.get_by_id(user_id)
+        if user:
+            user.status = UserStatus.INACTIVE
+            self.session.flush()
+        return user

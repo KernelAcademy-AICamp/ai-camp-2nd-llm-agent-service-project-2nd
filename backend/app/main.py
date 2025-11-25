@@ -165,6 +165,10 @@ async def health_check():
 from app.api import auth
 app.include_router(auth.router, prefix="/auth", tags=["Authentication"])
 
+# 관리자 라우터
+from app.api import admin
+app.include_router(admin.router, tags=["Admin"])
+
 # 사건 라우터
 from app.api import cases
 app.include_router(cases.router, prefix="/cases", tags=["Cases"])

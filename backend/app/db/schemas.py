@@ -6,7 +6,7 @@ Separated from SQLAlchemy models per BACKEND_SERVICE_REPOSITORY_GUIDE.md
 from pydantic import BaseModel, EmailStr, Field
 from typing import Optional
 from datetime import datetime
-from app.db.models import UserRole, CaseStatus
+from app.db.models import UserRole, UserStatus, CaseStatus
 
 
 # ============================================
@@ -24,6 +24,8 @@ class UserOut(BaseModel):
     email: str
     name: str
     role: UserRole
+    status: UserStatus
+    created_at: datetime
 
     class Config:
         from_attributes = True  # Pydantic v2 (was orm_mode in v1)
@@ -35,6 +37,30 @@ class TokenResponse(BaseModel):
     token_type: str = "bearer"
     expires_in: int  # seconds
     user: UserOut
+
+
+# ============================================
+# User Management Schemas
+# ============================================
+class UserInviteRequest(BaseModel):
+    """User invitation request schema"""
+    email: EmailStr
+    role: UserRole = Field(default=UserRole.LAWYER)
+
+
+class InviteResponse(BaseModel):
+    """Invite token response schema"""
+    invite_token: str
+    invite_url: str
+    email: str
+    role: UserRole
+    expires_at: datetime
+
+
+class UserListResponse(BaseModel):
+    """User list response schema"""
+    users: list[UserOut]
+    total: int
 
 
 # ============================================

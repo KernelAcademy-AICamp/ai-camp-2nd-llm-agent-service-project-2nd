@@ -4,8 +4,12 @@ FastAPI dependencies for authentication and authorization
 
 from fastapi import Depends, Header
 from typing import Optional
+from sqlalchemy.orm import Session
 from app.core.security import decode_access_token
-from app.middleware import AuthenticationError
+from app.db.session import get_db
+from app.middleware import AuthenticationError, PermissionError
+from app.db.models import User, UserRole
+from app.repositories.user_repository import UserRepository
 
 
 def get_current_user_id(authorization: Optional[str] = Header(None)) -> str:
@@ -41,3 +45,48 @@ def get_current_user_id(authorization: Optional[str] = Header(None)) -> str:
         raise AuthenticationError("토큰에 사용자 정보가 없습니다.")
 
     return user_id
+
+
+def get_current_user(
+    user_id: str = Depends(get_current_user_id),
+    db: Session = Depends(get_db)
+) -> User:
+    """
+    Get current authenticated user from database
+
+    Args:
+        user_id: User ID from JWT token
+        db: Database session
+
+    Returns:
+        User object
+
+    Raises:
+        AuthenticationError: User not found
+    """
+    user_repo = UserRepository(db)
+    user = user_repo.get_by_id(user_id)
+
+    if not user:
+        raise AuthenticationError("사용자를 찾을 수 없습니다.")
+
+    return user
+
+
+def require_admin(current_user: User = Depends(get_current_user)) -> User:
+    """
+    Require admin role for access
+
+    Args:
+        current_user: Current authenticated user
+
+    Returns:
+        User object if user is admin
+
+    Raises:
+        PermissionError: User is not admin
+    """
+    if current_user.role != UserRole.ADMIN:
+        raise PermissionError("Admin 권한이 필요합니다.")
+
+    return current_user

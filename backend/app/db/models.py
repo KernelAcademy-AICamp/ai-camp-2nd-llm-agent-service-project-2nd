@@ -24,6 +24,12 @@ class UserRole(str, enum.Enum):
     ADMIN = "admin"
 
 
+class UserStatus(str, enum.Enum):
+    """User status enum"""
+    ACTIVE = "active"
+    INACTIVE = "inactive"
+
+
 class CaseStatus(str, enum.Enum):
     """Case status enum"""
     ACTIVE = "active"
@@ -51,6 +57,7 @@ class User(Base):
     hashed_password = Column(String, nullable=False)
     name = Column(String, nullable=False)
     role = Column(SQLEnum(UserRole), nullable=False, default=UserRole.LAWYER)
+    status = Column(SQLEnum(UserStatus), nullable=False, default=UserStatus.ACTIVE)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
 
     # Relationships
@@ -98,6 +105,25 @@ class CaseMember(Base):
 
     def __repr__(self):
         return f"<CaseMember(case_id={self.case_id}, user_id={self.user_id}, role={self.role})>"
+
+
+class InviteToken(Base):
+    """
+    Invite token model - user invitation tokens
+    """
+    __tablename__ = "invite_tokens"
+
+    id = Column(String, primary_key=True, default=lambda: f"invite_{uuid.uuid4().hex[:12]}")
+    email = Column(String, nullable=False, index=True)
+    role = Column(SQLEnum(UserRole), nullable=False, default=UserRole.LAWYER)
+    token = Column(String, unique=True, nullable=False, index=True)
+    created_by = Column(String, ForeignKey("users.id"), nullable=False)
+    expires_at = Column(DateTime(timezone=True), nullable=False)
+    used_at = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
+
+    def __repr__(self):
+        return f"<InviteToken(id={self.id}, email={self.email}, token={self.token[:8]}...)>"
 
 
 class AuditLog(Base):

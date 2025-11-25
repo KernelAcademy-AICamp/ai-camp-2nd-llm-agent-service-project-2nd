@@ -66,25 +66,25 @@
   - **Hallucination 금지 규칙**,
   - **"최종 결정은 변호사가 한다"** 류의 책임 한계 문구가 포함되어야 한다 (문자열 포함 여부 테스트).
 
-### 1.6 사용자 관리 (Admin)
+### 1.6 사용자 관리 (Admin) ✅
 
-- [ ] `POST /admin/users/invite` 호출 시:
+- [x] `POST /admin/users/invite` 호출 시:
   - 이메일, 역할 정보를 받아 초대 토큰을 생성하고 DB에 저장해야 한다.
   - 응답에 `invite_token` 과 `invite_url` 을 포함해야 한다.
   - Admin 권한을 가진 사용자만 호출 가능해야 한다 (RBAC 검증).
-- [ ] `GET /admin/users` 호출 시:
+- [x] `GET /admin/users` 호출 시:
   - 로펌 내 모든 사용자 목록을 반환해야 한다.
   - 검색 쿼리 파라미터 (`email`, `name`)를 지원해야 한다.
   - 역할 및 상태 필터링 (`role`, `status`)을 지원해야 한다.
   - Admin 권한 필요.
-- [ ] `DELETE /admin/users/{user_id}` 호출 시:
+- [x] `DELETE /admin/users/{user_id}` 호출 시:
   - 사용자를 soft delete (status를 `inactive`로 변경)해야 한다.
   - 삭제하려는 사용자가 자기 자신이면 400을 반환해야 한다.
   - Admin 권한 필요.
 
-### 1.7 권한 관리 (RBAC)
+### 1.7 권한 관리 (RBAC) ✅ (1.6에 포함됨)
 
-- [ ] Role 기반 접근 제어 미들웨어 구현:
+- [x] Role 기반 접근 제어 미들웨어 구현:
   - `require_admin(current_user: User)` dependency가 Admin이 아닌 사용자에 대해 403을 반환해야 한다.
   - `require_lawyer_or_admin(current_user: User)` dependency가 Staff 사용자에 대해 403을 반환해야 한다.
 - [ ] `GET /admin/roles` 호출 시:
