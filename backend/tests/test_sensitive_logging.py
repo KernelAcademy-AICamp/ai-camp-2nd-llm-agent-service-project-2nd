@@ -16,6 +16,7 @@ from fastapi import status
 from fastapi.testclient import TestClient
 from unittest.mock import patch, MagicMock
 from app.main import app
+from app.core.security import create_access_token
 from app.middleware.error_handler import (
     LEHException,
     AuthenticationError,
@@ -24,6 +25,12 @@ from app.middleware.error_handler import (
 
 
 client = TestClient(app)
+
+
+def get_test_auth_headers(user_id: str = "user123") -> dict:
+    """테스트용 인증 헤더 생성"""
+    token = create_access_token({"sub": user_id})
+    return {"Authorization": f"Bearer {token}"}
 
 
 class TestSensitiveDataLogging:
@@ -73,23 +80,23 @@ class TestSensitiveDataLogging:
         sensitive_data = "배우자의 불륜 증거 사진입니다"
 
         # When: 잘못된 형식의 요청 (presigned-url에 필수 필드 누락)
-        with patch('app.core.dependencies.get_current_user_id', return_value="user123"):
-            response = client.post(
-                "/evidence/presigned-url",
-                json={
-                    "case_id": "case123",
-                    # filename 필드 누락 -> validation error
-                    "content_type": sensitive_data  # 민감한 데이터가 잘못된 필드에
-                }
-            )
+        response = client.post(
+            "/evidence/presigned-url",
+            headers=get_test_auth_headers(),
+            json={
+                "case_id": "case123",
+                # filename 필드 누락 -> validation error
+                "content_type": sensitive_data  # 민감한 데이터가 잘못된 필드에
+            }
+        )
 
-            # Then: Validation error이지만 민감한 데이터는 로그에 노출되지 않아야 함
-            assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+        # Then: Validation error이지만 민감한 데이터는 로그에 노출되지 않아야 함
+        assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
-            log_output = caplog.text
-            # Note: Pydantic error details에 사용자 입력이 포함될 수 있음
-            assert sensitive_data not in log_output, \
-                "민감한 사용자 입력이 Validation 에러 로그에 노출되었습니다!"
+        log_output = caplog.text
+        # Note: Pydantic error details에 사용자 입력이 포함될 수 있음
+        assert sensitive_data not in log_output, \
+            "민감한 사용자 입력이 Validation 에러 로그에 노출되었습니다!"
 
     def test_general_exception_evidence_content_not_logged(self, caplog):
         """
@@ -103,22 +110,24 @@ class TestSensitiveDataLogging:
         # Given: 민감한 증거 내용을 포함한 예외
         sensitive_evidence = "남편이 다른 여성과 함께 있는 사진"
 
-        with patch('app.core.dependencies.get_current_user_id', return_value="user123"):
-            with patch('app.services.evidence_service.EvidenceService.get_evidence_detail') as mock_get:
-                # 증거 내용을 포함한 에러 발생
-                mock_get.side_effect = Exception(
-                    f"Failed to process evidence: {sensitive_evidence}"
-                )
+        with patch('app.services.evidence_service.EvidenceService.get_evidence_detail') as mock_get:
+            # 증거 내용을 포함한 에러 발생
+            mock_get.side_effect = Exception(
+                f"Failed to process evidence: {sensitive_evidence}"
+            )
 
-                # When: 증거 조회 API 호출
-                response = client.get("/evidence/ev123")
+            # When: 증거 조회 API 호출 (인증 헤더 포함)
+            response = client.get(
+                "/evidence/ev123",
+                headers=get_test_auth_headers()
+            )
 
-                # Then: 500 에러이지만 증거 내용은 로그에 노출되지 않아야 함
-                assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
+            # Then: 500 에러이지만 증거 내용은 로그에 노출되지 않아야 함
+            assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
 
-                log_output = caplog.text
-                assert sensitive_evidence not in log_output, \
-                    "민감한 증거 내용이 Exception 로그에 노출되었습니다!"
+            log_output = caplog.text
+            assert sensitive_evidence not in log_output, \
+                "민감한 증거 내용이 Exception 로그에 노출되었습니다!"
 
     def test_exception_traceback_with_jwt_token_sanitized(self, caplog):
         """
@@ -132,15 +141,16 @@ class TestSensitiveDataLogging:
         # Given: JWT 토큰을 포함한 에러
         fake_jwt_token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
 
-        with patch('app.core.dependencies.get_current_user_id') as mock_get_user:
-            # JWT decode 실패 시 토큰을 포함한 에러
-            mock_get_user.side_effect = Exception(
+        with patch('app.services.evidence_service.EvidenceService.generate_upload_presigned_url') as mock_gen:
+            # JWT 토큰을 포함한 에러 발생
+            mock_gen.side_effect = Exception(
                 f"JWT decode failed for token: {fake_jwt_token}"
             )
 
-            # When: 인증이 필요한 API 호출
+            # When: 인증이 필요한 API 호출 (인증 헤더 포함)
             response = client.post(
                 "/evidence/presigned-url",
+                headers=get_test_auth_headers(),
                 json={
                     "case_id": "case123",
                     "filename": "test.pdf",
@@ -200,29 +210,29 @@ class TestSensitiveDataLogging:
         # Given: 사건 정보를 포함한 LEH 에러
         sensitive_case_info = "이혼 사건 - 배우자 불륜 증거"
 
-        with patch('app.core.dependencies.get_current_user_id', return_value="user123"):
-            with patch('app.services.evidence_service.EvidenceService.generate_upload_presigned_url') as mock_gen:
-                from app.middleware.error_handler import PermissionError
+        with patch('app.services.evidence_service.EvidenceService.generate_upload_presigned_url') as mock_gen:
+            from app.middleware.error_handler import PermissionError
 
-                # 사건 정보를 포함한 권한 에러
-                exc = PermissionError(
-                    message=f"No access to case: {sensitive_case_info}"
-                )
-                mock_gen.side_effect = exc
+            # 사건 정보를 포함한 권한 에러
+            exc = PermissionError(
+                message=f"No access to case: {sensitive_case_info}"
+            )
+            mock_gen.side_effect = exc
 
-                # When: Presigned URL 생성 API 호출
-                response = client.post(
-                    "/evidence/presigned-url",
-                    json={
-                        "case_id": "case123",
-                        "filename": "evidence.pdf",
-                        "content_type": "application/pdf"
-                    }
-                )
+            # When: Presigned URL 생성 API 호출 (인증 헤더 포함)
+            response = client.post(
+                "/evidence/presigned-url",
+                headers=get_test_auth_headers(),
+                json={
+                    "case_id": "case123",
+                    "filename": "evidence.pdf",
+                    "content_type": "application/pdf"
+                }
+            )
 
-                # Then: 403 에러이지만 사건 정보는 로그에 노출되지 않아야 함
-                assert response.status_code == status.HTTP_403_FORBIDDEN
+            # Then: 403 에러이지만 사건 정보는 로그에 노출되지 않아야 함
+            assert response.status_code == status.HTTP_403_FORBIDDEN
 
-                log_output = caplog.text
-                assert sensitive_case_info not in log_output, \
-                    "민감한 사건 정보가 LEH Exception 로그에 노출되었습니다!"
+            log_output = caplog.text
+            assert sensitive_case_info not in log_output, \
+                "민감한 사건 정보가 LEH Exception 로그에 노출되었습니다!"
