@@ -326,6 +326,6 @@ class EvidenceService:
             content=evidence.get("content"),
             speaker=evidence.get("speaker"),
             timestamp=datetime.fromisoformat(evidence["timestamp"]) if evidence.get("timestamp") else None,
-            opensearch_id=evidence.get("opensearch_id"),
+            qdrant_id=evidence.get("qdrant_id"),
             article_840_tags=article_840_tags
         )

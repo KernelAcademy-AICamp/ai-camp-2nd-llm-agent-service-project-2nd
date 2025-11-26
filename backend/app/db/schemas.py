@@ -266,7 +266,7 @@ class EvidenceDetail(BaseModel):
     content: Optional[str] = None  # Full STT/OCR text
     speaker: Optional[str] = None  # For audio/video
     timestamp: Optional[datetime] = None  # Event timestamp in evidence
-    opensearch_id: Optional[str] = None  # RAG index reference
+    qdrant_id: Optional[str] = None  # RAG index reference (Qdrant point ID)
     article_840_tags: Optional[Article840Tags] = None  # Article 840 tagging
 
 

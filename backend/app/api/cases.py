@@ -217,7 +217,7 @@ def generate_draft_preview(
 
     **Process:**
     1. Retrieve evidence metadata from DynamoDB
-    2. Perform semantic search in OpenSearch (RAG)
+    2. Perform semantic search in Qdrant (RAG)
     3. Build GPT-4o prompt with RAG context
     4. Generate draft text
     5. Extract citations
@@ -317,7 +317,7 @@ def delete_case(
 
     **Note:**
     - This is a soft delete - case status is set to "closed"
-    - OpenSearch index for the case will be deleted
+    - Qdrant collection for the case will be deleted
     """
     case_service = CaseService(db)
     case_service.delete_case(case_id, user_id)

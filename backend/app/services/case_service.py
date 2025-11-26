@@ -181,8 +181,8 @@ class CaseService:
         # Soft delete
         self.case_repo.soft_delete(case_id)
 
-        # TODO: Trigger OpenSearch index deletion
-        # This will be implemented when OpenSearch integration is added
+        # TODO: Trigger Qdrant collection deletion
+        # This will be implemented when Qdrant integration is added
 
         self.db.commit()
 

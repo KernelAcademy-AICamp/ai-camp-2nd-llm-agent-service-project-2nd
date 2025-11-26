@@ -56,7 +56,8 @@ async def lifespan(_app: FastAPI):
     logger.info("📍 CORS origins: %s", settings.cors_origins_list)
 
     # Note: Database connection pool is managed per-request via get_db()
-    # Note: AWS services (S3, DynamoDB, OpenSearch) currently use mock implementations
+    # Note: AWS services (S3, DynamoDB) currently use mock implementations
+    # Note: Qdrant client is initialized on-demand in utils/qdrant.py (in-memory mode for local dev)
     # Note: OpenAI client is initialized on-demand in utils/openai_client.py
 
     logger.info("✅ Startup complete")
