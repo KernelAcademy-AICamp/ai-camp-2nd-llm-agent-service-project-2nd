@@ -59,7 +59,12 @@ export default function DraftGenerationModal({
                         <h2 className="text-xl font-bold text-deep-trust-blue">Draft 생성 옵션</h2>
                         <p className="text-sm text-gray-500 mt-1">초안 작성에 참고할 증거를 선택해주세요.</p>
                     </div>
-                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        aria-label="닫기"
+                        className="text-gray-400 hover:text-gray-600 transition-colors"
+                    >
                         <X className="w-6 h-6" />
                     </button>
                 </div>
@@ -87,6 +92,7 @@ export default function DraftGenerationModal({
                         선택된 증거: <span className="text-accent">{selectedIds.length}</span> / {evidenceList.length}
                     </div>
                     <button
+                        type="button"
                         onClick={handleSelectAll}
                         className="text-xs text-deep-trust-blue hover:underline font-medium"
                     >
@@ -132,12 +138,14 @@ export default function DraftGenerationModal({
 
                 <div className="p-6 border-t border-gray-100 flex justify-end space-x-3 bg-gray-50 rounded-b-xl">
                     <button
+                        type="button"
                         onClick={onClose}
                         className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50 transition-colors"
                     >
                         취소
                     </button>
                     <button
+                        type="button"
                         onClick={() => onGenerate(selectedIds)}
                         disabled={selectedIds.length === 0}
                         className="px-4 py-2 text-sm font-medium text-white bg-deep-trust-blue hover:bg-slate-800 rounded-lg shadow-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center"

@@ -101,6 +101,7 @@ export function EvidenceDataTable({ items }: EvidenceDataTableProps) {
                   className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                 >
                   <button
+                    type="button"
                     onClick={() => table.getColumn('filename')?.toggleSorting()}
                     className="flex items-center space-x-1 hover:text-deep-trust-blue transition-colors"
                   >
@@ -119,6 +120,7 @@ export function EvidenceDataTable({ items }: EvidenceDataTableProps) {
                   className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                 >
                   <button
+                    type="button"
                     onClick={() => table.getColumn('uploadDate')?.toggleSorting()}
                     className="flex items-center space-x-1 hover:text-deep-trust-blue transition-colors"
                   >
@@ -185,6 +187,7 @@ export function EvidenceDataTable({ items }: EvidenceDataTableProps) {
                     {/* Actions */}
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <button
+                        type="button"
                         className="text-gray-400 hover:text-gray-600 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
                         aria-label={`${evidence.filename} 추가 작업`}
                       >
