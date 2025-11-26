@@ -3,6 +3,7 @@
 from src.analysis.evidence_scorer import EvidenceScorer, ScoringResult
 from src.analysis.risk_analyzer import RiskAnalyzer, RiskAssessment, RiskLevel
 from src.analysis.analysis_engine import AnalysisEngine, AnalysisResult
+from src.analysis.draft_generator import DraftGenerator
 
 __all__ = [
     "EvidenceScorer",
@@ -12,4 +13,5 @@ __all__ = [
     "RiskLevel",
     "AnalysisEngine",
     "AnalysisResult",
+    "DraftGenerator",
 ]
