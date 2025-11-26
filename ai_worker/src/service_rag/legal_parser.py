@@ -260,6 +260,160 @@ class CaseLawParser:
             results.append(case_law)
         return results
 
+    # ============================================================
+    # JSON 파싱 메서드 (AI Hub 판례 데이터용)
+    # ============================================================
+
+    def parse_json(
+        self,
+        json_data: Dict[str, Any],
+        case_id: Optional[str] = None,
+        include_full_summary: bool = False
+    ) -> CaseLaw:
+        """
+        JSON 형식 판례 데이터 파싱 (AI Hub 판례 데이터 포맷)
+
+        Args:
+            json_data: AI Hub JSON 판례 데이터
+            case_id: 판례 고유 ID (없으면 info.id 또는 UUID 사용)
+            include_full_summary: True면 Summary의 summ_contxt를 full_text에 포함
+
+        Returns:
+            CaseLaw: 파싱된 판례 객체
+
+        Raises:
+            ValueError: 필수 필드 누락 또는 잘못된 날짜 형식
+        """
+        info = json_data.get("info", {})
+
+        # case_id 결정
+        if not case_id:
+            case_id = str(info.get("id", uuid.uuid4()))
+
+        # 필수 필드 추출
+        case_number = info.get("caseNo") or info.get("caseNoID", "")
+        court = info.get("courtNm", "")
+        case_name = info.get("caseNm", "")
+        decision_date_str = info.get("judmnAdjuDe", "")
+
+        # 날짜 파싱
+        decision_date = self._parse_json_date(decision_date_str)
+
+        # 판결 요지 (jdgmn 필드)
+        summary = json_data.get("jdgmn", "")
+
+        # 전문 추출 (Summary가 있으면 summ_contxt 사용)
+        full_text = None
+        if include_full_summary:
+            summaries = json_data.get("Summary", [])
+            if summaries and len(summaries) > 0:
+                full_text = summaries[0].get("summ_contxt", "")
+
+        # 관련 법령 추출
+        reference_info = json_data.get("Reference_info", {})
+        reference_rules = reference_info.get("reference_rules", "")
+        related_statutes = self._extract_related_statutes(reference_rules)
+
+        # 카테고리 추출
+        class_info = json_data.get("Class_info", {})
+        category = class_info.get("class_name", "가사")
+
+        return CaseLaw(
+            case_id=case_id,
+            case_number=case_number,
+            court=court,
+            decision_date=decision_date,
+            case_name=case_name,
+            summary=summary,
+            full_text=full_text,
+            related_statutes=related_statutes,
+            category=category
+        )
+
+    def _parse_json_date(self, date_str: str) -> date:
+        """
+        JSON 날짜 문자열 파싱
+
+        Args:
+            date_str: 날짜 문자열 (YYYY-MM-DD 형식)
+
+        Returns:
+            date: 파싱된 날짜
+
+        Raises:
+            ValueError: 잘못된 날짜 형식
+        """
+        if not date_str:
+            raise ValueError("Invalid date format: empty date string")
+
+        try:
+            return datetime.strptime(date_str, "%Y-%m-%d").date()
+        except ValueError:
+            raise ValueError(f"Invalid date format: {date_str}. Expected YYYY-MM-DD")
+
+    def _extract_related_statutes(self, reference_rules: str) -> List[str]:
+        """
+        참조 법령 문자열에서 관련 법령 목록 추출
+
+        Args:
+            reference_rules: 참조 법령 문자열 (예: "민법 제840조 / 가사소송법 제2조")
+
+        Returns:
+            List[str]: 관련 법령 목록
+        """
+        if not reference_rules:
+            return []
+
+        # "/" 또는 "[숫자]"로 구분된 법령 추출
+        statutes = []
+        # "[1] 민법 제840조" 형식 또는 "민법 제840조 / 가사소송법" 형식 처리
+        parts = re.split(r'\s*/\s*|\s*\[\d+\]\s*', reference_rules)
+        for part in parts:
+            part = part.strip()
+            if part:
+                statutes.append(part)
+
+        return statutes
+
+    def parse_json_batch(self, json_cases: List[Dict[str, Any]]) -> List[CaseLaw]:
+        """
+        여러 JSON 판례 일괄 파싱
+
+        Args:
+            json_cases: JSON 판례 데이터 리스트
+
+        Returns:
+            List[CaseLaw]: 파싱된 판례 객체 리스트
+        """
+        results = []
+        for json_data in json_cases:
+            case_law = self.parse_json(json_data)
+            results.append(case_law)
+        return results
+
+    def parse_json_file(self, file_path: str) -> List[CaseLaw]:
+        """
+        JSON 파일에서 판례 데이터 파싱
+
+        Args:
+            file_path: JSON 파일 경로
+
+        Returns:
+            List[CaseLaw]: 파싱된 판례 객체 리스트
+        """
+        import json
+
+        with open(file_path, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+
+        # 데이터가 리스트면 그대로 사용, 아니면 리스트로 감싸기
+        if isinstance(data, list):
+            json_cases = data
+        else:
+            json_cases = [data]
+
+        return self.parse_json_batch(json_cases)
+
 
 class LegalParser:
     """

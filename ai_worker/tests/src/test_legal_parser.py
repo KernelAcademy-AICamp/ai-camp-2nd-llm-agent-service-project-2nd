@@ -219,6 +219,156 @@ class TestIntegration:
         assert result.case_number == "2019다12345"
 
 
+class TestJSONCaseLawParser:
+    """Test JSON case law parsing for AI Hub precedent data"""
+
+    @pytest.fixture
+    def sample_json_case(self):
+        """AI Hub 판례 JSON 샘플 데이터"""
+        return {
+            "info": {
+                "id": 41055905,
+                "dataType": "판결문",
+                "caseNm": "이혼등",
+                "caseTitle": "서울가정법원 2001. 5. 29. 선고 2000드단21348 판결：항소기각, 확정",
+                "courtType": "판례(하급심)",
+                "courtNm": "서울가정법원",
+                "judmnAdjuDe": "2001-05-29",
+                "caseNoID": "2000드단21348",
+                "caseNo": "2000드단21348"
+            },
+            "jdgmn": "유책배우자의 이혼청구를 인용한 사례",
+            "jdgmnInfo": [
+                {
+                    "question": "유책배우자의 이혼청구권이 인정될 수 있는가?",
+                    "answer": "긍정"
+                }
+            ],
+            "Summary": [
+                {
+                    "summ_contxt": "상세한 판결 내용...",
+                    "summ_pass": "요약된 판결 내용"
+                }
+            ],
+            "keyword_tagg": [{"id": 1, "keyword": "이혼"}],
+            "Reference_info": {
+                "reference_rules": "민법 제840조",
+                "reference_court_case": ""
+            },
+            "Class_info": {
+                "class_name": "가사",
+                "instance_name": "이혼"
+            }
+        }
+
+    def test_parse_json_case(self, sample_json_case):
+        """JSON 형식 판례 데이터 파싱 테스트 (RED)"""
+        parser = CaseLawParser()
+
+        result = parser.parse_json(sample_json_case)
+
+        assert isinstance(result, CaseLaw)
+        assert result.case_number == "2000드단21348"
+        assert result.court == "서울가정법원"
+        assert result.decision_date == date(2001, 5, 29)
+        assert result.case_name == "이혼등"
+        assert "유책배우자" in result.summary
+        assert result.category == "가사"
+        assert "민법 제840조" in result.related_statutes
+
+    def test_parse_json_case_with_full_summary(self, sample_json_case):
+        """JSON 판례의 상세 요약 포함 파싱 테스트 (RED)"""
+        parser = CaseLawParser()
+
+        result = parser.parse_json(sample_json_case, include_full_summary=True)
+
+        assert result.full_text is not None
+        assert "상세한 판결 내용" in result.full_text
+
+    def test_parse_json_case_extracts_category(self, sample_json_case):
+        """JSON 판례 카테고리 추출 테스트"""
+        parser = CaseLawParser()
+
+        result = parser.parse_json(sample_json_case)
+
+        # Class_info에서 카테고리 추출 확인
+        assert result.category == "가사"
+
+    def test_parse_json_batch(self, sample_json_case):
+        """여러 JSON 판례 일괄 파싱 테스트 (RED)"""
+        parser = CaseLawParser()
+        json_cases = [sample_json_case, sample_json_case]  # 2개 동일 데이터
+
+        results = parser.parse_json_batch(json_cases)
+
+        assert len(results) == 2
+        assert all(isinstance(r, CaseLaw) for r in results)
+
+    def test_parse_json_file(self, tmp_path):
+        """JSON 파일에서 판례 파싱 테스트 (RED)"""
+        import json
+        parser = CaseLawParser()
+
+        # 임시 JSON 파일 생성 (명시적 UTF-8 인코딩)
+        json_data = [{
+            "info": {
+                "id": 1,
+                "caseNm": "test",
+                "courtNm": "Supreme Court",
+                "judmnAdjuDe": "2020-01-01",
+                "caseNo": "2020da1234"
+            },
+            "jdgmn": "test case summary",
+            "Reference_info": {"reference_rules": ""},
+            "Class_info": {"class_name": "civil"}
+        }]
+        json_file = tmp_path / "test_cases.json"
+        with open(json_file, 'w', encoding='utf-8') as f:
+            json.dump(json_data, f, ensure_ascii=False)
+
+        results = parser.parse_json_file(str(json_file))
+
+        assert len(results) == 1
+        assert results[0].case_number == "2020da1234"
+
+    def test_parse_json_handles_missing_optional_fields(self):
+        """선택적 필드 누락 시 기본값 처리 테스트 (RED)"""
+        parser = CaseLawParser()
+        minimal_json = {
+            "info": {
+                "id": 1,
+                "caseNm": "테스트",
+                "courtNm": "대법원",
+                "judmnAdjuDe": "2020-01-01",
+                "caseNo": "2020다1234"
+            },
+            "jdgmn": "테스트 요지"
+        }
+
+        result = parser.parse_json(minimal_json)
+
+        assert result.case_number == "2020다1234"
+        assert result.related_statutes == []
+        assert result.category == "가사"  # 기본값
+
+    def test_parse_json_invalid_date_format(self):
+        """잘못된 날짜 형식 처리 테스트 (RED)"""
+        parser = CaseLawParser()
+        invalid_json = {
+            "info": {
+                "id": 1,
+                "caseNm": "테스트",
+                "courtNm": "대법원",
+                "judmnAdjuDe": "2020/01/01",  # 잘못된 형식
+                "caseNo": "2020다1234"
+            },
+            "jdgmn": "테스트"
+        }
+
+        with pytest.raises(ValueError, match="Invalid date format"):
+            parser.parse_json(invalid_json)
+
+
 class TestEdgeCases:
     """Test edge cases"""
 
