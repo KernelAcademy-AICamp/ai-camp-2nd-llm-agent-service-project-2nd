@@ -263,3 +263,76 @@ class TestErrorHandling:
 
         # 벡터가 저장되지 않았는지 확인
         assert storage_manager.vector_store.count() == 0
+
+
+class TestFactoryIntegration:
+    """Test factory integration for environment-based backend selection"""
+
+    @patch('src.storage.storage_manager.get_vector_store')
+    @patch('src.storage.storage_manager.get_metadata_store')
+    def test_storage_manager_uses_factories(self, mock_get_metadata, mock_get_vector):
+        """
+        StorageManager가 팩토리를 통해 스토어를 가져오는지 테스트 (RED)
+
+        Given: 환경 변수에 따라 스토어가 결정됨
+        When: StorageManager 생성
+        Then: get_vector_store(), get_metadata_store() 팩토리 함수가 호출됨
+        """
+        mock_vector_store = Mock()
+        mock_metadata_store = Mock()
+        mock_get_vector.return_value = mock_vector_store
+        mock_get_metadata.return_value = mock_metadata_store
+
+        manager = StorageManager(
+            vector_db_path="./test/vectors",
+            metadata_db_path="./test/metadata.db"
+        )
+
+        # 팩토리 함수가 호출되었는지 확인
+        mock_get_vector.assert_called_once()
+        mock_get_metadata.assert_called_once()
+
+    @patch.dict('os.environ', {'ENVIRONMENT': 'prod', 'OPENSEARCH_ENDPOINT': 'https://test.opensearch.amazonaws.com'})
+    @patch('src.storage.storage_manager.get_vector_store')
+    @patch('src.storage.storage_manager.get_metadata_store')
+    def test_storage_manager_production_environment(self, mock_get_metadata, mock_get_vector):
+        """
+        프로덕션 환경에서 AWS 서비스 사용 테스트 (RED)
+
+        Given: ENVIRONMENT=prod
+        When: StorageManager 생성
+        Then: 팩토리가 호출되어 OpenSearch/DynamoDB 반환
+        """
+        mock_vector_store = Mock()
+        mock_metadata_store = Mock()
+        mock_get_vector.return_value = mock_vector_store
+        mock_get_metadata.return_value = mock_metadata_store
+
+        manager = StorageManager()
+
+        mock_get_vector.assert_called_once()
+        mock_get_metadata.assert_called_once()
+
+    @patch.dict('os.environ', {'ENVIRONMENT': 'local'}, clear=False)
+    @patch('src.storage.storage_manager.get_vector_store')
+    @patch('src.storage.storage_manager.get_metadata_store')
+    def test_storage_manager_local_environment(self, mock_get_metadata, mock_get_vector):
+        """
+        로컬 환경에서 ChromaDB/SQLite 사용 테스트 (RED)
+
+        Given: ENVIRONMENT=local
+        When: StorageManager 생성
+        Then: 팩토리가 호출되어 ChromaDB/SQLite 반환
+        """
+        mock_vector_store = Mock()
+        mock_metadata_store = Mock()
+        mock_get_vector.return_value = mock_vector_store
+        mock_get_metadata.return_value = mock_metadata_store
+
+        manager = StorageManager(
+            vector_db_path="./local/vectors",
+            metadata_db_path="./local/metadata.db"
+        )
+
+        mock_get_vector.assert_called_once()
+        mock_get_metadata.assert_called_once()

@@ -6,8 +6,7 @@ Integrates parsers, vector store, and metadata store
 import os
 from typing import Dict, Any, List, Optional
 from pathlib import Path
-from .vector_store import VectorStore
-from .metadata_store import MetadataStore
+from .store_factory import get_vector_store, get_metadata_store
 from .schemas import EvidenceFile, EvidenceChunk
 from ..parsers.kakaotalk import KakaoTalkParser
 from ..parsers.text import TextParser
@@ -64,8 +63,8 @@ class StorageManager:
             vector_db_path: ChromaDB 저장 경로
             metadata_db_path: SQLite 데이터베이스 경로
         """
-        self.vector_store = VectorStore(persist_directory=vector_db_path)
-        self.metadata_store = MetadataStore(db_path=metadata_db_path)
+        self.vector_store = get_vector_store(local_persist_dir=vector_db_path)
+        self.metadata_store = get_metadata_store(local_db_path=metadata_db_path)
 
         # 파서 초기화
         self.parsers = {

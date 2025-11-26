@@ -5,21 +5,21 @@
 ---
 
 ## [dev] 작업 보고
-- **시간**: 2025-11-26 18:00
+- **시간**: 2025-11-26 18:30
 - **상태**: ✅ 커밋 요청
 - **작업 내용**:
-  - **벡터 DB 팩토리 통합 - LegalSearchEngine** (GREEN 완료)
-    - `LegalSearchEngine`이 `get_vector_store()` 팩토리 사용
-    - 환경 변수에 따라 ChromaDB/OpenSearch 자동 선택
-    - 기존 테스트 + 팩토리 통합 테스트 3개 추가
+  - **벡터 DB 팩토리 통합 - StorageManager** (GREEN 완료)
+    - `StorageManager`가 `get_vector_store()`, `get_metadata_store()` 팩토리 사용
+    - 환경 변수에 따라 ChromaDB/SQLite(로컬) 또는 OpenSearch/DynamoDB(프로덕션) 자동 선택
+    - 기존 테스트 14개 + 팩토리 통합 테스트 3개 추가
 - **수정된 파일**:
-  - `ai_worker/src/service_rag/legal_search.py` (팩토리 통합)
-  - `ai_worker/tests/src/test_legal_search.py` (테스트 업데이트)
-- **테스트 결과**: **7개 PASSED**
-  - 기존 4개 + 팩토리 통합 3개
+  - `ai_worker/src/storage/storage_manager.py` (팩토리 통합)
+  - `ai_worker/tests/src/test_storage_manager.py` (테스트 업데이트)
+- **테스트 결과**: **17개 PASSED**
+  - 기존 14개 + 팩토리 통합 3개
 - **커밋 메시지 제안**:
   ```
-  feat(search): add factory integration to LegalSearchEngine (GREEN)
+  feat(storage): add factory integration to StorageManager (GREEN)
   ```
 
 ---
@@ -63,6 +63,8 @@
 | 2025/11/26 4:30pm | com | Git Hooks 설정 (commit-msg, post-commit) | 완료 |
 | 2025/11/26 5:00pm | com | LegalVectorizer 팩토리 통합 커밋 (363d47e) | 완료 |
 | 2025/11/26 5:00pm | com | report.md 업데이트 커밋 (8d17c4f) | 완료 |
+| 2025/11/26 6:00pm | dev | LegalSearchEngine 팩토리 통합 (GREEN) | 커밋 요청 |
+| 2025/11/26 6:30pm | dev | StorageManager 팩토리 통합 (GREEN) | 커밋 요청 |
 
 ---
 
@@ -88,6 +90,7 @@
 - [x] RAG 검색 E2E 테스트 (45개 테스트 PASSED)
 - [x] 벡터 DB 팩토리 통합 - LegalVectorizer (GREEN 완료)
 - [x] 벡터 DB 팩토리 통합 - LegalSearchEngine (GREEN 완료)
+- [x] 벡터 DB 팩토리 통합 - StorageManager (GREEN 완료)
 
 ---
 
