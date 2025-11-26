@@ -1,0 +1,108 @@
+# .github/workflows/test.yml
+# TDD Enforcement: Run tests on every push and PR
+
+name: Test Suite
+
+on:
+  push:
+    branches: [main, master, develop, feat/*]
+  pull_request:
+    branches: [main, master, develop]
+
+jobs:
+  # Backend Tests (FastAPI)
+  test-backend:
+    name: Backend Tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./backend
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-cov pytest-asyncio
+
+      - name: Run tests with coverage
+        env:
+          # Test environment variables
+          JWT_SECRET: test-secret-key-for-ci
+          JWT_ALGORITHM: HS256
+          JWT_ACCESS_TOKEN_EXPIRE_MINUTES: 60
+          DYNAMODB_TABLE_NAME: test-table
+          OPENSEARCH_ENDPOINT: http://localhost:9200
+          AWS_REGION: ap-northeast-2
+        run: |
+          pytest --cov=app --cov-report=xml --cov-fail-under=80 -v
+
+      - name: Upload coverage report
+        uses: codecov/codecov-action@v4
+        if: always()
+        with:
+          file: ./backend/coverage.xml
+          flags: backend
+          name: backend-coverage
+
+  # AI Worker Tests
+  test-ai-worker:
+    name: AI Worker Tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./ai_worker
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: ai_worker/requirements.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-cov
+
+      - name: Run tests with coverage
+        env:
+          OPENAI_API_KEY: test-key
+          AWS_REGION: ap-northeast-2
+        run: |
+          pytest --cov=src --cov-report=xml --cov-fail-under=80 -v
+
+      - name: Upload coverage report
+        uses: codecov/codecov-action@v4
+        if: always()
+        with:
+          file: ./ai_worker/coverage.xml
+          flags: ai-worker
+          name: ai-worker-coverage
+
+  # Coverage Gate - All tests must pass
+  coverage-gate:
+    name: Coverage Gate
+    needs: [test-backend, test-ai-worker]
+    runs-on: ubuntu-latest
+    steps:
+      - name: All tests passed
+        run: |
+          echo "All tests passed with required coverage (80%+)"
+          echo "Backend: PASSED"
+          echo "AI Worker: PASSED"
