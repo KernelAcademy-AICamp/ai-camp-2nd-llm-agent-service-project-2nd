@@ -189,3 +189,4 @@ docs/guides/claude.md
 .agent/
 *.pdf
 .serena/
+ai_worker/test_data/
