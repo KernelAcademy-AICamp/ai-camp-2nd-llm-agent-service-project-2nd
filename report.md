@@ -66,65 +66,86 @@ pip install PyPDF2          # PDF 파싱
 ---
 
 ## [code] 작업 보고
-- **시간**: 2025/11/26 8:00pm
-- **상태**: ✅ 커밋 요청
-- **작업 내용**: Mock → Real 전환 작업 완료
+- **시간**: 2025/11/26 4:00pm
+- **상태**: ✅ 커밋 완료 (f377178)
+- **작업 내용**: Real 파일 Hands-On 테스트 완료 + 버그 수정
 
-### 완료된 작업
+### 🎯 Hands-On 테스트 결과 (실제 파일 테스트)
 
-**1. 테스트 Fixtures 생성**
+| # | 파서 | 테스트 결과 | 상세 |
+|---|------|------------|------|
+| 1 | **PDFParser** | ✅ 성공 | `n8n-AI-Agent-Workshop.pdf` → 26페이지 파싱 |
+| 2 | **KakaoTalkParser** | ✅ 성공 | 실제 카카오톡 대화 → 24메시지 파싱 |
+| 3 | **AudioParser** | ✅ 성공 | Whisper API STT 동작 확인 |
+| 4 | **ImageOCRParser** | ⚠️ 대기 | Tesseract 미설치 |
+
+### 🔧 버그 수정 및 기능 추가
+
+**1. KakaoTalkParser - 형식2 지원 추가** (`src/parsers/kakaotalk.py`)
+```python
+# 기존 형식1만 지원
+"2024년 1월 10일 오후 2:30, 발신자 : 메시지"
+
+# 새로 추가된 형식2 (PC/모바일 내보내기)
+"[발신자] [오전 8:56] 메시지"
+"2025년 11월 14일 금요일"  # 날짜 구분선
 ```
-ai_worker/tests/fixtures/
-├── real_document.pdf   ✅ 생성 (2페이지 테스트 PDF)
-├── real_image.jpg      ✅ 생성 (OCR 테스트용 이미지)
-├── real_image.png      ✅ 생성 (PNG 버전)
-├── real_audio.mp3      ✅ 생성 (STT 테스트용 오디오)
-├── kakaotalk_sample.txt (기존)
-└── text_sample.txt      (기존)
+- `BRACKET_PATTERN` 추가: `[발신자] [오전/오후 시:분] 메시지`
+- `DATE_LINE_PATTERN` 추가: 날짜 구분선 인식
+- 실제 사용자 카카오톡 대화 24개 메시지 파싱 성공
+
+**2. AudioParser - OpenAI API 호환성 수정** (`src/parsers/audio_parser.py`)
+```python
+# 수정 전: Mock에서만 동작
+text = segment['text']  # TypeError: 'TranscriptionSegment' object is not subscriptable
+
+# 수정 후: Real API + Mock 둘 다 지원
+if hasattr(segment, 'text'):
+    text = segment.text  # Real OpenAI API (객체)
+else:
+    text = segment['text']  # Mock (딕셔너리)
 ```
+- Whisper API 실제 호출 테스트 성공
+- 추출된 텍스트: "This is a test audio file for speech recognition. Evidence document number 12."
 
-**2. Real 테스트 구현**
+**3. demo_parsers.py 생성** (Hands-On 테스트용)
+- 인터랙티브 데모 스크립트 생성
+- PDF, KakaoTalk, Image OCR, Audio 파서 테스트 메뉴
 
-| 파서 | 테스트 클래스 | 테스트 수 | 결과 |
-|------|-------------|----------|------|
-| **PDFParser** | `TestRealPDFParsing` | 5개 | ✅ **PASSED** |
-| **ImageOCRParser** | `TestRealImageOCRParsing` | 4개 | ⏭️ SKIPPED (Tesseract 미설치) |
-| **AudioParser** | `TestRealAudioParsing` | 5개 | ⏭️ SKIPPED (OPENAI_API_KEY 미설정) |
-
-**3. 테스트 결과**
-- **총 테스트**: 407 passed, 15 skipped
-- **커버리지**: 88% ✅
-
-**4. 수정된 파일**
-- `tests/src/test_pdf_parser.py` - TestRealPDFParsing 클래스 추가
-- `tests/src/test_image_ocr.py` - TestRealImageOCRParsing 클래스 추가
-- `tests/src/test_audio_parser.py` - TestRealAudioParsing 클래스 추가
-
-### 조건부 테스트 설명
-- **ImageOCR**: Tesseract 설치 시 자동 실행 (`@pytest.mark.skipif`)
-- **Audio**: OPENAI_API_KEY 설정 시 자동 실행 (`@pytest.mark.skipif`)
+### 수정된 파일 목록
+```
+ai_worker/
+├── src/parsers/
+│   ├── kakaotalk.py      # 형식2 지원 추가
+│   └── audio_parser.py   # API 호환성 수정
+├── demo_parsers.py       # 새로 생성
+└── tests/fixtures/
+    └── user_kakaotalk.txt  # 사용자 테스트 데이터
+```
 
 ### 커밋 메시지 제안
 ```
-test(parsers): add real file parsing tests (GREEN)
+fix(parsers): add KakaoTalk format2 support and fix AudioParser API compatibility
 
-- Add TestRealPDFParsing: 5 tests with real PDF file
-- Add TestRealImageOCRParsing: 4 tests (skip if no Tesseract)
-- Add TestRealAudioParsing: 5 tests (skip if no API key)
-- Create test fixtures: PDF, images, audio files
+- KakaoTalk: Add BRACKET_PATTERN for [sender] [time] format
+- KakaoTalk: Add DATE_LINE_PATTERN for date separator lines
+- AudioParser: Fix TranscriptionSegment object access (hasattr check)
+- Add demo_parsers.py for hands-on testing
+- Add user_kakaotalk.txt test fixture
 ```
 
 ---
 
 ## [com] 버전 관리 보고
-- **시간**: 2025/11/26 7:00pm
-- **상태**: ✅ 작업 요청 완료
+- **시간**: 2025/11/26 4:01pm
+- **상태**: ✅ 커밋 완료
 - **최근 커밋**:
+  - `f377178` feat(parsers): add format2 support and real API compatibility (REAL) ← **NEW**
+  - `4c06c05` test(parsers): add real file parsing tests (Mock→Real 전환)
   - `a01d0c3` feat(storage): add factory integration to StorageManager (GREEN)
   - `3a1f268` feat(search): add factory integration to LegalSearchEngine (GREEN)
-  - `363d47e` feat(vectorizer): add factory integration to LegalVectorizer
 - **브랜치**: feat/hardcoded-secrets-detection
-- **Origin 상태**: Up to date (Push 완료)
+- **Origin 상태**: 3 commits ahead (Push 필요)
 
 ---
 
@@ -142,7 +163,13 @@ test(parsers): add real file parsing tests (GREEN)
 | 2025/11/26 6:00pm | code | StorageManager 팩토리 통합 (GREEN) | 완료 |
 | 2025/11/26 6:30pm | com | Push 완료 | ✅ |
 | 2025/11/26 7:00pm | com | **Mock → Real 전환 작업 요청** | 🔴 요청 |
-| 2025/11/26 8:00pm | code | **Mock → Real 전환 작업 완료** | ✅ 커밋 요청 |
+| 2025/11/26 8:00pm | code | Mock → Real 전환 작업 완료 | ✅ |
+| 2025/11/26 3:00pm | code | **Hands-On 테스트 시작** | 🔄 |
+| 2025/11/26 3:30pm | code | PDF Parser 테스트 (26페이지) | ✅ |
+| 2025/11/26 3:45pm | code | KakaoTalk Parser 형식2 지원 추가 | ✅ |
+| 2025/11/26 4:00pm | code | Audio Parser API 호환성 수정 | ✅ |
+| 2025/11/26 4:00pm | code | **Hands-On 테스트 완료** | ✅ 커밋 요청 |
+| 2025/11/26 4:01pm | com | **커밋 완료** (f377178) | ✅ |
 
 ---
 
@@ -154,12 +181,13 @@ test(parsers): add real file parsing tests (GREEN)
 - [x] Phase 3: 소장 초안 생성 (Mock)
 - [x] 벡터 DB 팩토리 통합 (로컬 ChromaDB)
 
-### ✅ Real 전환 작업 (완료)
+### ✅ Real 전환 작업 (Hands-On 테스트 완료)
+- [x] PDFParser: 실제 PDF → PyPDF2 ✅ **26페이지 파싱 성공**
+- [x] KakaoTalkParser: 실제 카톡 → 형식2 지원 추가 ✅ **24메시지 파싱 성공**
+- [x] AudioParser: 실제 오디오 → Whisper API ✅ **STT 동작 확인**
+- [ ] ImageOCRParser: 실제 이미지 → Tesseract ⚠️ (Tesseract 미설치)
 - [ ] ImageVisionParser: 실제 이미지 → GPT-4o Vision (테스트 미구현)
-- [x] ImageOCRParser: 실제 이미지 → Tesseract (테스트 구현, Tesseract 설치 필요)
-- [x] AudioParser: 실제 오디오 → Whisper API (테스트 구현, API 키 필요)
 - [ ] VideoParser: 실제 영상 → ffmpeg → Whisper (테스트 미구현)
-- [x] PDFParser: 실제 PDF → PyPDF2 ✅ **PASSED**
 
 ### AWS 연동 (Issue #10)
 - [x] DynamoDB 연동 (H 완료)
