@@ -108,3 +108,36 @@ def get_token_expire_seconds() -> int:
         Expiration time in seconds
     """
     return settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES * 60
+
+
+def create_refresh_token(data: dict) -> str:
+    """
+    Create a JWT refresh token with longer expiration
+
+    Args:
+        data: Payload data to encode (typically {"sub": user_id})
+
+    Returns:
+        Encoded JWT refresh token string
+    """
+    to_encode = data.copy()
+    expire = datetime.now(timezone.utc) + timedelta(days=settings.JWT_REFRESH_TOKEN_EXPIRE_DAYS)
+    to_encode.update({"exp": expire, "type": "refresh"})
+
+    encoded_jwt = jwt.encode(
+        to_encode,
+        settings.JWT_SECRET,
+        algorithm=settings.JWT_ALGORITHM
+    )
+
+    return encoded_jwt
+
+
+def get_refresh_token_expire_seconds() -> int:
+    """
+    Get refresh token expiration time in seconds
+
+    Returns:
+        Expiration time in seconds
+    """
+    return settings.JWT_REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60

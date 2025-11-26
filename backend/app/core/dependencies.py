@@ -1,8 +1,12 @@
 """
 FastAPI dependencies for authentication and authorization
+
+Supports both:
+1. Authorization header (Bearer token) - for API clients
+2. HTTP-only cookies (access_token) - for browser clients
 """
 
-from fastapi import Depends, Header
+from fastapi import Depends, Header, Cookie, Request
 from typing import Optional
 from sqlalchemy.orm import Session
 from app.core.security import decode_access_token
@@ -12,12 +16,19 @@ from app.db.models import User, UserRole
 from app.repositories.user_repository import UserRepository
 
 
-def get_current_user_id(authorization: Optional[str] = Header(None)) -> str:
+def get_current_user_id(
+    authorization: Optional[str] = Header(None),
+    access_token: Optional[str] = Cookie(None)
+) -> str:
     """
     Extract and validate user ID from JWT token
 
+    Supports both Authorization header and HTTP-only cookie.
+    Priority: Authorization header > Cookie
+
     Args:
         authorization: Authorization header (Bearer token)
+        access_token: HTTP-only cookie with access token
 
     Returns:
         User ID from token
@@ -25,15 +36,22 @@ def get_current_user_id(authorization: Optional[str] = Header(None)) -> str:
     Raises:
         AuthenticationError: Invalid or missing token
     """
-    if not authorization:
+    token = None
+
+    # Try Authorization header first (for API clients)
+    if authorization:
+        parts = authorization.split()
+        if len(parts) == 2 and parts[0].lower() == "bearer":
+            token = parts[1]
+        else:
+            raise AuthenticationError("잘못된 인증 형식입니다.")
+
+    # Fall back to cookie (for browser clients)
+    if not token and access_token:
+        token = access_token
+
+    if not token:
         raise AuthenticationError("인증이 필요합니다.")
-
-    # Extract token from "Bearer <token>"
-    parts = authorization.split()
-    if len(parts) != 2 or parts[0].lower() != "bearer":
-        raise AuthenticationError("잘못된 인증 형식입니다.")
-
-    token = parts[1]
 
     # Decode and validate token
     payload = decode_access_token(token)

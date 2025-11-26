@@ -47,6 +47,14 @@ class Settings(BaseSettings):
     JWT_SECRET: str = Field(default="CHANGE_ME_IN_PROD", env="JWT_SECRET")
     JWT_ALGORITHM: str = Field(default="HS256", env="JWT_ALGORITHM")
     JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(default=60, env="JWT_ACCESS_TOKEN_EXPIRE_MINUTES")
+    JWT_REFRESH_TOKEN_EXPIRE_DAYS: int = Field(default=7, env="JWT_REFRESH_TOKEN_EXPIRE_DAYS")
+
+    # ============================================
+    # Cookie Settings
+    # ============================================
+    COOKIE_SECURE: bool = Field(default=False, env="COOKIE_SECURE")  # True in production (HTTPS)
+    COOKIE_SAMESITE: str = Field(default="lax", env="COOKIE_SAMESITE")  # lax | strict | none
+    COOKIE_DOMAIN: str = Field(default="", env="COOKIE_DOMAIN")  # Empty = current domain
 
     # ============================================
     # Database Settings (PostgreSQL)
