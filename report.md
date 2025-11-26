@@ -5,13 +5,22 @@
 ---
 
 ## [dev] 작업 보고
-- **시간**: 2025-11-26 17:00
-- **상태**: ⏸️ 대기중
-- **최근 완료 작업**:
-  - **벡터 DB 팩토리 통합** (GREEN 완료) ✅
-  - `LegalVectorizer`가 `get_vector_store()` 팩토리 사용
-- **다음 작업 예정**:
-  - 벡터 DB 팩토리 통합 - LegalSearchEngine
+- **시간**: 2025-11-26 18:00
+- **상태**: ✅ 커밋 요청
+- **작업 내용**:
+  - **벡터 DB 팩토리 통합 - LegalSearchEngine** (GREEN 완료)
+    - `LegalSearchEngine`이 `get_vector_store()` 팩토리 사용
+    - 환경 변수에 따라 ChromaDB/OpenSearch 자동 선택
+    - 기존 테스트 + 팩토리 통합 테스트 3개 추가
+- **수정된 파일**:
+  - `ai_worker/src/service_rag/legal_search.py` (팩토리 통합)
+  - `ai_worker/tests/src/test_legal_search.py` (테스트 업데이트)
+- **테스트 결과**: **7개 PASSED**
+  - 기존 4개 + 팩토리 통합 3개
+- **커밋 메시지 제안**:
+  ```
+  feat(search): add factory integration to LegalSearchEngine (GREEN)
+  ```
 
 ---
 
@@ -78,7 +87,7 @@
 - [x] PrecedentIngester 클래스 구현
 - [x] RAG 검색 E2E 테스트 (45개 테스트 PASSED)
 - [x] 벡터 DB 팩토리 통합 - LegalVectorizer (GREEN 완료)
-- [ ] 벡터 DB 팩토리 통합 - LegalSearchEngine (다음 단계)
+- [x] 벡터 DB 팩토리 통합 - LegalSearchEngine (GREEN 완료)
 
 ---
 
