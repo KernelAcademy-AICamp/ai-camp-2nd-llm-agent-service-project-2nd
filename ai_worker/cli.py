@@ -11,6 +11,7 @@ Usage:
     python cli.py summary --case-id <case_id>
     python cli.py list [--case-id <case_id>]
     python cli.py analyze --file <filepath>
+    python cli.py draft --file <filepath> --case-id <case_id>
 """
 
 import argparse
@@ -38,6 +39,11 @@ if env_path.exists():
 
 from src.storage.storage_manager import StorageManager
 from src.analysis.article_840_tagger import Article840Tagger, TaggingResult
+from src.analysis.draft_generator import DraftGenerator
+from src.analysis.evidence_scorer import EvidenceScorer
+from src.analysis.risk_analyzer import RiskAnalyzer, RiskLevel
+from src.analysis.analysis_engine import AnalysisEngine, AnalysisResult
+from src.service_rag.schemas import PartyInfo
 from src.parsers.kakaotalk import KakaoTalkParser
 from src.parsers.text import TextParser
 from src.parsers.base import Message
@@ -418,6 +424,104 @@ def _generate_llm_summary(storage: StorageManager, case_id: str):
         print(f"   ⚠️ LLM 요약 생성 실패: {e}")
 
 
+def cmd_draft(args):
+    """
+    이혼 소장 초안 생성 커맨드
+
+    Given: 파일 경로, 케이스 ID, 당사자 정보
+    When: 파일을 분석하고 소장 초안 생성
+    Then: 초안 문서 출력 및 저장
+    """
+    print(f"\n{'='*60}")
+    print(f"📜 이혼 소장 초안 생성")
+    print(f"{'='*60}\n")
+
+    filepath = Path(args.file)
+    if not filepath.exists():
+        print(f"❌ 오류: 파일을 찾을 수 없습니다 - {filepath}")
+        return 1
+
+    try:
+        # 1. 파일 파싱
+        print("🔄 1단계: 파일 파싱 중...")
+        messages = _parse_file(filepath)
+        if not messages:
+            print("📭 파싱된 메시지가 없습니다.")
+            return 0
+        print(f"   ✅ {len(messages)}개 메시지 파싱 완료\n")
+
+        # 2. 증거 분석
+        print("🔄 2단계: 증거 분석 중...")
+        engine = AnalysisEngine()
+        analysis_result = engine.analyze_case(messages, args.case_id)
+        print(f"   ✅ 분석 완료")
+        print(f"      - 평균 증거 점수: {analysis_result.average_score:.1f}/10")
+        print(f"      - 고가치 증거: {len(analysis_result.high_value_messages)}개")
+        print(f"      - 위험 수준: {analysis_result.risk_assessment.risk_level.value}\n")
+
+        # 3. 당사자 정보 입력/기본값
+        print("🔄 3단계: 당사자 정보 설정...")
+        plaintiff = PartyInfo(
+            name=args.plaintiff_name or "원고 성명",
+            resident_number=args.plaintiff_rn or "000000-0000000",
+            address=args.plaintiff_addr or "서울시 OO구 OO로 123",
+            phone=args.plaintiff_phone or "010-0000-0000",
+            role="plaintiff"
+        )
+        defendant = PartyInfo(
+            name=args.defendant_name or "피고 성명",
+            resident_number=args.defendant_rn or "000000-0000000",
+            address=args.defendant_addr or "서울시 OO구 OO로 456",
+            phone=None,
+            role="defendant"
+        )
+        print(f"   ✅ 원고: {plaintiff.name}")
+        print(f"   ✅ 피고: {defendant.name}\n")
+
+        # 4. 초안 생성
+        print("🔄 4단계: 소장 초안 생성 중 (GPT-4 사용)...")
+        generator = DraftGenerator()
+        draft = generator.generate_divorce_complaint(
+            analysis_result=analysis_result,
+            plaintiff=plaintiff,
+            defendant=defendant,
+            marriage_date=args.marriage_date or "20XX년 X월 X일",
+            children_info=args.children_info or "슬하에 자녀가 없습니다.",
+            alimony_amount=args.alimony or 30000000,
+            child_custody_claim=args.custody or "해당 없음"
+        )
+        print(f"   ✅ 초안 생성 완료!\n")
+
+        # 5. 결과 출력
+        print("="*60)
+        print("📜 생성된 소장 초안")
+        print("="*60)
+        print(draft.content)
+        print("="*60)
+
+        # 6. 파일 저장 (선택적)
+        if args.output:
+            output_path = Path(args.output)
+            output_path.write_text(draft.content, encoding='utf-8')
+            print(f"\n💾 파일 저장: {output_path}")
+
+        # 7. 메타데이터 출력
+        print(f"\n📊 생성 정보:")
+        print(f"   - 문서 유형: {draft.document_type}")
+        print(f"   - 케이스 ID: {draft.case_id}")
+        print(f"   - 적용 법조: {', '.join(draft.legal_grounds)}")
+        print(f"   - 참조 증거 수: {len(draft.evidence_references)}개")
+        print(f"   - 생성 시간: {draft.created_at}")
+
+        return 0
+
+    except Exception as e:
+        print(f"\n❌ 초안 생성 실패: {e}")
+        import traceback
+        traceback.print_exc()
+        return 1
+
+
 def main():
     """
     메인 함수 - CLI 인터페이스 정의
@@ -441,6 +545,11 @@ def main():
 
     # Article 840 분석
     python cli.py analyze --file ./test_data/kakaotalk.txt
+
+    # 이혼 소장 초안 생성
+    python cli.py draft --file ./test_data/kakaotalk.txt --case-id case001 \\
+        --plaintiff-name "김원고" --defendant-name "이피고" \\
+        --marriage-date "2015년 3월 15일" --output draft_output.md
         """
     )
 
@@ -485,14 +594,35 @@ def main():
     analyze_parser.add_argument("--verbose", "-v", action="store_true", help="상세 결과 출력")
     analyze_parser.set_defaults(func=cmd_analyze)
 
+    # draft 커맨드
+    draft_parser = subparsers.add_parser("draft", help="이혼 소장 초안 생성")
+    draft_parser.add_argument("--file", "-f", required=True, help="증거 파일 경로")
+    draft_parser.add_argument("--case-id", "-c", required=True, help="케이스 ID")
+    draft_parser.add_argument("--output", "-o", help="출력 파일 경로 (선택)")
+    # 원고 정보
+    draft_parser.add_argument("--plaintiff-name", help="원고 성명")
+    draft_parser.add_argument("--plaintiff-rn", help="원고 주민등록번호")
+    draft_parser.add_argument("--plaintiff-addr", help="원고 주소")
+    draft_parser.add_argument("--plaintiff-phone", help="원고 연락처")
+    # 피고 정보
+    draft_parser.add_argument("--defendant-name", help="피고 성명")
+    draft_parser.add_argument("--defendant-rn", help="피고 주민등록번호")
+    draft_parser.add_argument("--defendant-addr", help="피고 주소")
+    # 혼인 정보
+    draft_parser.add_argument("--marriage-date", help="혼인일 (예: 2010년 5월 1일)")
+    draft_parser.add_argument("--children-info", help="자녀 정보")
+    draft_parser.add_argument("--alimony", type=int, default=30000000, help="위자료 청구액 (기본: 3천만원)")
+    draft_parser.add_argument("--custody", help="양육권 청구 내용")
+    draft_parser.set_defaults(func=cmd_draft)
+
     args = parser.parse_args()
 
     if not args.command:
         parser.print_help()
         return 1
 
-    # OpenAI API 키 확인 (process, search, summary 시 필요)
-    if args.command in ["process", "search"] and not os.getenv("OPENAI_API_KEY"):
+    # OpenAI API 키 확인 (process, search, draft 시 필요)
+    if args.command in ["process", "search", "draft"] and not os.getenv("OPENAI_API_KEY"):
         print("⚠️ 주의: OPENAI_API_KEY 환경변수가 설정되지 않았습니다.")
         print("   임베딩 생성에 OpenAI API가 필요합니다.")
         print("   설정: export OPENAI_API_KEY=your-api-key")
