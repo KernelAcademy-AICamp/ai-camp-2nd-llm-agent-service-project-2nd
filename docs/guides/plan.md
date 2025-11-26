@@ -526,10 +526,10 @@
   - First Contentful Paint ≤ 1.5s
   - Largest Contentful Paint ≤ 2.5s
 
-- [ ] **SEO 테스트**
-  - Google Search Console 등록
-  - Sitemap.xml 생성 및 제출
-  - Robots.txt 설정
+- [x] **SEO 테스트**
+  - ⬜ Google Search Console 등록 (외부 설정 필요)
+  - ✅ Sitemap.xml 생성 및 제출 (`app/sitemap.ts`)
+  - ✅ Robots.txt 설정 (`app/robots.ts`)
 
 **참고 문서:**
 - [UI_UX_DESIGN.md](../UI_UX_DESIGN.md) - 디자인 시스템
