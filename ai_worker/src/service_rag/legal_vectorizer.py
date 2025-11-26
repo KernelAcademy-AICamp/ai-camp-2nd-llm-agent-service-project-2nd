@@ -5,7 +5,7 @@ Legal Knowledge Vectorizer Module
 
 import uuid
 from typing import List, Optional
-from src.storage.vector_store import VectorStore
+from src.storage.store_factory import get_vector_store
 from src.storage.storage_manager import get_embedding
 from src.service_rag.schemas import Statute, CaseLaw, LegalChunk
 
@@ -36,9 +36,10 @@ class LegalVectorizer:
             collection_name: 벡터 DB 컬렉션명
             persist_directory: 벡터 DB 저장 경로
         """
-        self.vector_store = VectorStore(
-            collection_name=collection_name,
-            persist_directory=persist_directory
+        self.vector_store = get_vector_store(
+            local_persist_dir=persist_directory,
+            index_name=collection_name,
+            vector_dimension=768
         )
 
     def vectorize_statute(self, statute: Statute) -> str:
