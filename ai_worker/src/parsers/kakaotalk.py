@@ -14,14 +14,25 @@ class KakaoTalkParser(BaseParser):
     카카오톡 대화 파일 파서
 
     지원 형식:
-    - "2024년 1월 10일 오후 2:30, 발신자 : 메시지 내용"
+    - 형식1: "2024년 1월 10일 오후 2:30, 발신자 : 메시지 내용"
+    - 형식2: "[발신자] [오전 8:56] 메시지 내용" (PC/모바일 내보내기)
     - 멀티라인 메시지 처리
     - 한국어 날짜/시간 형식
     """
 
-    # 정규표현식 패턴
+    # 정규표현식 패턴 - 형식1: 기존 형식
     DATE_TIME_PATTERN = re.compile(
         r"^(\d{4})년 (\d{1,2})월 (\d{1,2})일 (오전|오후) (\d{1,2}):(\d{2}), (.+?) : (.+)$"
+    )
+
+    # 정규표현식 패턴 - 형식2: [발신자] [오전/오후 시:분] 메시지
+    BRACKET_PATTERN = re.compile(
+        r"^\[(.+?)\] \[(오전|오후) (\d{1,2}):(\d{2})\] (.+)$"
+    )
+
+    # 날짜 구분선 패턴: "2025년 11월 14일 금요일" 또는 "----- 2024년 1월 10일 -----"
+    DATE_LINE_PATTERN = re.compile(
+        r"^-*\s*(\d{4})년 (\d{1,2})월 (\d{1,2})일.*$"
     )
 
     def parse(self, filepath: str) -> List[Message]:
@@ -42,6 +53,7 @@ class KakaoTalkParser(BaseParser):
 
         messages = []
         current_message = None
+        current_date = None  # 형식2용 현재 날짜 추적
 
         with open(filepath, "r", encoding="utf-8") as f:
             for line in f:
@@ -55,7 +67,7 @@ class KakaoTalkParser(BaseParser):
                 if self._is_header_line(line):
                     continue
 
-                # 날짜/시간 패턴 매칭
+                # 형식1: 날짜/시간 패턴 매칭 (먼저 체크 - 더 구체적인 패턴)
                 match = self.DATE_TIME_PATTERN.match(line)
 
                 if match:
@@ -77,11 +89,49 @@ class KakaoTalkParser(BaseParser):
                         timestamp=timestamp,
                         metadata={"source_type": "kakaotalk"}
                     )
-                else:
-                    # 멀티라인 메시지의 연속 라인
-                    if current_message and not self._is_system_message(line):
-                        # 개행 문자로 연결
-                        current_message.content += "\n" + line.strip()
+                    continue
+
+                # 날짜 구분선 체크 (형식2용 - 형식1 이후에 체크)
+                date_match = self.DATE_LINE_PATTERN.match(line)
+                if date_match:
+                    year, month, day = date_match.groups()
+                    current_date = (int(year), int(month), int(day))
+                    continue
+
+                # 형식2: [발신자] [오전/오후 시:분] 메시지
+                bracket_match = self.BRACKET_PATTERN.match(line)
+                if bracket_match:
+                    # 이전 메시지가 있으면 저장
+                    if current_message:
+                        messages.append(current_message)
+
+                    sender, meridiem, hour, minute, content = bracket_match.groups()
+
+                    # 날짜가 설정되어 있으면 사용, 아니면 오늘 날짜
+                    if current_date:
+                        year, month, day = current_date
+                    else:
+                        from datetime import date
+                        today = date.today()
+                        year, month, day = today.year, today.month, today.day
+
+                    timestamp = self._parse_korean_datetime(
+                        year, month, day,
+                        meridiem, int(hour), int(minute)
+                    )
+
+                    current_message = Message(
+                        content=content.strip(),
+                        sender=sender.strip(),
+                        timestamp=timestamp,
+                        metadata={"source_type": "kakaotalk"}
+                    )
+                    continue
+
+                # 멀티라인 메시지의 연속 라인
+                if current_message and not self._is_system_message(line):
+                    # 개행 문자로 연결
+                    current_message.content += "\n" + line.strip()
 
         # 마지막 메시지 저장
         if current_message:

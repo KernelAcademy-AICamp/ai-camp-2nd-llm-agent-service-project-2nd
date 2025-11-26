@@ -70,14 +70,20 @@ class AudioParser(BaseParser):
 
         # 세그먼트별 처리
         for segment in transcript.segments:
-            text = segment['text'].strip()
+            # OpenAI API는 객체로 반환 (segment.text), Mock은 딕셔너리로 반환
+            if hasattr(segment, 'text'):
+                text = segment.text.strip()
+                start_time = segment.start
+            else:
+                text = segment['text'].strip()
+                start_time = segment['start']
 
             # 빈 텍스트 제외
             if not text:
                 continue
 
             # 세그먼트 시작 시간 기준으로 타임스탬프 계산
-            segment_time = base_timestamp + timedelta(seconds=segment['start'])
+            segment_time = base_timestamp + timedelta(seconds=start_time)
 
             message = Message(
                 content=text,
