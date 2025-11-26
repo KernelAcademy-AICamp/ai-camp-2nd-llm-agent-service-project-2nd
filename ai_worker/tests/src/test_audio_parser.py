@@ -293,3 +293,69 @@ class TestFileFormats:
 
         assert len(messages) == 1
         assert messages[0].content == "M4A 테스트"
+
+
+def has_openai_api_key():
+    """Check if OpenAI API key is available"""
+    import os
+    return os.getenv("OPENAI_API_KEY") is not None
+
+
+@pytest.mark.skipif(not has_openai_api_key(), reason="OPENAI_API_KEY not set")
+class TestRealAudioParsing:
+    """Test AudioParser with real audio file (no mocks)
+
+    Prerequisites:
+    - OPENAI_API_KEY environment variable must be set
+    - Real audio file in fixtures/real_audio.mp3
+    """
+
+    @pytest.fixture
+    def real_audio_path(self):
+        """실제 테스트 오디오 파일 경로"""
+        return Path(__file__).parent.parent / "fixtures" / "real_audio.mp3"
+
+    def test_real_audio_file_exists(self, real_audio_path):
+        """실제 테스트 오디오 파일 존재 확인"""
+        assert real_audio_path.exists(), f"Test fixture not found: {real_audio_path}"
+
+    def test_parse_real_audio_returns_messages(self, real_audio_path):
+        """실제 오디오 파싱 - Message 반환 확인"""
+        parser = AudioParser()
+        messages = parser.parse(str(real_audio_path))
+
+        assert isinstance(messages, list)
+        assert len(messages) > 0, "Should return at least one message"
+        assert all(isinstance(m, Message) for m in messages)
+
+    def test_parse_real_audio_extracts_text(self, real_audio_path):
+        """실제 오디오 파싱 - 텍스트 추출 확인"""
+        parser = AudioParser()
+        messages = parser.parse(str(real_audio_path))
+
+        all_content = " ".join(m.content for m in messages)
+        assert len(all_content) > 0, "Should extract non-empty text"
+
+        # Test audio contains "test" or "evidence" or "speech"
+        content_lower = all_content.lower()
+        assert any(word in content_lower for word in ["test", "evidence", "speech", "audio"]), \
+            f"Expected keywords not found in: {all_content}"
+
+    def test_parse_real_audio_has_timestamps(self, real_audio_path):
+        """실제 오디오 파싱 - 타임스탬프 확인"""
+        parser = AudioParser()
+        messages = parser.parse(str(real_audio_path))
+
+        for msg in messages:
+            assert msg.timestamp is not None
+            assert isinstance(msg.timestamp, datetime)
+
+    def test_parse_real_audio_with_custom_sender(self, real_audio_path):
+        """실제 오디오 파싱 - 커스텀 sender 설정"""
+        parser = AudioParser()
+        messages = parser.parse(
+            str(real_audio_path),
+            default_sender="증인녹음"
+        )
+
+        assert all(m.sender == "증인녹음" for m in messages)

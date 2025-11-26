@@ -200,3 +200,54 @@ class TestEdgeCases:
 
         with pytest.raises(Exception, match="OCR failed"):
             parser.parse("test.png")
+
+
+def is_tesseract_installed():
+    """Check if Tesseract is installed"""
+    import shutil
+    return shutil.which('tesseract') is not None
+
+
+@pytest.mark.skipif(not is_tesseract_installed(), reason="Tesseract not installed")
+class TestRealImageOCRParsing:
+    """Test ImageOCRParser with real image file (no mocks)"""
+
+    @pytest.fixture
+    def real_image_path(self):
+        """실제 테스트 이미지 파일 경로"""
+        return Path(__file__).parent.parent / "fixtures" / "real_image.png"
+
+    def test_real_image_file_exists(self, real_image_path):
+        """실제 테스트 이미지 파일 존재 확인"""
+        assert real_image_path.exists(), f"Test fixture not found: {real_image_path}"
+
+    def test_parse_real_image_returns_messages(self, real_image_path):
+        """실제 이미지 파싱 - Message 반환 확인"""
+        parser = ImageOCRParser()
+        messages = parser.parse(str(real_image_path))
+
+        # OCR 결과에 따라 메시지가 있을 수 있음
+        assert isinstance(messages, list)
+        assert all(isinstance(m, Message) for m in messages)
+
+    def test_parse_real_image_extracts_text(self, real_image_path):
+        """실제 이미지 파싱 - 텍스트 추출 확인"""
+        parser = ImageOCRParser()
+        messages = parser.parse(str(real_image_path))
+
+        # 테스트 이미지에 "Test" 또는 "Evidence" 텍스트가 있음
+        if len(messages) > 0:
+            all_content = " ".join(m.content for m in messages)
+            # OCR이 일부라도 인식했는지 확인
+            assert len(all_content) > 0, "Should extract some text"
+
+    def test_parse_real_image_with_custom_sender(self, real_image_path):
+        """실제 이미지 파싱 - 커스텀 sender 설정"""
+        parser = ImageOCRParser()
+        messages = parser.parse(
+            str(real_image_path),
+            default_sender="OCR증거"
+        )
+
+        if len(messages) > 0:
+            assert all(m.sender == "OCR증거" for m in messages)

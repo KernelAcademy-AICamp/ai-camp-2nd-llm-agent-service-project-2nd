@@ -244,3 +244,57 @@ class TestTextExtraction:
         # 공백이 정리되어야 함
         assert messages[0].content.strip() != ""
         assert "텍스트" in messages[0].content
+
+
+class TestRealPDFParsing:
+    """Test PDFParser with real PDF file (no mocks)"""
+
+    @pytest.fixture
+    def real_pdf_path(self):
+        """실제 테스트 PDF 파일 경로"""
+        return Path(__file__).parent.parent / "fixtures" / "real_document.pdf"
+
+    def test_real_pdf_file_exists(self, real_pdf_path):
+        """실제 테스트 PDF 파일 존재 확인"""
+        assert real_pdf_path.exists(), f"Test fixture not found: {real_pdf_path}"
+
+    def test_parse_real_pdf_returns_messages(self, real_pdf_path):
+        """실제 PDF 파싱 - Message 반환 확인"""
+        parser = PDFParser()
+        messages = parser.parse(str(real_pdf_path))
+
+        assert len(messages) > 0, "Should return at least one message"
+        assert all(isinstance(m, Message) for m in messages)
+
+    def test_parse_real_pdf_extracts_content(self, real_pdf_path):
+        """실제 PDF 파싱 - 내용 추출 확인"""
+        parser = PDFParser()
+        messages = parser.parse(str(real_pdf_path))
+
+        # Check that content is extracted (not empty)
+        all_content = " ".join(m.content for m in messages)
+        assert len(all_content) > 0, "Should extract non-empty content"
+
+        # Check for expected keywords from test PDF
+        assert "Test" in all_content or "Document" in all_content, \
+            f"Expected keywords not found in: {all_content[:200]}"
+
+    def test_parse_real_pdf_page_numbering(self, real_pdf_path):
+        """실제 PDF 파싱 - 페이지 번호 확인"""
+        parser = PDFParser()
+        messages = parser.parse(str(real_pdf_path))
+
+        # Test PDF has 2 pages
+        assert len(messages) == 2, f"Expected 2 pages, got {len(messages)}"
+        assert "[Page 1]" in messages[0].content
+        assert "[Page 2]" in messages[1].content
+
+    def test_parse_real_pdf_with_custom_sender(self, real_pdf_path):
+        """실제 PDF 파싱 - 커스텀 sender 설정"""
+        parser = PDFParser()
+        messages = parser.parse(
+            str(real_pdf_path),
+            default_sender="증거문서"
+        )
+
+        assert all(m.sender == "증거문서" for m in messages)

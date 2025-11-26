@@ -113,16 +113,16 @@ class TestRAGPipelineE2E:
         # Mock embedding generation (외부 API 의존성)
         with patch('src.service_rag.legal_vectorizer.get_embedding') as mock_embed_vec, \
              patch('src.service_rag.legal_search.get_embedding') as mock_embed_search, \
-             patch('src.service_rag.legal_vectorizer.VectorStore') as mock_vec_store_class, \
-             patch('src.service_rag.legal_search.VectorStore') as mock_search_store_class:
+             patch('src.service_rag.legal_vectorizer.get_vector_store') as mock_vec_store_factory, \
+             patch('src.service_rag.legal_search.get_vector_store') as mock_search_store_factory:
 
             # Setup mock embeddings (768 dimensions)
             mock_embed_vec.return_value = [0.1] * 768
             mock_embed_search.return_value = [0.1] * 768
 
             # Both vectorizer and search engine use the same mock vector store
-            mock_vec_store_class.return_value = mock_vector_store
-            mock_search_store_class.return_value = mock_vector_store
+            mock_vec_store_factory.return_value = mock_vector_store
+            mock_search_store_factory.return_value = mock_vector_store
 
             # === Phase 1: Ingest precedents ===
             ingester = PrecedentIngester()
@@ -162,24 +162,28 @@ class TestRAGPipelineE2E:
 
         with patch('src.service_rag.legal_vectorizer.get_embedding') as mock_embed_vec, \
              patch('src.service_rag.legal_search.get_embedding') as mock_embed_search, \
-             patch('src.service_rag.legal_vectorizer.VectorStore') as mock_vector_store_class:
+             patch('src.service_rag.legal_vectorizer.get_vector_store') as mock_vector_store_factory, \
+             patch('src.service_rag.legal_search.get_vector_store') as mock_search_store_factory:
 
             mock_embed_vec.return_value = [0.1] * 768
             mock_embed_search.return_value = [0.1] * 768
 
             mock_vector_store = MagicMock()
-            mock_vector_store_class.return_value = mock_vector_store
+            mock_vector_store_factory.return_value = mock_vector_store
+            mock_search_store_factory.return_value = mock_vector_store
 
             stored_vectors = []
 
-            def mock_add(chunk_id, embedding, metadata):
+            def mock_add(text, embedding, metadata):
+                chunk_id = f"chunk_{len(stored_vectors)}"
                 stored_vectors.append({
                     "id": chunk_id,
                     "embedding": embedding,
                     "metadata": metadata
                 })
+                return chunk_id
 
-            mock_vector_store.add.side_effect = mock_add
+            mock_vector_store.add_evidence.side_effect = mock_add
 
             def mock_search(query_embedding, top_k=5):
                 # Return all stored vectors for filtering
@@ -199,16 +203,13 @@ class TestRAGPipelineE2E:
             ingester.ingest_from_file(str(json_file))
 
             # Search with court filter
-            with patch('src.service_rag.legal_search.VectorStore') as mock_search_store:
-                mock_search_store.return_value = mock_vector_store
+            search_engine = LegalSearchEngine()
+            results = search_engine.search_cases("이혼", top_k=5, court="대법원")
 
-                search_engine = LegalSearchEngine()
-                results = search_engine.search_cases("이혼", top_k=5, court="대법원")
-
-                # 대법원 판례만 반환되어야 함
-                for r in results:
-                    if r.metadata.get("court"):
-                        assert r.metadata["court"] == "대법원"
+            # 대법원 판례만 반환되어야 함
+            for r in results:
+                if r.metadata.get("court"):
+                    assert r.metadata["court"] == "대법원"
 
     def test_e2e_search_by_category_filter(self, sample_precedent_json, tmp_path):
         """
@@ -228,24 +229,28 @@ class TestRAGPipelineE2E:
 
         with patch('src.service_rag.legal_vectorizer.get_embedding') as mock_embed_vec, \
              patch('src.service_rag.legal_search.get_embedding') as mock_embed_search, \
-             patch('src.service_rag.legal_vectorizer.VectorStore') as mock_vector_store_class:
+             patch('src.service_rag.legal_vectorizer.get_vector_store') as mock_vector_store_factory, \
+             patch('src.service_rag.legal_search.get_vector_store') as mock_search_store_factory:
 
             mock_embed_vec.return_value = [0.1] * 768
             mock_embed_search.return_value = [0.1] * 768
 
             mock_vector_store = MagicMock()
-            mock_vector_store_class.return_value = mock_vector_store
+            mock_vector_store_factory.return_value = mock_vector_store
+            mock_search_store_factory.return_value = mock_vector_store
 
             stored_vectors = []
 
-            def mock_add(chunk_id, embedding, metadata):
+            def mock_add(text, embedding, metadata):
+                chunk_id = f"chunk_{len(stored_vectors)}"
                 stored_vectors.append({
                     "id": chunk_id,
                     "embedding": embedding,
                     "metadata": metadata
                 })
+                return chunk_id
 
-            mock_vector_store.add.side_effect = mock_add
+            mock_vector_store.add_evidence.side_effect = mock_add
 
             def mock_search(query_embedding, top_k=5):
                 results = []
@@ -264,16 +269,13 @@ class TestRAGPipelineE2E:
             ingester.ingest_from_file(str(json_file))
 
             # Search with category filter
-            with patch('src.service_rag.legal_search.VectorStore') as mock_search_store:
-                mock_search_store.return_value = mock_vector_store
+            search_engine = LegalSearchEngine()
+            results = search_engine.search_cases("재산분할", top_k=5, category="가사")
 
-                search_engine = LegalSearchEngine()
-                results = search_engine.search_cases("재산분할", top_k=5, category="가사")
-
-                # 카테고리 필터 적용 검증
-                for r in results:
-                    if r.metadata.get("category"):
-                        assert r.metadata["category"] == "가사"
+            # 카테고리 필터 적용 검증
+            for r in results:
+                if r.metadata.get("category"):
+                    assert r.metadata["category"] == "가사"
 
     def test_e2e_parser_to_vectorizer_integration(self, sample_precedent_json):
         """
@@ -290,12 +292,12 @@ class TestRAGPipelineE2E:
         parser = CaseLawParser()
 
         with patch('src.service_rag.legal_vectorizer.get_embedding') as mock_embed, \
-             patch('src.service_rag.legal_vectorizer.VectorStore') as mock_vector_store_class:
+             patch('src.service_rag.legal_vectorizer.get_vector_store') as mock_vector_store_factory:
 
             mock_embed.return_value = [0.1] * 768
 
             mock_vector_store = MagicMock()
-            mock_vector_store_class.return_value = mock_vector_store
+            mock_vector_store_factory.return_value = mock_vector_store
 
             captured_metadata = {}
 
