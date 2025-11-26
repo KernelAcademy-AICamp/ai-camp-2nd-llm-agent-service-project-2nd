@@ -188,3 +188,4 @@ docs/guides/claude.md
 
 .agent/
 *.pdf
+.serena/
