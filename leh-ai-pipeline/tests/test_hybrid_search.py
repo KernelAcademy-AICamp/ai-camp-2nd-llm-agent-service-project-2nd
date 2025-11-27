@@ -214,3 +214,131 @@ class TestEdgeCases:
 
         with pytest.raises(ValueError, match="Empty query"):
             engine.search("", case_id="case_001")
+
+
+class TestSearchWithWeights:
+    """Test weighted hybrid search"""
+
+    @patch('src.user_rag.hybrid_search.SearchEngine')
+    @patch('src.user_rag.hybrid_search.LegalSearchEngine')
+    def test_search_with_weights_applies_evidence_weight(self, mock_legal_search, mock_evidence_search):
+        """증거 가중치 적용 테스트"""
+        mock_evidence_instance = MagicMock()
+        mock_evidence_search.return_value = mock_evidence_instance
+        mock_evidence_instance.search.return_value = [
+            Mock(
+                chunk_id="e1",
+                content="증거1",
+                distance=0.1,
+                sender="A",
+                timestamp=None,
+                case_id="case_001",
+                metadata={}
+            )
+        ]
+
+        mock_legal_instance = MagicMock()
+        mock_legal_search.return_value = mock_legal_instance
+        mock_legal_instance.search.return_value = []
+
+        engine = HybridSearchEngine()
+        results = engine.search_with_weights(
+            "test",
+            case_id="case_001",
+            evidence_weight=0.8,
+            legal_weight=0.2
+        )
+
+        assert len(results) > 0
+        # 가중치가 적용되어야 함
+        assert results[0].relevance_score is not None
+
+    @patch('src.user_rag.hybrid_search.SearchEngine')
+    @patch('src.user_rag.hybrid_search.LegalSearchEngine')
+    def test_search_with_weights_applies_legal_weight(self, mock_legal_search, mock_evidence_search):
+        """법률 가중치 적용 테스트"""
+        mock_evidence_instance = MagicMock()
+        mock_evidence_search.return_value = mock_evidence_instance
+        mock_evidence_instance.search.return_value = []
+
+        mock_legal_instance = MagicMock()
+        mock_legal_search.return_value = mock_legal_instance
+        mock_legal_instance.search.return_value = [
+            Mock(
+                chunk_id="l1",
+                doc_type="statute",
+                content="법령1",
+                distance=0.1,
+                metadata={}
+            )
+        ]
+
+        engine = HybridSearchEngine()
+        results = engine.search_with_weights(
+            "test",
+            case_id="case_001",
+            evidence_weight=0.6,
+            legal_weight=0.4
+        )
+
+        assert len(results) > 0
+        # 법률 결과에 legal_weight가 적용됨
+        assert results[0].source == "legal"
+
+    @patch('src.user_rag.hybrid_search.SearchEngine')
+    @patch('src.user_rag.hybrid_search.LegalSearchEngine')
+    def test_search_with_weights_sorts_by_relevance(self, mock_legal_search, mock_evidence_search):
+        """가중치 적용 후 relevance_score 정렬 테스트"""
+        mock_evidence_instance = MagicMock()
+        mock_evidence_search.return_value = mock_evidence_instance
+        mock_evidence_instance.search.return_value = [
+            Mock(
+                chunk_id="e1",
+                content="증거1",
+                distance=0.3,  # 낮은 유사도
+                sender="A",
+                timestamp=None,
+                case_id="case_001",
+                metadata={}
+            )
+        ]
+
+        mock_legal_instance = MagicMock()
+        mock_legal_search.return_value = mock_legal_instance
+        mock_legal_instance.search.return_value = [
+            Mock(
+                chunk_id="l1",
+                doc_type="statute",
+                content="법령1",
+                distance=0.1,  # 높은 유사도
+                metadata={}
+            )
+        ]
+
+        engine = HybridSearchEngine()
+        results = engine.search_with_weights(
+            "test",
+            case_id="case_001",
+            evidence_weight=0.5,
+            legal_weight=0.5
+        )
+
+        # relevance_score 기준 내림차순 정렬 확인
+        if len(results) > 1:
+            assert results[0].relevance_score >= results[1].relevance_score
+
+
+class TestInitializationWithStorageManager:
+    """Test initialization with storage_manager"""
+
+    @patch('src.user_rag.hybrid_search.SearchEngine')
+    @patch('src.user_rag.hybrid_search.LegalSearchEngine')
+    def test_init_with_storage_manager(self, mock_legal_search, mock_evidence_search):
+        """storage_manager로 초기화 테스트"""
+        mock_storage_manager = MagicMock()
+
+        engine = HybridSearchEngine(storage_manager=mock_storage_manager)
+
+        # SearchEngine이 storage_manager와 함께 호출되어야 함
+        mock_evidence_search.assert_called_once_with(mock_storage_manager)
+        assert engine is not None

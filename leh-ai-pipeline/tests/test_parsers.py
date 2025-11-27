@@ -304,3 +304,47 @@ class TestTextParser:
         messages = parser.parse("tests/fixtures/text_sample.txt")
 
         assert len(messages) > 0
+
+    def test_parse_pdf_file(self, parser):
+        """PDF 파일 파싱 테스트"""
+        messages = parser.parse("tests/fixtures/pdf_sample.pdf")
+
+        assert isinstance(messages, list)
+        assert len(messages) == 1
+        assert isinstance(messages[0], Message)
+
+    def test_parse_pdf_content(self, parser):
+        """PDF 내용 파싱 테스트"""
+        messages = parser.parse("tests/fixtures/pdf_sample.pdf")
+
+        content = messages[0].content
+
+        # PDF 텍스트가 추출되었는지 확인
+        assert isinstance(content, str)
+        assert len(content) > 0  # 내용이 추출되어야 함
+
+    def test_parse_pdf_metadata(self, parser):
+        """PDF 메타데이터 확인"""
+        messages = parser.parse("tests/fixtures/pdf_sample.pdf")
+
+        metadata = messages[0].metadata
+
+        assert metadata.get("source_type") == "text"
+        assert metadata.get("extension") == ".pdf"
+        assert "pdf_sample.pdf" in metadata.get("filename", "")
+
+    def test_parse_unsupported_format_raises_error(self, parser):
+        """지원하지 않는 파일 형식은 에러 발생"""
+        import tempfile
+        import os
+
+        # 임시 .xyz 파일 생성
+        with tempfile.NamedTemporaryFile(suffix=".xyz", delete=False) as f:
+            f.write(b"test content")
+            temp_path = f.name
+
+        try:
+            with pytest.raises(ValueError, match="Unsupported file format"):
+                parser.parse(temp_path)
+        finally:
+            os.unlink(temp_path)
