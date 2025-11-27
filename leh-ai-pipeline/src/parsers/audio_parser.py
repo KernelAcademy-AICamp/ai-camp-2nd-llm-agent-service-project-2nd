@@ -82,7 +82,17 @@ class AudioParser(BaseParser):
             message = Message(
                 content=text,
                 sender=default_sender,  # TODO: Speaker diarization 추가 가능
-                timestamp=segment_time
+                timestamp=segment_time,
+                metadata={
+                    "source_type": "audio",
+                    "filename": Path(file_path).name,
+                    "filepath": str(Path(file_path).absolute()),
+                    "parser_class": self.__class__.__name__,
+                    "parsed_at": datetime.now().isoformat(),
+                    "segment_start": segment.get('start', 0),
+                    "segment_end": segment.get('end', 0),
+                    "segment_id": segment.get('id', 0)
+                }
             )
             messages.append(message)
 

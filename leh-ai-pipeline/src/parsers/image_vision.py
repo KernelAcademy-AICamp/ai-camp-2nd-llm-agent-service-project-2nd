@@ -108,6 +108,25 @@ class ImageVisionParser(BaseParser):
             timestamp=default_timestamp
         )
 
+        # 기본 메타데이터 추가 (Vision 분석 없을 때)
+        base_metadata = {
+            "source_type": "image",
+            "filename": Path(file_path).name,
+            "filepath": str(Path(file_path).absolute()),
+            "parser_class": self.__class__.__name__,
+            "parsed_at": datetime.now().isoformat(),
+            "vision_enabled": False
+        }
+
+        # 모든 메시지에 기본 메타데이터 추가
+        for i, msg in enumerate(messages):
+            messages[i] = Message(
+                content=msg.content,
+                sender=msg.sender,
+                timestamp=msg.timestamp,
+                metadata=base_metadata.copy()
+            )
+
         # Vision 분석 추가 (옵션)
         if include_vision:
             vision_analysis = self.analyze_vision(file_path)
@@ -119,7 +138,17 @@ class ImageVisionParser(BaseParser):
                 messages[0] = Message(
                     content=enhanced_content,
                     sender=first_msg.sender,
-                    timestamp=first_msg.timestamp
+                    timestamp=first_msg.timestamp,
+                    metadata={
+                        "source_type": "image",
+                        "filename": Path(file_path).name,
+                        "filepath": str(Path(file_path).absolute()),
+                        "parser_class": self.__class__.__name__,
+                        "parsed_at": datetime.now().isoformat(),
+                        "vision_enabled": True,
+                        "vision_emotions": vision_analysis.emotions,
+                        "vision_confidence": vision_analysis.confidence
+                    }
                 )
 
         return messages
@@ -188,9 +217,11 @@ class ImageVisionParser(BaseParser):
             # 응답 파싱
             content = response.choices[0].message.content
 
-            # JSON 파싱
+            # JSON 파싱 (마크다운 코드블록 처리)
+            json_content = self._extract_json_from_response(content)
+
             try:
-                data = json.loads(content)
+                data = json.loads(json_content)
                 return VisionAnalysis(
                     emotions=data.get("emotions", []),
                     context=data.get("context", ""),
@@ -209,6 +240,34 @@ class ImageVisionParser(BaseParser):
         except Exception as e:
             # API 에러 발생 시 예외 발생
             raise Exception(f"GPT-4o Vision API error: {e}")
+
+    def _extract_json_from_response(self, content: str) -> str:
+        """
+        GPT 응답에서 JSON 추출 (마크다운 코드블록 처리)
+
+        GPT-4o가 때때로 ```json ... ``` 형식으로 응답하므로
+        마크다운 코드블록을 제거하고 순수 JSON을 추출
+
+        Args:
+            content: GPT 응답 원본
+
+        Returns:
+            str: 추출된 JSON 문자열
+        """
+        import re
+
+        if not content:
+            return "{}"
+
+        # 마크다운 코드블록 패턴 (```json ... ``` 또는 ``` ... ```)
+        code_block_pattern = r'```(?:json)?\s*([\s\S]*?)```'
+        match = re.search(code_block_pattern, content)
+
+        if match:
+            return match.group(1).strip()
+
+        # 코드블록이 없으면 원본 반환 (이미 JSON일 수 있음)
+        return content.strip()
 
     def _preprocess_image(self, file_path: str) -> Image.Image:
         """

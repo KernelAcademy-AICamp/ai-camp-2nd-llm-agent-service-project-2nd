@@ -80,6 +80,25 @@ class ImageOCRParser(BaseParser):
             timestamp=default_timestamp
         )
 
+        # 메타데이터 추가
+        base_metadata = {
+            "source_type": "image",
+            "filename": Path(file_path).name,
+            "filepath": str(Path(file_path).absolute()),
+            "parser_class": self.__class__.__name__,
+            "parsed_at": datetime.now().isoformat(),
+            "ocr_engine": self.ocr_engine
+        }
+
+        # 모든 메시지에 메타데이터 추가
+        for i, msg in enumerate(messages):
+            messages[i] = Message(
+                content=msg.content,
+                sender=msg.sender,
+                timestamp=msg.timestamp,
+                metadata=base_metadata.copy()
+            )
+
         return messages
 
     def _preprocess_image(self, file_path: str) -> Image.Image:

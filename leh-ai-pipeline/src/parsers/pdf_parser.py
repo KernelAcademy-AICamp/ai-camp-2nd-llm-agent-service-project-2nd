@@ -73,7 +73,16 @@ class PDFParser(BaseParser):
                 message = Message(
                     content=content,
                     sender=default_sender,
-                    timestamp=default_timestamp
+                    timestamp=default_timestamp,
+                    metadata={
+                        "source_type": "pdf",
+                        "filename": Path(file_path).name,
+                        "filepath": str(Path(file_path).absolute()),
+                        "parser_class": self.__class__.__name__,
+                        "parsed_at": datetime.now().isoformat(),
+                        "page_number": page_num,
+                        "total_pages": len(reader.pages)
+                    }
                 )
                 messages.append(message)
 
