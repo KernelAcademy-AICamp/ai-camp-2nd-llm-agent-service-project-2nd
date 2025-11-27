@@ -80,6 +80,7 @@ class Case(Base):
     status = Column(SQLEnum(CaseStatus), nullable=False, default=CaseStatus.ACTIVE)
     created_by = Column(String, ForeignKey("users.id"), nullable=False)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
 
     # Relationships
     owner = relationship("User", back_populates="created_cases", foreign_keys=[created_by])
