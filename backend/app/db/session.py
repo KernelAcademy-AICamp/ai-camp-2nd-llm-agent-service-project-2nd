@@ -36,10 +36,19 @@ def init_db():
 
         logger.info(f"Initializing database with URL: {database_url.split('@')[0]}@...")
 
+        # PostgreSQL connection args with timeout
+        connect_args = {}
+        if "sqlite" in database_url:
+            connect_args = {"check_same_thread": False}
+        else:
+            # PostgreSQL: add connection timeout (5 seconds)
+            connect_args = {"connect_timeout": 5}
+
         engine = create_engine(
             database_url,
-            connect_args={"check_same_thread": False} if "sqlite" in database_url else {},
+            connect_args=connect_args,
             pool_pre_ping=True,
+            pool_timeout=10,  # Wait max 10s for connection from pool
             echo=settings.APP_DEBUG
         )
 

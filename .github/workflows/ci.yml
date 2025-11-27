@@ -16,6 +16,7 @@ jobs:
   frontend:
     name: Frontend (Lint, Test, Build)
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     defaults:
       run:
         working-directory: frontend
@@ -57,6 +58,7 @@ jobs:
   backend:
     name: Backend (Lint, Test)
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     defaults:
       run:
         working-directory: backend
@@ -97,6 +99,7 @@ jobs:
         run: ruff check .
 
       - name: Run pytest
+        timeout-minutes: 5
         env:
           DATABASE_URL: postgresql://test_user:test_pass@localhost:5432/test_db
           JWT_SECRET_KEY: test_secret_key_for_ci_pipeline_32chars
@@ -117,6 +120,7 @@ jobs:
   ai-worker:
     name: AI Worker (Lint, Test)
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     defaults:
       run:
         working-directory: ai_worker
