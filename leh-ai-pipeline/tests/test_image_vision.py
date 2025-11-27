@@ -331,5 +331,116 @@ class TestEdgeCases(unittest.TestCase):
         self.assertIsInstance(analysis, VisionAnalysis)
 
 
+import pytest
+import os
+import tempfile
+
+
+class TestImageVisionRealAPI:
+    """
+    ImageVisionParser Real API 테스트 (GPT-4o Vision)
+
+    Given: 실제 이미지 파일
+    When: Mock 없이 GPT-4o Vision API 호출
+    Then: 실제 감정, 맥락, 분위기 분석 결과 반환
+
+    NOTE: OPENAI_API_KEY 환경변수 필요
+    """
+
+    @pytest.fixture
+    def test_image_path(self):
+        """테스트용 이미지 생성 (PIL)"""
+        from PIL import Image, ImageDraw
+
+        # 임시 이미지 파일 생성
+        with tempfile.NamedTemporaryFile(suffix='.jpg', delete=False) as f:
+            # 간단한 테스트 이미지 생성 (사람 얼굴 아이콘)
+            img = Image.new('RGB', (200, 200), color='white')
+            draw = ImageDraw.Draw(img)
+
+            # 얼굴 윤곽
+            draw.ellipse([40, 40, 160, 160], outline='black', width=2)
+            # 눈
+            draw.ellipse([70, 70, 90, 90], fill='black')
+            draw.ellipse([110, 70, 130, 90], fill='black')
+            # 입 (웃는 표정)
+            draw.arc([70, 100, 130, 140], 0, 180, fill='black', width=2)
+
+            img.save(f.name, 'JPEG')
+            yield f.name
+
+        # 테스트 후 정리
+        if os.path.exists(f.name):
+            os.unlink(f.name)
+
+    @pytest.mark.real
+    @pytest.mark.skipif(
+        not os.getenv("OPENAI_API_KEY"),
+        reason="OPENAI_API_KEY 환경변수가 설정되지 않음"
+    )
+    def test_real_vision_analysis_returns_valid_result(self, test_image_path):
+        """
+        Given: 실제 이미지 파일 (간단한 얼굴 그림)
+        When: GPT-4o Vision API로 분석 (Mock 없이)
+        Then: VisionAnalysis 객체 반환 (emotions, context, atmosphere 포함)
+        """
+        parser = ImageVisionParser()
+
+        # Real API 호출 (Mock 없음!)
+        analysis = parser.analyze_vision(test_image_path)
+
+        # 기본 검증
+        assert analysis is not None
+        assert isinstance(analysis, VisionAnalysis)
+
+        # 분석 결과 검증
+        assert analysis.context, "context가 비어있으면 안 됨"
+        assert analysis.confidence > 0, "confidence가 0보다 커야 함"
+
+        print(f"\n=== Real Vision API Result ===")
+        print(f"Emotions: {analysis.emotions}")
+        print(f"Context: {analysis.context}")
+        print(f"Atmosphere: {analysis.atmosphere}")
+        print(f"Confidence: {analysis.confidence}")
+
+    @pytest.mark.real
+    @pytest.mark.skipif(
+        not os.getenv("OPENAI_API_KEY"),
+        reason="OPENAI_API_KEY 환경변수가 설정되지 않음"
+    )
+    def test_real_vision_analysis_emotions_list(self, test_image_path):
+        """
+        Given: 실제 이미지 파일
+        When: GPT-4o Vision API로 분석
+        Then: emotions가 리스트 형태로 반환
+        """
+        parser = ImageVisionParser()
+
+        analysis = parser.analyze_vision(test_image_path)
+
+        # emotions 검증
+        assert isinstance(analysis.emotions, list)
+        # GPT-4o는 이미지에서 감정을 추출해야 함 (빈 리스트도 유효)
+        print(f"\nDetected emotions: {analysis.emotions}")
+
+    @pytest.mark.real
+    @pytest.mark.skipif(
+        not os.getenv("OPENAI_API_KEY"),
+        reason="OPENAI_API_KEY 환경변수가 설정되지 않음"
+    )
+    def test_real_vision_analysis_confidence_range(self, test_image_path):
+        """
+        Given: 실제 이미지 파일
+        When: GPT-4o Vision API로 분석
+        Then: confidence가 0.0 ~ 1.0 범위
+        """
+        parser = ImageVisionParser()
+
+        analysis = parser.analyze_vision(test_image_path)
+
+        # confidence 범위 검증
+        assert 0.0 <= analysis.confidence <= 1.0
+
+
 if __name__ == '__main__':
     unittest.main()
