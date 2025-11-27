@@ -132,6 +132,39 @@
 - ✅ E2E 통합 테스트: 5 passing (Phase 7)
 - ✅ 전체 파이프라인: S3 Event → 파싱 → 메타데이터 저장 → 벡터 저장 → Article 840 태깅
 
+### 2.7 독립 AI 파이프라인 (leh-ai-pipeline) - 백엔드 통합 전 테스트용
+
+> **목적**: 백엔드 완성 전까지 AI 워크플로우를 독립적으로 테스트
+> **위치**: `leh-ai-pipeline/`
+> **통합 계획**: 백엔드 완성 후 ai_worker/와 통합
+
+#### 완료된 항목:
+- [x] KakaoTalkParser - 한국어 날짜/시간, 멀티라인 메시지, 형식2 지원
+- [x] ImageVisionParser - GPT-4o Vision (감정/맥락 분석)
+- [x] ImageOCRParser - Tesseract (한글+영어)
+- [x] AudioParser - Whisper STT
+- [x] VideoParser - ffmpeg → AudioParser
+- [x] PDFParser - PyPDF2
+- [x] TextParser - 자동 형식 감지
+- [x] EvidenceScorer - 증거 가치 점수 (0-10)
+- [x] Article840Tagger - 민법 840조 자동 태깅 (7개 카테고리)
+- [x] RiskAnalyzer - 케이스 리스크 평가
+- [x] AnalysisEngine - 통합 분석 엔진
+- [x] VectorStore - ChromaDB/Qdrant 벡터 저장
+- [x] MetadataStore - SQLite/DynamoDB 메타데이터
+- [x] StorageManager - 통합 저장소 관리
+- [x] HybridSearchEngine - 하이브리드 검색 (증거+법률)
+- [x] Case Isolation - 사건별 데이터 격리
+- [x] EvidenceSummarizer - LLM 기반 요약
+
+#### 미완료 (백엔드 통합 후):
+- [ ] DraftGenerator - 초안 생성
+- [ ] LegalDocumentGenerator - 법적 문서 생성
+- [ ] TimelineGenerator - 타임라인 재구성
+- [ ] 실제 DynamoDB 연동 테스트
+- [ ] 실제 OpenSearch 연동 테스트
+- [ ] Lambda 프로덕션 배포
+
 ---
 
 ## 3. Frontend (P, React + Tailwind) — UX & UI 디자인 반영
@@ -1060,7 +1093,84 @@ frontend/e2e/
 
 ---
 
-## 9. 메타 규칙
+## 9. 현재 스프린트 (2025-11-27 업데이트)
+
+### 9.1 오늘 완료된 작업 ✅
+
+| 이슈 | 제목 | 상태 | 내용 |
+|------|------|------|------|
+| #6 | handler.py 핵심 버그 수정 | ✅ 완료 | case_id 추출, /tmp 정리 |
+| #12 | Parser 메타데이터 구조 표준화 | ✅ 완료 | 모든 파서 표준화 |
+| #16 | DLQ 및 에러 핸들링 | ✅ 완료 | errors.py, dlq.py 생성 |
+| #18 | PostgreSQL 로컬 설정 | 🔄 진행중 | docker-compose 설정 완료, 테스트 필요 |
+
+### 9.2 남은 GitHub 이슈 (우선순위순)
+
+#### 🔴 Critical / High Priority
+
+| 이슈 | 제목 | 담당 | 예상 작업 |
+|------|------|------|----------|
+| #18 | PostgreSQL 로컬 설정 | L | E2E 테스트 실행하여 검증 |
+| #14 | 테스트 커버리지 확대 | All | 통합 테스트 구현 |
+| #13 | OpenSearch 인덱스 삭제 | H | case_service.py 수정 |
+| #11 | DynamoDB/OpenSearch 연동 | L | **주의: OpenSearch → Qdrant 변경됨** |
+
+#### 🟡 Medium Priority
+
+| 이슈 | 제목 | 담당 | 예상 작업 |
+|------|------|------|----------|
+| #17 | 타입 정의 동기화 | H/P | Frontend/Backend 타입 일치 |
+| #15 | S3 Presigned URL 업로드 | P | Frontend 업로드 UI 구현 |
+
+### 9.3 기술 스택 변경 사항 ⚠️
+
+**중요: 문서 확인 필수 (CLAUDE.md 규칙)**
+- **Vector DB**: OpenSearch → **Qdrant** 로 변경됨
+- #11 작업 시 `opensearch_store.py` 대신 Qdrant 연동 필요
+- 관련 문서: `docs/rag_architecture_spec.md`, `docs/rag_decisions_summary.md`
+
+### 9.4 즉시 실행 필요 작업
+
+```bash
+# 1. PostgreSQL E2E 테스트 (Issue #18 완료)
+docker-compose up -d postgres
+cd frontend && npm run test:e2e
+
+# 2. AI Worker 테스트
+cd leh-ai-pipeline && python -m pytest tests/ -v
+
+# 3. Backend 테스트
+cd backend && python -m pytest tests/ -v
+```
+
+### 9.5 다음 스프린트 계획
+
+#### Phase 1: 테스트 환경 안정화
+- [ ] PostgreSQL E2E 테스트 통과 확인
+- [ ] Backend 67개 테스트 통과 확인
+- [ ] AI Worker 테스트 통과 확인
+
+#### Phase 2: 벡터 DB 마이그레이션
+- [ ] Qdrant 연동 구현 (OpenSearch 대체)
+- [ ] `qdrant_store.py` 생성
+- [ ] 기존 `opensearch_store.py` 제거 또는 업데이트
+
+#### Phase 3: 통합 테스트
+- [ ] S3 → Lambda → DynamoDB → Qdrant 전체 파이프라인 테스트
+- [ ] Frontend E2E 테스트 21개 통과
+
+### 9.6 환경 설정 현황
+
+| 항목 | 상태 | 포트 | 비고 |
+|------|------|------|------|
+| PostgreSQL (leh-postgres) | ✅ Running | 5434 | docker-compose |
+| .env 파일 | ✅ 생성됨 | - | DB, JWT 설정 포함 |
+| Backend | ⏳ 대기 | 8000 | 테스트 필요 |
+| Frontend | ⏳ 대기 | 3000/5173 | 테스트 필요 |
+
+---
+
+## 10. 메타 규칙
 
 - 이 문서의 테스트 항목 외에는 **AI가 임의로 테스트를 추가하지 않는다.**
 - `"go"` 입력 시:
