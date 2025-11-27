@@ -1,0 +1,15 @@
+[run]
+source = src
+omit =
+    */tests/*
+    */__init__.py
+    */dynamodb_store.py
+    */opensearch_store.py
+
+[report]
+precision = 2
+show_missing = True
+exclude_lines =
+    pragma: no cover
+    def __repr__
+    raise NotImplementedError
