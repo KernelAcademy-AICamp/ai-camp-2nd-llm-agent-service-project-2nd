@@ -14,7 +14,8 @@ def pytest_configure(config):
     Load .env file for local integration tests (not in CI)
     """
     # Skip loading .env in CI environment (CI sets its own env vars)
-    if os.environ.get("TESTING") == "true":
+    # Also skip if DATABASE_URL is already set (indicates CI or pre-configured env)
+    if os.environ.get("TESTING") == "true" or os.environ.get("DATABASE_URL"):
         return
 
     # Load .env from backend directory for local integration tests

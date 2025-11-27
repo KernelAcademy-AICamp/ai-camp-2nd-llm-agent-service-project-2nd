@@ -141,4 +141,10 @@ class Settings(BaseSettings):
 # ============================================
 # Global settings instance
 # ============================================
-settings = Settings()
+import os
+
+# In CI/testing environment, don't load .env file (use env vars directly)
+if os.environ.get("TESTING") == "true":
+    settings = Settings(_env_file=None)
+else:
+    settings = Settings()
