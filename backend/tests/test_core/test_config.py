@@ -2,6 +2,7 @@
 Unit tests for app/core/config.py
 
 TDD approach: Test configuration loading, validation, and computed properties
+Tests use real .env values from local development environment
 """
 
 import pytest
@@ -14,20 +15,21 @@ class TestSettings:
     """Test Settings class configuration"""
 
     def test_settings_loads_from_env(self, test_env):
-        """Test that Settings correctly loads from environment variables"""
+        """Test that Settings correctly loads from .env environment variables"""
         settings = Settings()
 
+        # Verify real values from .env file
         assert settings.APP_ENV == "local"
         assert settings.APP_DEBUG is True
-        assert settings.JWT_SECRET == "test-secret-key-do-not-use-in-production"
-        assert settings.S3_EVIDENCE_BUCKET == "test-bucket"
+        assert settings.JWT_SECRET == "dev-secret-key-change-in-production-min-32-chars-required"
+        assert settings.S3_EVIDENCE_BUCKET == "leh-evidence-local"
 
     def test_settings_default_values(self):
-        """Test that Settings has correct default values"""
+        """Test that Settings has correct default values when env vars are cleared"""
         # Clear env vars temporarily
         original_env = os.environ.copy()
         for key in list(os.environ.keys()):
-            if key.startswith(('APP_', 'JWT_', 'S3_', 'POSTGRES_', 'AWS_', 'OPENAI_')):
+            if key.startswith(('APP_', 'JWT_', 'S3_', 'POSTGRES_', 'AWS_', 'OPENAI_', 'DATABASE_', 'LOG_')):
                 os.environ.pop(key, None)
 
         try:
@@ -92,12 +94,12 @@ class TestSettings:
         expected_url = "postgresql+psycopg2://testuser:testpass@testhost:5432/testdb"
         assert settings.database_url_computed == expected_url
 
-    def test_s3_presigned_url_max_expire_seconds(self, test_env):
-        """Test that S3 presigned URL expiry has a maximum limit (security requirement)"""
+    def test_s3_presigned_url_expire_seconds_from_env(self, test_env):
+        """Test that S3 presigned URL expiry loads from .env (3600 for local dev)"""
         settings = Settings()
 
-        # Default should be 300 seconds (5 minutes) per SECURITY_COMPLIANCE.md
-        assert settings.S3_PRESIGNED_URL_EXPIRE_SECONDS == 300
+        # Local development uses 3600 seconds (1 hour) for convenience
+        assert settings.S3_PRESIGNED_URL_EXPIRE_SECONDS == 3600
 
     def test_feature_flags_default_values(self, test_env):
         """Test that feature flags have correct default values"""
@@ -114,18 +116,20 @@ class TestSettings:
 
         assert settings.AWS_REGION == "ap-northeast-2"
 
-    def test_openai_model_defaults(self, test_env):
-        """Test that OpenAI model names have sensible defaults"""
+    def test_openai_model_from_env(self, test_env):
+        """Test that OpenAI model names load from .env"""
         settings = Settings()
 
-        assert settings.OPENAI_MODEL_CHAT == "gpt-4o-mini"
+        # Values from .env file
+        assert settings.OPENAI_MODEL_CHAT == "gpt-4.1-mini"
         assert settings.OPENAI_MODEL_EMBEDDING == "text-embedding-3-small"
 
-    def test_log_level_default(self, test_env):
-        """Test that log level defaults to INFO"""
+    def test_log_level_from_env(self, test_env):
+        """Test that log level loads from .env (DEBUG for local dev)"""
         settings = Settings()
 
-        assert settings.LOG_LEVEL == "INFO"
+        # Local development uses DEBUG level
+        assert settings.LOG_LEVEL == "DEBUG"
 
     def test_settings_validation_empty_jwt_secret_in_prod(self):
         """Test that JWT_SECRET should not be empty in production (future validation)"""

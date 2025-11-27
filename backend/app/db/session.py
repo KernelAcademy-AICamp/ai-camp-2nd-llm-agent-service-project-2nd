@@ -17,8 +17,6 @@ logger = logging.getLogger(__name__)
 # ============================================
 
 # Create engine with connection pooling
-# TODO: Implement actual database connection when RDS is ready
-# For now, we'll use an in-memory SQLite for testing
 engine = None
 SessionLocal = None
 
@@ -31,15 +29,24 @@ def init_db():
     global engine, SessionLocal
 
     try:
-        # Use SQLite for local development/testing
-        # In production, use settings.database_url_computed for PostgreSQL
-        database_url = "sqlite:///./leh_local.db"
+        # Use DATABASE_URL from environment (PostgreSQL)
+        # Falls back to SQLite only if not configured
+        database_url = settings.database_url_computed
+        if not database_url:
+            database_url = "sqlite:///./leh_local.db"
+            logger.warning("DATABASE_URL not set, using SQLite fallback")
 
-        logger.info(f"Initializing database with URL: {database_url}")
+        # Log URL without credentials
+        log_url = database_url.split('@')[-1] if '@' in database_url else database_url
+        logger.info(f"Initializing database: {log_url}")
+
+        connect_args = {}
+        if "sqlite" in database_url:
+            connect_args = {"check_same_thread": False}
 
         engine = create_engine(
             database_url,
-            connect_args={"check_same_thread": False} if "sqlite" in database_url else {},
+            connect_args=connect_args,
             pool_pre_ping=True,
             echo=settings.APP_DEBUG
         )
