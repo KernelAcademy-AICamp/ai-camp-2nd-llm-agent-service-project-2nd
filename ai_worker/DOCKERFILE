@@ -1,15 +1,27 @@
 # ai_worker/Dockerfile
+# 로컬 개발용 Dockerfile (Lambda 배포 시에는 별도 Dockerfile.lambda 사용)
 
-# AWS Lambda용 Python 공식 이미지를 사용 (RIC 포함)
-FROM public.ecr.aws/lambda/python:3.14
+FROM python:3.12-slim
 
-# 의존성 파일 복사 및 설치
-COPY requirements.txt ${LAMBDA_TASK_ROOT}
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+
+WORKDIR /app
+
+# 시스템 의존성 설치 (ffmpeg for audio/video, tesseract for OCR)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ffmpeg \
+    tesseract-ocr \
+    tesseract-ocr-kor \
+ && apt-get clean \
+ && rm -rf /var/lib/apt/lists/*
+
+# Python 의존성 설치
+COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # 소스 코드 복사
-# (핸들러 파일이 루트에 위치한다고 가정)
-COPY . ${LAMBDA_TASK_ROOT}
+COPY . .
 
-# 실행 명령: handler.py 파일의 handle 함수 실행
-CMD [ "handler.handle" ]
+# 기본 명령 (로컬 테스트용 - 실제로는 docker-compose에서 override)
+CMD ["python", "-c", "print('AI Worker ready. Waiting for tasks...')"]

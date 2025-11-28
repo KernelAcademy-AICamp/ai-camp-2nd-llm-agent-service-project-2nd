@@ -1,16 +1,43 @@
 version: "3.9"
 
 services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: leh-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: leh_user
+      POSTGRES_PASSWORD: leh_password
+      POSTGRES_DB: leh_db
+    ports:
+      - "5434:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U leh_user -d leh_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Backend API (FastAPI)
   backend:
     build: ./backend
     container_name: leh-backend
     restart: always
     env_file:
       - .env
-    # 여기서는 .env에 있는 POSTGRES_HOST / DATABASE_URL 그대로 사용
+    environment:
+      # Docker 내부 통신용 호스트 설정
+      POSTGRES_HOST: postgres
+      DATABASE_URL: postgresql+psycopg2://leh_user:leh_password@postgres:5432/leh_db
     ports:
       - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
 
+  # AI Worker (로컬 테스트용)
   ai_worker:
     build: ./ai_worker
     container_name: leh-ai-worker
@@ -20,4 +47,7 @@ services:
     env_file:
       - .env
     environment:
-      WORKER_ENV: prod
+      WORKER_ENV: local
+
+volumes:
+  postgres_data:
