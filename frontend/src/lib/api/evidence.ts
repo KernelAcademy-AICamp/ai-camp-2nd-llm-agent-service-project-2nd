@@ -30,8 +30,25 @@ export interface EvidenceListResponse {
 
 export interface PresignedUrlResponse {
   upload_url: string;
-  evidence_id: string;
+  evidence_temp_id: string;
   s3_key: string;
+  fields?: Record<string, string>;
+}
+
+export interface UploadCompleteRequest {
+  case_id: string;
+  evidence_temp_id: string;
+  s3_key: string;
+  note?: string;
+}
+
+export interface UploadCompleteResponse {
+  evidence_id: string;
+  case_id: string;
+  filename: string;
+  s3_key: string;
+  status: string;
+  created_at: string;
 }
 
 /**
@@ -79,35 +96,74 @@ export async function getPresignedUploadUrl(
   filename: string,
   contentType: string
 ): Promise<ApiResponse<PresignedUrlResponse>> {
-  return apiRequest<PresignedUrlResponse>(`/cases/${caseId}/evidence/upload-url`, {
+  return apiRequest<PresignedUrlResponse>('/evidence/presigned-url', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ filename, content_type: contentType }),
+    body: JSON.stringify({
+      case_id: caseId,
+      filename,
+      content_type: contentType
+    }),
   });
 }
 
 /**
- * Upload file directly to S3 using presigned URL
+ * Notify backend that S3 upload is complete
+ */
+export async function notifyUploadComplete(
+  request: UploadCompleteRequest
+): Promise<ApiResponse<UploadCompleteResponse>> {
+  return apiRequest<UploadCompleteResponse>('/evidence/upload-complete', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(request),
+  });
+}
+
+export interface UploadProgress {
+  loaded: number;
+  total: number;
+  percent: number;
+}
+
+/**
+ * Upload file directly to S3 using presigned URL with progress tracking
  */
 export async function uploadToS3(
   presignedUrl: string,
-  file: File
+  file: File,
+  onProgress?: (progress: UploadProgress) => void
 ): Promise<boolean> {
-  try {
-    const response = await fetch(presignedUrl, {
-      method: 'PUT',
-      body: file,
-      headers: {
-        'Content-Type': file.type,
-      },
+  return new Promise((resolve) => {
+    const xhr = new XMLHttpRequest();
+
+    xhr.upload.addEventListener('progress', (e) => {
+      if (e.lengthComputable && onProgress) {
+        onProgress({
+          loaded: e.loaded,
+          total: e.total,
+          percent: Math.round((e.loaded / e.total) * 100),
+        });
+      }
     });
-    return response.ok;
-  } catch (error) {
-    console.error('S3 upload error:', error);
-    return false;
-  }
+
+    xhr.addEventListener('load', () => {
+      resolve(xhr.status >= 200 && xhr.status < 300);
+    });
+
+    xhr.addEventListener('error', () => {
+      console.error('S3 upload error');
+      resolve(false);
+    });
+
+    xhr.open('PUT', presignedUrl);
+    xhr.setRequestHeader('Content-Type', file.type);
+    xhr.send(file);
+  });
 }
 
 /**
