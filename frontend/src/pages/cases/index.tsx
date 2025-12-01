@@ -6,53 +6,67 @@ import CaseCard from '@/components/cases/CaseCard';
 import AddCaseModal from '@/components/cases/AddCaseModal';
 import { Case } from '@/types/case';
 import { useAuth } from '@/hooks/useAuth';
+import { getCases, Case as ApiCase } from '@/lib/api/cases';
 
-// Mock Data for MVP
-const MOCK_CASES: Case[] = [
-    {
-        id: '1',
-        title: '김철수 이혼 소송',
-        clientName: '김철수',
-        status: 'open',
-        evidenceCount: 128,
-        draftStatus: 'ready',
-        lastUpdated: '2024-05-20T09:00:00Z',
-    },
-    {
-        id: '2',
-        title: '이영희 재산분할 청구',
-        clientName: '이영희',
-        status: 'open',
-        evidenceCount: 45,
-        draftStatus: 'generating',
-        lastUpdated: '2024-05-19T15:30:00Z',
-    },
-    {
-        id: '3',
-        title: '박민수 양육권 분쟁',
-        clientName: '박민수',
-        status: 'closed',
-        evidenceCount: 12,
-        draftStatus: 'not_started',
-        lastUpdated: '2024-04-10T11:20:00Z',
-    },
-];
+// Helper function to map API response to frontend Case type
+function mapApiCaseToCase(apiCase: ApiCase): Case {
+    return {
+        id: apiCase.id,
+        title: apiCase.title,
+        clientName: apiCase.client_name,
+        status: apiCase.status === 'active' ? 'open' : apiCase.status === 'closed' ? 'closed' : 'open',
+        evidenceCount: apiCase.evidence_count,
+        draftStatus: apiCase.draft_status === 'completed' ? 'ready' :
+                     apiCase.draft_status === 'in_progress' ? 'generating' : 'not_started',
+        lastUpdated: apiCase.updated_at,
+    };
+}
 
 export default function CasesPage() {
     const router = useRouter();
-    const { isAuthenticated, isLoading, logout } = useAuth();
-    const [cases] = useState<Case[]>(MOCK_CASES);
+    const { isAuthenticated, isLoading: isAuthLoading, logout } = useAuth();
+    const [cases, setCases] = useState<Case[]>([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
     // Redirect to login if not authenticated
     useEffect(() => {
-        if (!isLoading && !isAuthenticated) {
+        if (!isAuthLoading && !isAuthenticated) {
             router.replace('/login');
         }
-    }, [isLoading, isAuthenticated, router]);
+    }, [isAuthLoading, isAuthenticated, router]);
 
-    // Show loading while checking auth
-    if (isLoading || !isAuthenticated) {
+    // Fetch cases from API
+    useEffect(() => {
+        async function fetchCases() {
+            if (isAuthLoading || !isAuthenticated) return;
+
+            setIsLoading(true);
+            setError(null);
+
+            try {
+                const response = await getCases();
+                if (response.error) {
+                    setError(response.error);
+                    setCases([]);
+                } else if (response.data) {
+                    const mappedCases = response.data.cases.map(mapApiCaseToCase);
+                    setCases(mappedCases);
+                }
+            } catch (err) {
+                setError('사건 목록을 불러오는데 실패했습니다.');
+                setCases([]);
+            } finally {
+                setIsLoading(false);
+            }
+        }
+
+        fetchCases();
+    }, [isAuthLoading, isAuthenticated]);
+
+    // Show loading while checking auth or fetching cases
+    if (isAuthLoading || !isAuthenticated || isLoading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-neutral-50">
                 <div className="text-gray-500">로딩 중...</div>
@@ -89,8 +103,8 @@ export default function CasesPage() {
                         <h2 className="text-3xl font-bold text-gray-900">나의 사건</h2>
                         <p className="mt-1 text-gray-500">진행 중인 사건을 한눈에 확인하고 관리하세요.</p>
                     </div>
-                    <button 
-                        onClick={() => setIsModalOpen(true)} // onClick 핸들러 추가
+                    <button
+                        onClick={() => setIsModalOpen(true)}
                         className="btn-primary flex items-center shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all"
                     >
                         <Plus className="w-5 h-5 mr-2" />
@@ -105,10 +119,18 @@ export default function CasesPage() {
                     ))}
                 </div>
 
-                {/* Empty State (Hidden for now as we have mock data) */}
-                {cases.length === 0 && (
+                {/* Error State */}
+                {error && (
+                    <div className="text-center py-10">
+                        <p className="text-red-500 text-lg">{error}</p>
+                    </div>
+                )}
+
+                {/* Empty State */}
+                {!error && cases.length === 0 && (
                     <div className="text-center py-20">
                         <p className="text-gray-500 text-lg">등록된 사건이 없습니다.</p>
+                        <p className="text-gray-400 mt-2">새 사건 등록 버튼을 눌러 첫 사건을 추가해보세요.</p>
                     </div>
                 )}
             </main>

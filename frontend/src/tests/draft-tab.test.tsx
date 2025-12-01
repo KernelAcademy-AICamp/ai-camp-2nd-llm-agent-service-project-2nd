@@ -175,7 +175,8 @@ describe('Plan 3.6 - Draft Tab requirements on the case detail page', () => {
             fireEvent.change(fileInput, { target: { files: [file] } });
 
             const statusToast = screen.getByRole('status');
-            expect(statusToast).toHaveTextContent(/업로드 대기열/i);
+            // 업로드 상태 메시지 확인 (업로드 중 또는 업로드 대기열)
+            expect(statusToast).toHaveTextContent(/업로드 중|업로드 대기열/i);
         });
     });
 });

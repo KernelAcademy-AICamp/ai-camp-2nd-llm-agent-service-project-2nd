@@ -21,20 +21,25 @@ export async function apiRequest<T>(
   try {
     const url = `${API_BASE_URL}${endpoint}`;
 
+    // Get auth token from localStorage
+    const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
+
     const response = await fetch(url, {
       ...options,
       headers: {
         'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
         ...options.headers,
       },
-      credentials: 'include', // Include cookies for session management
     });
 
     const data = await response.json();
 
     if (!response.ok) {
+      // Handle both error formats: { error: { message: "..." } } and { detail: "..." }
+      const errorMessage = data.error?.message || data.detail || 'An error occurred';
       return {
-        error: data.detail || 'An error occurred',
+        error: errorMessage,
         status: response.status,
       };
     }
