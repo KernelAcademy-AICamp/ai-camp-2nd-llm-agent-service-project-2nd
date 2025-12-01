@@ -138,6 +138,60 @@ class MetadataStore:
             logger.error(f"DynamoDB put_item error for file {file.file_id}: {e}")
             raise
 
+    def update_evidence_status(
+        self,
+        evidence_id: str,
+        status: str = "processed",
+        ai_summary: Optional[str] = None,
+        article_840_tags: Optional[dict] = None,
+        qdrant_id: Optional[str] = None
+    ) -> None:
+        """
+        Backend가 생성한 evidence 레코드의 상태 업데이트
+
+        AI Worker가 파일 처리 완료 후 Backend 레코드를 UPDATE합니다.
+        - status: pending → processed
+        - 분석 결과 필드 추가 (ai_summary, article_840_tags, qdrant_id)
+
+        Args:
+            evidence_id: Backend에서 생성한 evidence ID (예: ev_abc123)
+            status: 새 상태 (기본값: "processed")
+            ai_summary: AI 생성 요약
+            article_840_tags: 민법 840조 태그 딕셔너리
+            qdrant_id: Qdrant에 저장된 벡터 ID
+        """
+        update_expression = "SET #status = :status, processed_at = :processed_at"
+        expression_names = {"#status": "status"}
+        expression_values = {
+            ":status": {"S": status},
+            ":processed_at": {"S": datetime.now(timezone.utc).isoformat()}
+        }
+
+        if ai_summary is not None:
+            update_expression += ", ai_summary = :ai_summary"
+            expression_values[":ai_summary"] = {"S": ai_summary}
+
+        if article_840_tags is not None:
+            update_expression += ", article_840_tags = :tags"
+            expression_values[":tags"] = self._serialize_value(article_840_tags)
+
+        if qdrant_id is not None:
+            update_expression += ", qdrant_id = :qdrant_id"
+            expression_values[":qdrant_id"] = {"S": qdrant_id}
+
+        try:
+            self.client.update_item(
+                TableName=self.table_name,
+                Key={"evidence_id": {"S": evidence_id}},
+                UpdateExpression=update_expression,
+                ExpressionAttributeNames=expression_names,
+                ExpressionAttributeValues=expression_values
+            )
+            logger.info(f"Updated evidence status: {evidence_id} → {status}")
+        except ClientError as e:
+            logger.error(f"DynamoDB update_item error for {evidence_id}: {e}")
+            raise
+
     def get_file(self, file_id: str) -> Optional[EvidenceFile]:
         """
         파일 ID로 조회
