@@ -117,7 +117,8 @@ class EvidenceService:
         return PresignedUrlResponse(
             upload_url=presigned_data["upload_url"],
             fields=presigned_data["fields"],
-            evidence_temp_id=evidence_temp_id
+            evidence_temp_id=evidence_temp_id,
+            s3_key=s3_key
         )
 
     def handle_upload_complete(

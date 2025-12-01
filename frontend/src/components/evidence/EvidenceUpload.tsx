@@ -5,16 +5,19 @@ import { UploadCloud } from 'lucide-react';
 
 interface EvidenceUploadProps {
   onUpload: (files: File[]) => void;
+  disabled?: boolean;
 }
 
-export default function EvidenceUpload({ onUpload }: EvidenceUploadProps) {
+export default function EvidenceUpload({ onUpload, disabled = false }: EvidenceUploadProps) {
   const [isDragging, setIsDragging] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
-    setIsDragging(true);
-  }, []);
+    if (!disabled) {
+      setIsDragging(true);
+    }
+  }, [disabled]);
 
   const handleDragLeave = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -26,48 +29,60 @@ export default function EvidenceUpload({ onUpload }: EvidenceUploadProps) {
       e.preventDefault();
       setIsDragging(false);
 
+      if (disabled) return;
+
       if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
         onUpload(Array.from(e.dataTransfer.files));
       }
     },
-    [onUpload]
+    [onUpload, disabled]
   );
 
   const handleFileSelect = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
+      if (disabled) return;
       if (e.target.files && e.target.files.length > 0) {
         onUpload(Array.from(e.target.files));
       }
     },
-    [onUpload]
+    [onUpload, disabled]
   );
 
   // Keyboard accessibility: allow Enter/Space to open file dialog
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (disabled) return;
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
       inputRef.current?.click();
     }
-  }, []);
+  }, [disabled]);
+
+  const handleClick = useCallback(() => {
+    if (!disabled) {
+      inputRef.current?.click();
+    }
+  }, [disabled]);
 
   return (
     <div
       role="button"
-      tabIndex={0}
+      tabIndex={disabled ? -1 : 0}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
       onKeyDown={handleKeyDown}
-      onClick={() => inputRef.current?.click()}
+      onClick={handleClick}
       aria-label="파일 업로드 영역. 클릭하거나 파일을 끌어다 놓으세요."
+      aria-disabled={disabled}
       className={`
-        border-2 border-dashed rounded-lg p-10 text-center cursor-pointer
+        border-2 border-dashed rounded-lg p-10 text-center
         transition-colors duration-200
         focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2
-        ${
-          isDragging
-            ? 'border-primary bg-primary-light'
-            : 'border-neutral-300 hover:border-primary hover:bg-neutral-50'
+        ${disabled
+          ? 'border-neutral-200 bg-neutral-50 cursor-not-allowed opacity-60'
+          : isDragging
+            ? 'border-primary bg-primary-light cursor-pointer'
+            : 'border-neutral-300 hover:border-primary hover:bg-neutral-50 cursor-pointer'
         }
       `}
     >
@@ -75,6 +90,7 @@ export default function EvidenceUpload({ onUpload }: EvidenceUploadProps) {
         ref={inputRef}
         type="file"
         multiple
+        disabled={disabled}
         className="sr-only"
         id="file-upload"
         aria-label="파일을 끌어다 놓거나 클릭하여 업로드"

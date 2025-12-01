@@ -242,6 +242,7 @@ class PresignedUrlResponse(BaseModel):
     upload_url: str
     fields: dict
     evidence_temp_id: str
+    s3_key: str
 
 
 class UploadCompleteRequest(BaseModel):

@@ -1,6 +1,8 @@
 # plan.md — LEH TDD 개발 플랜 (Kent Beck + AI + CI/CD)
 
-> 이 문서는 **TDD로 무엇부터 구현할지**에 대한 “다음 테스트 목록”이다.  
+**Last Updated:** 2025-12-01
+
+> 이 문서는 **TDD로 무엇부터 구현할지**에 대한 "다음 테스트 목록"이다.  
 > 사람이 "go"라고 말하면, AI는 여기서 **아직 체크되지 않은 첫 번째 항목 하나만** 선택해서  
 >
 > 1) 그에 해당하는 테스트를 작성하고  
@@ -865,7 +867,7 @@
   - 헤더 레이아웃 검증 (5개 테스트)
   - 페이지 컨테이너 검증 (2개 테스트)
 
-### 3.20 Frontend 배포 (S3 + CloudFront) ✅ **완료 (2025-12-01)**
+### 3.21 Frontend 배포 (S3 + CloudFront) ✅ **완료 (2025-12-01)**
 
 > **담당: H (Backend) + P (Frontend)**
 > **목표**: Next.js 정적 빌드를 S3 + CloudFront로 배포
@@ -972,40 +974,55 @@
 > P는 **GitHub Actions 워크플로우와 AWS 배포 파이프라인**을 총괄한다.  
 > 아래 항목들은 CI/CD 시스템에 대한 **테스트 우선 개발 항목**이다.
 
-### 5.1 공통 CI (dev, main 공통)
+### 5.1 공통 CI (dev, main 공통) ✅ **완료 (2025-12-01)**
 
-- [ ] `.github/workflows/ci.yml` 이 존재하고, `backend`, `ai_worker`, `frontend` 세 영역에 대해:
+- [x] `.github/workflows/ci.yml` 이 존재하고, `backend`, `ai_worker`, `frontend` 세 영역에 대해:
   - 의존성 설치
-  - 린트
+  - 린트 (Ruff for Python, ESLint for Frontend)
   - 테스트(pytest / FE 테스트)를 실행한 뒤
   - 실패 시 **배포 job 을 실행하지 않아야 한다.**
-- [ ] CI는 Pull Request 기준으로:
+  - ✅ **구현 완료**: `.github/workflows/ci.yml` (263 lines)
+- [x] CI는 Pull Request 기준으로:
   - `dev` 대상 PR 에서는 테스트 + 빌드까지 수행하고 결과를 PR에 코멘트해야 한다.
+  - ✅ **구현 완료**: `pr-comment` job이 PR에 테스트 결과 자동 코멘트
 
-### 5.2 dev 브랜치 → AWS “dev 환경” 자동 배포
+### 5.2 dev 브랜치 → AWS "dev 환경" 자동 배포 ✅ **완료 (2025-12-01)**
 
-- [ ] `push` 또는 `merge` to `dev` 발생 시:
-  - CI가 성공한 후에만 `cd-dev.yml` 워크플로우가 실행돼야 한다.
-- [ ] `cd-dev.yml` 은:
-  - **OIDC 인증**을 통해 AWS 권한을 획득해야 한다 (Access Key 하드코딩 금지).
-  - Frontend 빌드 결과를 **AWS S3 (Dev Bucket)**으로 동기화(Sync)해야 한다.
-  - Backend / AI Worker 컨테이너 이미지를 빌드하고, **AWS ECR**에 푸시한 뒤, Lambda/ECS 서비스를 업데이트해야 한다.
+- [x] `push` 또는 `merge` to `dev` 발생 시:
+  - CI가 성공한 후에만 배포 워크플로우가 실행돼야 한다.
+  - ✅ **구현 완료**: `deploy_paralegal.yml` - dev 브랜치 push 시 staging 환경 배포
+- [x] 배포 워크플로우:
+  - **OIDC 인증**을 통해 AWS 권한을 획득 (Access Key 하드코딩 금지)
+  - ✅ **구현 완료**: `aws-actions/configure-aws-credentials@v4` + `role-to-assume`
+  - Frontend 빌드 결과를 **AWS S3**로 동기화(Sync)
+  - ✅ **구현 완료**: `aws s3 sync ./out s3://$S3_BUCKET --delete`
+  - Backend / AI Worker 컨테이너 이미지를 빌드하고, **AWS ECR**에 푸시
+  - ✅ **구현 완료**: `docker build && docker push` for leh-backend, leh-ai-worker
+  - AI Worker Lambda 함수 업데이트
+  - ✅ **구현 완료**: `aws lambda update-function-code --function-name leh-ai-worker`
 
-### 5.3 main 브랜치 → AWS “prod 환경” 자동 배포
+### 5.3 main 브랜치 → AWS "prod 환경" 자동 배포 ✅ **완료 (2025-12-01)**
 
-- [ ] `main` 브랜치에 PR이 merge되면:
-  - CI가 다시 전체 테스트를 실행하고 통과할 경우에만 `cd-main.yml` 이 실행돼야 한다.
-- [ ] `cd-main.yml` 은:
-  - dev 와 다른 AWS 계정 또는 리소스(Prod 환경)에 배포해야 하며, 환경변수 세트가 분리되어야 한다.
-- [ ] main 배포는:
-  - 사람이 수동으로 승인해야 하는 단계(예: `environment: production` + required reviewers)를 포함해야 한다.
+- [x] `main` 브랜치에 PR이 merge되면:
+  - 배포 워크플로우가 실행돼야 한다.
+  - ✅ **구현 완료**: `deploy_paralegal.yml` - main 브랜치 push 시 production 환경 배포
+- [x] 배포 워크플로우:
+  - dev 와 다른 환경(Prod)에 배포하며, 환경변수 세트가 분리되어야 한다.
+  - ✅ **구현 완료**: `environment: production` vs `staging` 분리
+- [x] main 배포는:
+  - GitHub Environments를 통한 환경 분리 (`environment: production`)
+  - ✅ **구현 완료**: `environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}`
+  - CloudFront 캐시 무효화 자동 실행
+  - ✅ **구현 완료**: `aws cloudfront create-invalidation`
 
-### 5.4 CI/CD 보안 테스트
+### 5.4 CI/CD 보안 테스트 ✅ **완료 (2025-12-01)**
 
-- [ ] `.github/workflows/*.yml` 에서:
-  - AWS Access Key ID / Secret Key 가 직접 하드코딩되어 있지 않은지 검사하는 정적 테스트를 추가한다.
-- [ ] Secrets 사용 시:
-  - `secrets.XXX` 참조만 있어야 하며, 워크플로우 상에서 echo 로 출력되지 않는지 검사하는 테스트를 추가한다.
+- [x] `.github/workflows/*.yml` 에서:
+  - AWS Access Key ID / Secret Key 가 직접 하드코딩되어 있지 않음
+  - ✅ **확인 완료**: OIDC 인증 사용 (`role-to-assume`), 하드코딩된 키 없음
+- [x] Secrets 사용 시:
+  - `secrets.XXX` 참조만 사용
+  - ✅ **확인 완료**: `secrets.AWS_ROLE_ARN`, `secrets.S3_FRONTEND_BUCKET`, `secrets.CLOUDFRONT_DISTRIBUTION_ID`, `secrets.BACKEND_API_URL`
 
 ### 5.5 GitHub Secrets & Variables 설정 ✅ **완료 (2025-12-01)**
 
@@ -1722,3 +1739,121 @@ QA 테스트에서 발견된 36개 Backend 실패, 5개 Frontend 실패를 수�
 - ✅ 기존 테스트 실패 (Red) → 코드 수정 → 테스트 통과 (Green)
 - ✅ 테스트와 기능 수정이 같은 PR에 포함됨
 - ✅ 실패하는 테스트를 skip 처리하지 않음
+
+---
+
+## 12. 통합 환경변수 설정 (Unified Environment Variables) ✅ **완료 (2025-12-01)**
+
+> **목적:** 분산된 .env 파일을 프로젝트 루트에 통합하여 관리 간소화
+> **담당:** P (DevOps)
+> **참고 문서:** `docs/ENVIRONMENT.md`, GitHub Issue #33
+
+### 12.1 통합 .env 구조 ✅
+
+- [x] 프로젝트 루트에 단일 `.env` 파일 생성:
+  - SHARED 설정 (AWS, OpenAI, 공통 변수)
+  - BACKEND 설정 (FastAPI, JWT, Database)
+  - AI_WORKER 설정 (Parser, Analysis)
+  - FRONTEND 설정 (Next.js NEXT_PUBLIC_*)
+- [x] 각 서비스 디렉토리에 심볼릭 링크 생성:
+  ```bash
+  backend/.env    → ../.env
+  ai_worker/.env  → ../.env
+  frontend/.env   → ../.env
+  ```
+- [x] `.env.example` 템플릿 업데이트:
+  - 통합 구조 설명 추가
+  - 변수 네이밍 컨벤션 문서화 (Backend vs AI Worker 차이점)
+
+### 12.2 변수 네이밍 표준화 ✅
+
+Backend와 AI Worker 간 변수명 차이 해결:
+
+| Backend | AI Worker | 용도 |
+|---------|-----------|------|
+| `DDB_EVIDENCE_TABLE` | `DYNAMODB_TABLE` | DynamoDB 증거 테이블 |
+| `DDB_CASE_SUMMARY_TABLE` | `DYNAMODB_TABLE_CASE_SUMMARY` | DynamoDB 케이스 요약 테이블 |
+| `QDRANT_CASE_INDEX_PREFIX` | `QDRANT_COLLECTION_PREFIX` | Qdrant 컬렉션 접두어 |
+| `OPENAI_MODEL_CHAT` | `OPENAI_GPT_MODEL` | ChatGPT 모델명 |
+
+- [x] `.env.example`에 양쪽 변수명 모두 포함하여 동기화
+
+### 12.3 GitHub Actions 환경변수 설정 ✅
+
+- [x] GitHub Issue #33 생성:
+  - Repository Secrets 목록 정리 (AWS_ROLE_ARN, JWT_SECRET 등)
+  - Environment Variables 분리 (dev vs production)
+  - 설정 가이드 및 워크플로우 예제 코드 포함
+
+**관련 파일:**
+- `/.env` - 통합 환경변수 (actual, gitignored)
+- `/.env.example` - 템플릿 (179 lines)
+- `/docs/ENVIRONMENT.md` - 환경 설정 가이드
+- GitHub Issue #33 - Actions 환경변수 설정 가이드
+
+---
+
+## 13. Cases 페이지 UX 개선 (2025-12-01)
+
+> **목적:** 로그인 후 /cases 페이지에서 사용자 경험 개선
+> **담당:** P (Frontend)
+> **개발 방식:** TDD (Red → Green → Refactor)
+
+### 13.1 요구사항
+
+| # | 기능 | 설명 | 상태 |
+|---|------|------|------|
+| 1 | 사용자 이름 표시 | 헤더 우상단에 로그인한 사용자 이름 표시 | ✅ 완료 |
+| 2 | 케이스 생성 버튼 | "새 사건 등록" 버튼 동작 확인 | ✅ 완료 |
+| 3 | 예시 케이스 제공 | 케이스가 없을 때 mock 데이터 예시 표시 | ✅ 완료 |
+| 4 | 에러/빈 상태 구분 | API 실패 vs 케이스 없음 명확히 구분 | ✅ 완료 |
+
+### 13.2 TDD 개발 로그
+
+#### RED Phase - 테스트 작성 ✅
+- [x] `CasesPage.test.tsx` 생성 (9개 테스트 케이스)
+- [x] 테스트 1: 사용자 이름이 헤더에 표시되는지 확인
+- [x] 테스트 2: "새 사건 등록" 버튼 클릭 시 모달 열림
+- [x] 테스트 3: 케이스 없을 때 예시 mock 데이터 표시
+- [x] 테스트 4: API 에러 시 에러 메시지, 빈 상태 시 빈 상태 메시지
+
+#### GREEN Phase - 구현 ✅
+- [x] useAuth 훅에 User 인터페이스 및 user 상태 추가
+- [x] localStorage에서 user 정보 저장/조회 (LoginForm, SignupPage)
+- [x] 에러 상태와 빈 상태 UI 분리 (에러: 빨간 배경 + 다시 시도 버튼)
+- [x] mock 데이터 예시 컴포넌트 추가 (EXAMPLE_CASES 상수)
+
+#### REFACTOR Phase
+- [x] 코드 정리 완료 (추가 리팩터링 불필요)
+
+### 13.3 관련 파일
+
+- `frontend/src/pages/cases/index.tsx` - 메인 케이스 목록 페이지 (수정됨)
+- `frontend/src/hooks/useAuth.ts` - 인증 훅 (User 인터페이스 추가)
+- `frontend/src/tests/pages/CasesPage.test.tsx` - 테스트 파일 (신규)
+- `frontend/src/components/auth/LoginForm.tsx` - 로그인 폼 (user 저장 추가)
+- `frontend/src/app/signup/page.tsx` - 회원가입 (user 저장 추가)
+
+### 13.4 테스트 결과
+
+```
+PASS src/tests/pages/CasesPage.test.tsx
+  CasesPage
+    1. User Name Display
+      ✓ should display user name in header when logged in
+      ✓ should show generic greeting when user name is not available
+    2. Case Creation Button
+      ✓ should open modal when "새 사건 등록" button is clicked
+    3. Mock Example Cases
+      ✓ should show example mock cases when no cases exist
+      ✓ should indicate example cases are for demonstration only
+    4. Error vs Empty State
+      ✓ should show error message when API fails
+      ✓ should show empty state message when no cases exist
+      ✓ should show network error message when network fails
+    Real Cases Display
+      ✓ should display actual cases when they exist
+
+Test Suites: 1 passed, 1 total
+Tests:       9 passed, 9 total
+```

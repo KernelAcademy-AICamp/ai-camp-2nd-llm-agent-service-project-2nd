@@ -1,7 +1,7 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
-import { ArrowLeft, CheckCircle2, Filter, Shield, Sparkles } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Filter, Shield, Sparkles, Upload, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import EvidenceUpload from '@/components/evidence/EvidenceUpload';
 import EvidenceTable from '@/components/evidence/EvidenceTable';
@@ -10,6 +10,12 @@ import DraftPreviewPanel from '@/components/draft/DraftPreviewPanel';
 import DraftGenerationModal from '@/components/draft/DraftGenerationModal';
 import { DraftCitation } from '@/types/draft';
 import { downloadDraftAsDocx, DraftDownloadFormat } from '@/services/documentService';
+import {
+  getPresignedUploadUrl,
+  uploadToS3,
+  notifyUploadComplete,
+  UploadProgress
+} from '@/lib/api/evidence';
 
 // Mock Data
 const MOCK_EVIDENCE: Evidence[] = [
@@ -73,7 +79,14 @@ const INITIAL_CITATIONS: DraftCitation[] = [
 
 const GENERATION_DELAY_MS = 1200;
 type CaseDetailTab = 'evidence' | 'opponent' | 'timeline' | 'draft';
-type UploadFeedback = { message: string; tone: 'info' | 'success' };
+type UploadFeedback = { message: string; tone: 'info' | 'success' | 'error' };
+type UploadStatus = {
+  isUploading: boolean;
+  currentFile: string;
+  progress: number;
+  completed: number;
+  total: number;
+};
 
 export default function CaseDetailPage() {
     const router = useRouter();
@@ -86,16 +99,114 @@ export default function CaseDetailPage() {
     const [isDraftModalOpen, setIsDraftModalOpen] = useState(false);
     const [activeTab, setActiveTab] = useState<CaseDetailTab>('draft');
     const [uploadFeedback, setUploadFeedback] = useState<UploadFeedback | null>(null);
+    const [uploadStatus, setUploadStatus] = useState<UploadStatus>({
+        isUploading: false,
+        currentFile: '',
+        progress: 0,
+        completed: 0,
+        total: 0,
+    });
 
-    const handleUpload = (files: File[]) => {
-        if (files.length === 0) return;
-        // TODO: Implement actual upload logic
-        setUploadFeedback({
-            tone: 'success',
-            message: `${new Date().toLocaleTimeString('ko-KR')} 기준 ${files.length}개의 파일이 업로드 대기열에 추가되었습니다.`,
+    const caseId = typeof id === 'string' ? id : '';
+
+    const handleUpload = useCallback(async (files: File[]) => {
+        if (files.length === 0 || !caseId) return;
+
+        setUploadStatus({
+            isUploading: true,
+            currentFile: files[0].name,
+            progress: 0,
+            completed: 0,
+            total: files.length,
         });
-        setTimeout(() => setUploadFeedback(null), 4000);
-    };
+
+        let successCount = 0;
+        let failCount = 0;
+
+        for (let i = 0; i < files.length; i++) {
+            const file = files[i];
+
+            setUploadStatus(prev => ({
+                ...prev,
+                currentFile: file.name,
+                progress: 0,
+            }));
+
+            try {
+                // Step 1: Get presigned URL from backend
+                const presignedResult = await getPresignedUploadUrl(
+                    caseId,
+                    file.name,
+                    file.type || 'application/octet-stream'
+                );
+
+                if (presignedResult.error || !presignedResult.data) {
+                    throw new Error(presignedResult.error || 'Failed to get presigned URL');
+                }
+
+                const { upload_url, evidence_temp_id, s3_key } = presignedResult.data;
+
+                // Step 2: Upload file directly to S3
+                const uploadSuccess = await uploadToS3(
+                    upload_url,
+                    file,
+                    (progress: UploadProgress) => {
+                        setUploadStatus(prev => ({
+                            ...prev,
+                            progress: progress.percent,
+                        }));
+                    }
+                );
+
+                if (!uploadSuccess) {
+                    throw new Error('S3 upload failed');
+                }
+
+                // Step 3: Notify backend of completed upload
+                const completeResult = await notifyUploadComplete({
+                    case_id: caseId,
+                    evidence_temp_id,
+                    s3_key,
+                });
+
+                if (completeResult.error) {
+                    throw new Error(completeResult.error || 'Failed to complete upload');
+                }
+
+                successCount++;
+            } catch (error) {
+                console.error(`Upload failed for ${file.name}:`, error);
+                failCount++;
+            }
+
+            setUploadStatus(prev => ({
+                ...prev,
+                completed: i + 1,
+            }));
+        }
+
+        // Upload complete - show feedback
+        setUploadStatus(prev => ({ ...prev, isUploading: false }));
+
+        if (failCount === 0) {
+            setUploadFeedback({
+                tone: 'success',
+                message: `${successCount}개 파일 업로드 완료. AI가 증거를 분석 중입니다.`,
+            });
+        } else if (successCount > 0) {
+            setUploadFeedback({
+                tone: 'info',
+                message: `${successCount}개 성공, ${failCount}개 실패. 실패한 파일을 다시 업로드해주세요.`,
+            });
+        } else {
+            setUploadFeedback({
+                tone: 'error',
+                message: `업로드 실패. 네트워크를 확인하고 다시 시도해주세요.`,
+            });
+        }
+
+        setTimeout(() => setUploadFeedback(null), 5000);
+    }, [caseId]);
 
     const openDraftModal = () => {
         setIsDraftModalOpen(true);
@@ -226,18 +337,43 @@ export default function CaseDetailPage() {
                                     <Sparkles className="w-4 h-4 text-accent mr-1" /> Whisper · OCR 자동 적용
                                 </span>
                             </div>
-                            <EvidenceUpload onUpload={handleUpload} />
-                            {uploadFeedback && (
+                            <EvidenceUpload onUpload={handleUpload} disabled={uploadStatus.isUploading} />
+                            {uploadStatus.isUploading && (
+                                <div
+                                    role="status"
+                                    aria-live="polite"
+                                    className="bg-blue-50 border border-blue-200 rounded-lg px-4 py-3 text-sm"
+                                >
+                                    <div className="flex items-center space-x-2 mb-2">
+                                        <Loader2 className="w-4 h-4 text-blue-600 animate-spin" />
+                                        <span className="text-blue-800 font-medium">
+                                            업로드 중 ({uploadStatus.completed + 1}/{uploadStatus.total})
+                                        </span>
+                                    </div>
+                                    <p className="text-blue-700 text-xs mb-2 truncate">{uploadStatus.currentFile}</p>
+                                    <div className="w-full bg-blue-200 rounded-full h-2">
+                                        <div
+                                            className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                                            style={{ width: `${uploadStatus.progress}%` }}
+                                        />
+                                    </div>
+                                </div>
+                            )}
+                            {uploadFeedback && !uploadStatus.isUploading && (
                                 <div
                                     role="status"
                                     aria-live="polite"
                                     className={`flex items-start space-x-2 rounded-lg px-4 py-3 text-sm ${
                                         uploadFeedback.tone === 'success'
                                             ? 'bg-accent/10 text-secondary'
+                                            : uploadFeedback.tone === 'error'
+                                            ? 'bg-red-50 text-red-700 border border-red-200'
                                             : 'bg-gray-100 text-neutral-700'
                                     }`}
                                 >
-                                    <CheckCircle2 className="w-4 h-4 mt-0.5 text-accent" />
+                                    <CheckCircle2 className={`w-4 h-4 mt-0.5 ${
+                                        uploadFeedback.tone === 'error' ? 'text-red-500' : 'text-accent'
+                                    }`} />
                                     <p>{uploadFeedback.message}</p>
                                 </div>
                             )}
