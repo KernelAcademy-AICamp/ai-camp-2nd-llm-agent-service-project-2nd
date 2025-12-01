@@ -87,7 +87,7 @@ class Settings(BaseSettings):
     # ============================================
     # S3 Settings
     # ============================================
-    S3_EVIDENCE_BUCKET: str = Field(default="leh-evidence-dev", env="S3_EVIDENCE_BUCKET")
+    S3_EVIDENCE_BUCKET: str = Field(default="leh-evidence-prod", env="S3_EVIDENCE_BUCKET")
     S3_EVIDENCE_PREFIX: str = Field(default="cases/", env="S3_EVIDENCE_PREFIX")
     S3_PRESIGNED_URL_EXPIRE_SECONDS: int = Field(default=300, env="S3_PRESIGNED_URL_EXPIRE_SECONDS")  # 5 minutes max
 
