@@ -13,6 +13,7 @@ from datetime import datetime, timezone
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from mangum import Mangum  # AWS Lambda handler
 
 # Import configuration and middleware
 from app.core.config import settings
@@ -188,8 +189,6 @@ app.include_router(evidence.router, prefix="/evidence", tags=["Evidence"])
 # ============================================
 # AWS Lambda Handler (Mangum)
 # ============================================
-from mangum import Mangum
-
 # Lambda handler for API Gateway
 handler = Mangum(app, lifespan="off")
 
