@@ -37,7 +37,8 @@
 
 ```text
 main  ←  dev  ←  feat/*
-````
+              ←  p-work (P 개발자 전용, Claude Code 기반)
+```
 
 ## 2.1 main
 
@@ -73,7 +74,40 @@ main  ←  dev  ←  feat/*
 
 * **feat/* → dev** merge 시 PR 필수 아님 (dev는 실험장)
 
-## 2.4 exp/* (선택)
+## 2.4 p-work (P 개발자 전용)
+
+- P 개발자의 **Claude Code 기반** 작업 브랜치
+- **모든 작업은 p-work에서 수행 → dev로 merge**
+- 흐름:
+
+  ```sh
+  # 1. p-work 브랜치로 이동 (없으면 생성)
+  git checkout p-work || git checkout -b p-work
+
+  # 2. dev 최신화 후 p-work에 반영
+  git pull origin dev
+  git merge dev  # 또는 git rebase dev
+
+  # 3. Claude Code로 작업 수행
+  # ... 코드 생성, 수정, 테스트 ...
+
+  # 4. p-work에 커밋 & 푸시
+  git add .
+  git commit -m "feat: implement xxx"
+  git push origin p-work
+
+  # 5. dev로 merge (PR 또는 직접 merge)
+  git checkout dev
+  git merge p-work
+  git push origin dev
+  ```
+
+- **장점:**
+  - Claude Code 작업 이력이 p-work에 보존
+  - dev 브랜치의 안정성 유지
+  - 롤백이 필요한 경우 쉽게 되돌리기 가능
+
+## 2.5 exp/* (선택)
 
 - 개인 테스트 / 버려도 되는 코드
 - **main/dev로 merge 금지**
