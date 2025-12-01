@@ -57,6 +57,14 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
+      # Setup Docker Buildx for multi-platform builds
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # Setup QEMU for ARM64 emulation
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
       # 1. Backend 배포 (ECR Push + Lambda Update)
       - name: Build & Push Backend
         if: github.ref == 'refs/heads/main'
@@ -65,11 +73,14 @@ jobs:
           ECR_REPOSITORY: leh-backend
           IMAGE_TAG: ${{ github.sha }}
         run: |
-          # Lambda용 Dockerfile로 빌드
-          docker build -f ./backend/Dockerfile.lambda -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG ./backend
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-          docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:latest
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+          # Lambda용 Dockerfile로 ARM64 이미지 빌드 (Lambda가 arm64로 설정됨)
+          docker buildx build \
+            --platform linux/arm64 \
+            -f ./backend/Dockerfile.lambda \
+            -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG \
+            -t $ECR_REGISTRY/$ECR_REPOSITORY:latest \
+            --push \
+            ./backend
 
           # Lambda 함수 코드를 새 이미지로 교체
           aws lambda update-function-code \
@@ -77,20 +88,23 @@ jobs:
             --image-uri $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
       # 2. AI Worker 배포 (ECR Push + Lambda Update)
+      # Note: Skipped until ai_worker/Dockerfile is created
       - name: Build & Push AI Worker
-        if: github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/main' && false
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           ECR_REPOSITORY: leh-ai-worker
           IMAGE_TAG: ${{ github.sha }}
         run: |
-          # Docker 빌드 및 푸시
-          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG ./ai_worker
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-          docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:latest
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+          # Docker 빌드 및 푸시 (ARM64)
+          docker buildx build \
+            --platform linux/arm64 \
+            -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG \
+            -t $ECR_REGISTRY/$ECR_REPOSITORY:latest \
+            --push \
+            ./ai_worker
 
-          # [핵심] Lambda 함수 코드를 새 이미지로 교체
+          # Lambda 함수 코드를 새 이미지로 교체
           aws lambda update-function-code \
             --function-name leh-ai-worker \
             --image-uri $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
