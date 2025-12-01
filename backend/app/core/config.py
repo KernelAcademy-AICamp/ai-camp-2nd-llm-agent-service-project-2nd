@@ -85,6 +85,11 @@ class Settings(BaseSettings):
     AWS_SECRET_ACCESS_KEY: str = Field(default="", env="AWS_SECRET_ACCESS_KEY")
 
     # ============================================
+    # AWS SES Settings
+    # ============================================
+    SES_SENDER_EMAIL: str = Field(default="", env="SES_SENDER_EMAIL")
+
+    # ============================================
     # S3 Settings
     # ============================================
     S3_EVIDENCE_BUCKET: str = Field(default="leh-evidence-prod", env="S3_EVIDENCE_BUCKET")

@@ -6,6 +6,7 @@ import pytest
 from fastapi.testclient import TestClient
 from unittest.mock import Mock, patch, MagicMock
 import os
+import uuid
 from pathlib import Path
 
 
@@ -13,42 +14,30 @@ def pytest_configure(config):
     """
     Configure environment for pytest.
 
-    In CI environment (TESTING=true):
-      - Set test-specific environment variables if not already set
-      - These must be set BEFORE any app modules are imported
-
-    In local environment:
-      - Load .env file for integration tests
+    IMPORTANT (Issue #39 fix): Always use SQLite for tests to ensure:
+    - No accidental modification of production/development database
+    - Fast test execution
+    - Complete test isolation
     """
-    # CI environment: set test defaults if not already set
-    if os.environ.get("TESTING") == "true":
-        # These defaults are used in CI when env vars are not explicitly set
-        # DATABASE_URL should be set by CI workflow, but provide fallback
-        defaults = {
-            "APP_ENV": "local",
-            "APP_DEBUG": "true",
-            "JWT_SECRET": "test-secret-key-for-ci-pipeline-32chars",
-            "S3_EVIDENCE_BUCKET": "test-bucket",
-            "DDB_EVIDENCE_TABLE": "test-evidence-table",
-            "QDRANT_HOST": "",  # Empty = in-memory mode for tests
-            "OPENAI_API_KEY": "test-openai-key",
-        }
-        for key, value in defaults.items():
-            if not os.environ.get(key):
-                os.environ[key] = value
-        return
+    # ALWAYS force SQLite for tests - prevents connecting to production PostgreSQL
+    os.environ["DATABASE_URL"] = "sqlite:///./test.db"
+    os.environ["TESTING"] = "true"
 
-    # Local environment: load .env file
-    # Skip if DATABASE_URL is already set (indicates pre-configured env)
-    if os.environ.get("DATABASE_URL"):
-        return
+    # Set other test defaults
+    defaults = {
+        "APP_ENV": "local",
+        "APP_DEBUG": "true",
+        "JWT_SECRET": "test-secret-key-for-ci-pipeline-32chars",
+        "S3_EVIDENCE_BUCKET": "test-bucket",
+        "DDB_EVIDENCE_TABLE": "test-evidence-table",
+        "QDRANT_HOST": "",  # Empty = in-memory mode for tests
+        "OPENAI_API_KEY": "test-openai-key",
+    }
+    for key, value in defaults.items():
+        if not os.environ.get(key):
+            os.environ[key] = value
 
-    # Load .env from backend directory for local integration tests
-    from dotenv import load_dotenv
-    backend_dir = Path(__file__).parent.parent
-    env_path = backend_dir / ".env"
-    if env_path.exists():
-        load_dotenv(env_path, override=True)
+    # DO NOT load .env file - we want complete isolation from production config
 
 
 # ============================================
@@ -295,18 +284,24 @@ def test_user(test_env):
     Create a real user in the database for authentication tests
 
     Password: correct_password123
+
+    Issue #39 fix: Uses unique email per test to prevent duplicate key errors
     """
     from app.db.session import get_db
     from app.db.models import User, Case, CaseMember, InviteToken
     from app.core.security import hash_password
     from sqlalchemy.orm import Session
 
+    # Generate unique email for each test run to prevent conflicts
+    unique_id = uuid.uuid4().hex[:8]
+    unique_email = f"test_{unique_id}@example.com"
+
     # Database is already initialized by test_env fixture
     # Create user
     db: Session = next(get_db())
     try:
         user = User(
-            email="test@example.com",
+            email=unique_email,
             hashed_password=hash_password("correct_password123"),
             name="테스트 사용자",
             role="lawyer"
@@ -329,7 +324,6 @@ def test_user(test_env):
         db.commit()
     finally:
         db.close()
-        # Note: Tables are NOT dropped to allow other fixtures/tests to reuse the schema
 
 
 @pytest.fixture
@@ -356,11 +350,17 @@ def admin_user(test_env):
     Create admin user in the database for admin tests
 
     Password: admin_password123
+
+    Issue #39 fix: Uses unique email per test to prevent duplicate key errors
     """
     from app.db.session import get_db, init_db
     from app.db.models import User
     from app.core.security import hash_password
     from sqlalchemy.orm import Session
+
+    # Generate unique email for each test run to prevent conflicts
+    unique_id = uuid.uuid4().hex[:8]
+    unique_email = f"admin_{unique_id}@example.com"
 
     # Initialize database
     init_db()
@@ -369,7 +369,7 @@ def admin_user(test_env):
     db: Session = next(get_db())
     try:
         admin = User(
-            email="admin@example.com",
+            email=unique_email,
             hashed_password=hash_password("admin_password123"),
             name="Admin User",
             role="admin"
@@ -393,7 +393,6 @@ def admin_user(test_env):
         db.commit()
     finally:
         db.close()
-        # Note: Tables are NOT dropped to allow other fixtures/tests to reuse the schema
 
 
 @pytest.fixture
