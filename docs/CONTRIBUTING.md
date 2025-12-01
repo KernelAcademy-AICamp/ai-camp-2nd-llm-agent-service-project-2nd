@@ -33,6 +33,11 @@
 
 # 🌱 2. 브랜치 전략 (Branching Strategy)
 
+> ⛔ **절대규칙 (ABSOLUTE RULES)**
+> - `main` 브랜치 직접 push 금지 → PR only (Production 배포)
+> - `dev` 브랜치 직접 push 금지 → PR only (Staging 배포)
+> - 모든 코드 변경은 작업 브랜치(p-work, feat/*)에서 PR을 통해 진행
+
 단일 패턴만 기억하면 된다:
 
 ```text
@@ -49,9 +54,9 @@ main  ←  dev  ←  feat/*
 
 ## 2.2 dev
 
-- 모든 개발의 기준 브랜치
-- H / L / P 누구나 **자유롭게 push 가능**
-- Vibe Coding, 대규모 리팩토링, 구조 변경 등은 전부 dev에서 진행
+- 모든 개발의 기준 브랜치 (Staging 환경 배포)
+- **⚠️ 직접 push 금지** — 오직 **PR(p-work/feat/* → dev)** 로만 변경
+- Vibe Coding, 대규모 리팩토링, 구조 변경 등은 작업 브랜치에서 진행 후 PR
 
 ## 2.3 feat/*
 
