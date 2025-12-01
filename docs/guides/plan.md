@@ -867,6 +867,35 @@
 
 ---
 
+### 3.21 Frontend API 연동 ✅ **완료 (2025-12-01)**
+
+> **담당: H (Backend)**
+> **목표**: Mock 데이터 제거 및 실제 Backend API 연동
+
+- [x] API 클라이언트 JWT 인증 추가:
+  - `frontend/src/lib/api/client.ts` 수정
+  - localStorage에서 `authToken` 읽어 `Authorization: Bearer` 헤더 추가
+  - 에러 응답 형식 통일 (`error.message` + `detail` 모두 처리)
+- [x] 사건 목록 API 연동:
+  - `frontend/src/pages/cases/index.tsx` 수정
+  - Mock 데이터(`MOCK_CASES`) 제거
+  - `getCases()` API 호출로 실제 데이터 로드
+  - `useAuth` 훅 연동 (인증 상태 확인)
+  - API 응답 형식 매핑 (`snake_case` → `camelCase`)
+- [x] 테스트 Mock 업데이트:
+  - `frontend/src/tests/case-list-dashboard.test.tsx` 수정
+  - `useAuth` 훅 mock 추가 (isAuthenticated, isLoading, logout)
+  - `getCases` API mock 추가
+  - `getByRole` → `findByRole` 변경 (비동기 로딩 대기)
+
+**변경된 파일:**
+- `frontend/src/lib/api/client.ts` - JWT 인증 헤더 추가
+- `frontend/src/pages/cases/index.tsx` - 실제 API 연동
+- `frontend/src/tests/case-list-dashboard.test.tsx` - 테스트 mock 수정
+- `frontend/src/tests/draft-tab.test.tsx` - 업로드 상태 assertion 수정
+
+---
+
 ## 4. 보안 관련 테스트 (전 계층 공통) ✅ **완료**
 
 - [x] HTTP 응답 헤더에는:
@@ -920,6 +949,47 @@
   - AWS Access Key ID / Secret Key 가 직접 하드코딩되어 있지 않은지 검사하는 정적 테스트를 추가한다.
 - [ ] Secrets 사용 시:
   - `secrets.XXX` 참조만 있어야 하며, 워크플로우 상에서 echo 로 출력되지 않는지 검사하는 테스트를 추가한다.
+
+### 5.5 GitHub Secrets & Variables 설정 ✅ **완료 (2025-12-01)**
+
+> **담당: H (Backend)**
+> **목표**: GitHub Actions에서 사용할 환경 변수 및 Secrets 설정
+> **관련 이슈**: Issue #30, Issue #33
+
+#### 5.5.1 GitHub Secrets (민감 정보) - 11개
+
+| Secret | 용도 | 상태 |
+|--------|------|------|
+| `AWS_ACCESS_KEY_ID` | AWS IAM 인증 | ✅ |
+| `AWS_SECRET_ACCESS_KEY` | AWS IAM 인증 | ✅ |
+| `DATABASE_URL` | PostgreSQL RDS 연결 | ✅ |
+| `JWT_SECRET` | JWT 토큰 서명 | ✅ |
+| `OPENAI_API_KEY` | OpenAI API | ✅ |
+| `QDRANT_API_KEY` | Qdrant Cloud | ✅ |
+| `POSTGRES_PASSWORD` | DB 비밀번호 | ✅ |
+| `ADMIN_DEFAULT_PASSWORD` | 관리자 초기 비밀번호 | ✅ |
+| `S3_FRONTEND_BUCKET` | 프론트엔드 S3 버킷 | ✅ |
+| `CLOUDFRONT_DISTRIBUTION_ID` | CloudFront 배포 ID | ✅ |
+| `BACKEND_API_URL` | Lambda API Gateway URL | ✅ |
+
+#### 5.5.2 GitHub Variables (비민감 정보) - 27개
+
+- [x] **AWS 설정**: `AWS_REGION`, `S3_EVIDENCE_BUCKET`, `S3_EVIDENCE_PREFIX`, `S3_PRESIGNED_URL_EXPIRE_SECONDS`
+- [x] **애플리케이션**: `APP_ENV`, `APP_DEBUG`, `LOG_LEVEL`, `CORS_ALLOW_ORIGINS`, `BACKEND_BASE_URL`
+- [x] **JWT**: `JWT_ALGORITHM`, `JWT_ACCESS_TOKEN_EXPIRE_MINUTES`, `ADMIN_DEFAULT_EMAIL`
+- [x] **OpenAI**: `OPENAI_API_BASE`, `OPENAI_MODEL_CHAT`, `OPENAI_MODEL_EMBEDDING`, `OPENAI_MODEL_VISION`, `OPENAI_MODEL_STT`, `LLM_REQUEST_TIMEOUT_SECONDS`
+- [x] **Qdrant**: `QDRANT_HOST`, `QDRANT_PORT`, `QDRANT_COLLECTION_PREFIX`, `QDRANT_DEFAULT_TOP_K`, `QDRANT_USE_HTTPS`
+- [x] **PostgreSQL**: `POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_DB`, `POSTGRES_USER`
+- [x] **DynamoDB**: `DDB_EVIDENCE_TABLE`, `DDB_CASE_SUMMARY_TABLE`
+
+#### 5.5.3 배포 워크플로우 수정
+
+- [x] `.github/workflows/deploy_paralegal.yml` 수정:
+  - OIDC 인증 → Access Key 인증으로 변경
+  - `aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}`
+  - `aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}`
+
+**참고**: OIDC 방식이 보안상 더 권장되나, 초기 설정 간소화를 위해 Access Key 방식 사용. 추후 OIDC로 마이그레이션 권장.
 
 ---
 
