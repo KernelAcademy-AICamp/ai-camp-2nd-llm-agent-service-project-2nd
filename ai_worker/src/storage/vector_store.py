@@ -44,7 +44,8 @@ class VectorStore:
         url: str = None,
         api_key: str = None,
         collection_name: str = "leh_evidence",
-        vector_size: int = None
+        vector_size: int = None,
+        persist_directory: str = None  # Deprecated: kept for backwards compatibility
     ):
         """
         VectorStore 초기화
@@ -54,7 +55,16 @@ class VectorStore:
             api_key: Qdrant API Key (기본값: 환경변수 QDRANT_API_KEY)
             collection_name: 기본 컬렉션명
             vector_size: 벡터 차원 (기본값: 환경변수 VECTOR_SIZE 또는 1536)
+            persist_directory: Deprecated - ignored (was used for ChromaDB)
         """
+        # Note: persist_directory is ignored - Qdrant Cloud handles persistence
+        if persist_directory:
+            logger.warning(
+                "persist_directory is deprecated and ignored. "
+                "VectorStore now uses Qdrant Cloud."
+            )
+        self.persist_directory = persist_directory  # Keep for test compatibility
+
         self.url = url or os.environ.get('QDRANT_URL')
         self.api_key = api_key or os.environ.get('QDRANT_API_KEY')
         self.collection_name = collection_name
