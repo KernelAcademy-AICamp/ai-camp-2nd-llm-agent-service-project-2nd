@@ -33,14 +33,28 @@ class MetadataStore:
     - GSI: case_id-index (case_id as HASH)
     """
 
-    def __init__(self, table_name: str = None, region: str = None):
+    def __init__(
+        self,
+        table_name: str = None,
+        region: str = None,
+        db_path: str = None  # Deprecated: kept for backwards compatibility
+    ):
         """
         MetadataStore 초기화
 
         Args:
             table_name: DynamoDB 테이블명 (기본값: 환경변수 DYNAMODB_TABLE)
             region: AWS 리전 (기본값: 환경변수 AWS_REGION)
+            db_path: Deprecated - ignored (was used for SQLite)
         """
+        # Note: db_path is ignored - DynamoDB handles persistence
+        if db_path:
+            logger.warning(
+                "db_path is deprecated and ignored. "
+                "MetadataStore now uses DynamoDB."
+            )
+        self.db_path = db_path  # Keep for test compatibility
+
         self.table_name = table_name or os.environ.get('DYNAMODB_TABLE', 'leh_evidence')
         self.region = region or os.environ.get('AWS_REGION', 'ap-northeast-2')
         self._client = None
