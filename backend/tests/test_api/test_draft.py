@@ -7,6 +7,7 @@ Tests for:
 Note: This uses Qdrant (in-memory mode) and OpenAI for RAG search.
 """
 
+from unittest.mock import patch
 from fastapi import status
 
 
@@ -29,9 +30,8 @@ class TestDraftPreview:
         case_response = client.post("/cases", json={"title": "Draft 생성 테스트 사건"}, headers=auth_headers)
         case_id = case_response.json()["id"]
 
-        # Insert mock evidence with AI analysis into DynamoDB
-        from app.utils.dynamo import put_evidence_metadata
-        put_evidence_metadata({
+        # Mock evidence data
+        mock_evidence = [{
             "id": f"ev_test_{case_id}",
             "case_id": case_id,
             "type": "text",
@@ -41,15 +41,22 @@ class TestDraftPreview:
             "ai_summary": "테스트 증거입니다",
             "labels": ["폭언", "불화"],
             "content": "테스트 증거 내용입니다"
-        })
+        }]
 
-        # When: POST /cases/{case_id}/draft-preview
-        draft_request = {
-            "sections": ["청구취지", "청구원인"],
-            "language": "ko",
-            "style": "법원 제출용_표준"
-        }
-        response = client.post(f"/cases/{case_id}/draft-preview", json=draft_request, headers=auth_headers)
+        # When: POST /cases/{case_id}/draft-preview with mocked DynamoDB and RAG
+        with patch("app.services.draft_service.get_evidence_by_case") as mock_get_evidence, \
+             patch("app.services.draft_service.search_evidence_by_semantic") as mock_search, \
+             patch("app.services.draft_service.generate_chat_completion") as mock_gpt:
+            mock_get_evidence.return_value = mock_evidence
+            mock_search.return_value = mock_evidence
+            mock_gpt.return_value = "테스트 준비서면 초안입니다. [증거 1]을 기반으로 작성되었습니다."
+
+            draft_request = {
+                "sections": ["청구취지", "청구원인"],
+                "language": "ko",
+                "style": "법원 제출용_표준"
+            }
+            response = client.post(f"/cases/{case_id}/draft-preview", json=draft_request, headers=auth_headers)
 
         # Then: Returns draft with citations
         assert response.status_code == status.HTTP_200_OK
@@ -74,9 +81,12 @@ class TestDraftPreview:
         case_response = client.post("/cases", json={"title": "증거 없는 사건"}, headers=auth_headers)
         case_id = case_response.json()["id"]
 
-        # When: POST /cases/{case_id}/draft-preview
-        draft_request = {"sections": ["청구취지"]}
-        response = client.post(f"/cases/{case_id}/draft-preview", json=draft_request, headers=auth_headers)
+        # When: POST /cases/{case_id}/draft-preview with empty evidence list
+        with patch("app.services.draft_service.get_evidence_by_case") as mock_get_evidence:
+            mock_get_evidence.return_value = []  # No evidence
+
+            draft_request = {"sections": ["청구취지"]}
+            response = client.post(f"/cases/{case_id}/draft-preview", json=draft_request, headers=auth_headers)
 
         # Then: Returns 400 Bad Request
         assert response.status_code == status.HTTP_400_BAD_REQUEST
@@ -96,9 +106,8 @@ class TestDraftPreview:
         case_response = client.post("/cases", json={"title": "기본 섹션 테스트"}, headers=auth_headers)
         case_id = case_response.json()["id"]
 
-        # Insert mock evidence
-        from app.utils.dynamo import put_evidence_metadata
-        put_evidence_metadata({
+        # Mock evidence data
+        mock_evidence = [{
             "id": f"ev_default_{case_id}",
             "case_id": case_id,
             "type": "text",
@@ -106,10 +115,17 @@ class TestDraftPreview:
             "s3_key": f"cases/{case_id}/raw/default_test.txt",
             "status": "done",
             "content": "기본 섹션 테스트 증거"
-        })
+        }]
 
-        # When: POST with empty request body
-        response = client.post(f"/cases/{case_id}/draft-preview", json={}, headers=auth_headers)
+        # When: POST with empty request body with mocked services
+        with patch("app.services.draft_service.get_evidence_by_case") as mock_get_evidence, \
+             patch("app.services.draft_service.search_evidence_by_semantic") as mock_search, \
+             patch("app.services.draft_service.generate_chat_completion") as mock_gpt:
+            mock_get_evidence.return_value = mock_evidence
+            mock_search.return_value = mock_evidence
+            mock_gpt.return_value = "기본 섹션으로 작성된 초안입니다."
+
+            response = client.post(f"/cases/{case_id}/draft-preview", json={}, headers=auth_headers)
 
         # Then: Success with default sections
         assert response.status_code == status.HTTP_200_OK

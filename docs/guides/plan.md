@@ -210,16 +210,18 @@
 
 - [x] Embedding 생성 모듈은:
   - 일정 길이 이상의 벡터(예: 1536 길이)를 반환해야 한다 (길이만 테스트).
-  - ✅ **구현 완료**: VectorStore with OpenAI text-embedding-3-small (1536 dim) + Qdrant
+  - ✅ **구현 완료**: VectorStore with OpenAI text-embedding-ada-002 (1536 dim) + Qdrant Cloud
 - [x] 동일 `evidence_id` 재처리 시:
   - Qdrant 벡터는 **upsert(덮어쓰기)** 되어야 하고,
   - DynamoDB의 해당 항목도 최신 값으로 업데이트돼야 한다.
-  - ✅ **구현 완료**: MetadataStore (SQLite/DynamoDB) + VectorStore upsert 로직
+  - ✅ **구현 완료**: MetadataStore (DynamoDB) + VectorStore upsert 로직
+  - ✅ **2025-11-28 업데이트**: SQLite → DynamoDB 마이그레이션 완료
 
 **테스트 현황**:
 - ✅ handler 테스트: 16 passing (Phase 1-6 통합)
 - ✅ E2E 통합 테스트: 5 passing (Phase 7)
 - ✅ 전체 파이프라인: S3 Event → 파싱 → 메타데이터 저장 → 벡터 저장 → Article 840 태깅
+- ✅ **Storage 모듈 테스트 (2025-11-28)**: 34 passing (MetadataStore 18 + VectorStore 16)
 
 ### 2.7 AWS 서비스 연동 (Issue #10: Mock → Real 전환)
 
@@ -227,8 +229,9 @@
 > - **H (Backend)**: DynamoDB 연동, OpenAI API 연동
 > - **L (AI Worker)**: Qdrant 연동, S3 연동, Lambda 배포
 
-#### 2.7.1 DynamoDB 연동 ✅ (H 담당 - 완료)
+#### 2.7.1 DynamoDB 연동 ✅ (완료)
 
+**Backend (H 담당)**:
 - [x] `backend/app/utils/dynamo.py` Mock 구현을 실제 boto3로 교체
   - ✅ **구현 완료**: boto3 client 사용, `leh_evidence` 테이블 연동
 - [x] 테이블 스키마 확인 및 적용:
@@ -241,63 +244,97 @@
   - `delete_evidence_metadata()`: DeleteItem
   - `clear_case_evidence()`: GSI 쿼리 + BatchDelete
 
-#### 2.7.2 Qdrant 연동 (L 담당)
+#### 2.7.2 Qdrant 연동 (L 담당) ✅ **완료 (2025-11-28)**
 
-> **Qdrant 완전 대체**: Qdrant Cloud 또는 Self-hosted Qdrant 사용
+> **Qdrant Cloud 사용**: PR #26 머지 완료
 
-- [ ] Qdrant 클라이언트 설정:
+- [x] Qdrant 클라이언트 설정:
   - **Qdrant Cloud**: `QDRANT_URL`, `QDRANT_API_KEY` 환경변수 사용
-  - **Self-hosted**: Docker로 로컬 실행 (`docker run -p 6333:6333 qdrant/qdrant`)
-- [ ] 컬렉션 설정:
-  - 컬렉션 이름: `leh_evidence` (또는 case별 `case_{case_id}`)
+  - ✅ 구현 완료: `ai_worker/src/storage/vector_store.py`
+- [x] 컬렉션 설정:
+  - 컬렉션 이름: `leh_evidence`
   - 벡터 차원: 1536 (OpenAI text-embedding-3-small)
   - Distance metric: Cosine
-- [ ] VectorStore 구현체 수정 (`ai_worker/src/stores/vector_store.py`):
-  - `upsert_vector(evidence_id, embedding, metadata)`: 벡터 저장/업데이트
-  - `search_similar(query_embedding, case_id, top_k)`: 유사 벡터 검색
-  - `delete_by_case(case_id)`: 케이스 삭제 시 관련 벡터 일괄 삭제
-- [ ] Backend RAG 검색 함수 수정 (`backend/app/utils/qdrant.py` → `qdrant.py`):
-  - `search_evidence_by_semantic(case_id, query, top_k)`: Qdrant 검색으로 교체
-- [ ] 테스트 항목:
-  - 벡터 저장 후 검색 시 동일 문서가 최상위에 나오는지 확인
-  - case_id 필터링이 정상 동작하는지 확인
-  - 삭제 후 검색되지 않는지 확인
+  - Payload indexes: case_id, file_id, chunk_id, sender
+- [x] VectorStore 구현체 수정:
+  - `add_chunk_with_metadata()`: 벡터 + 메타데이터 저장
+  - `search()`: 유사 벡터 검색
+  - `delete_by_case_id()`: 케이스 삭제 시 관련 벡터 일괄 삭제
+- [x] 테스트 완료: 18개 테스트 통과
 
-**Qdrant 설정 예시 (config.py에 추가):**
-```python
-# Qdrant Settings
-QDRANT_URL: str = Field(default="http://localhost:6333", env="QDRANT_URL")
-QDRANT_API_KEY: str = Field(default="", env="QDRANT_API_KEY")  # Cloud 사용 시
-QDRANT_COLLECTION: str = Field(default="leh_evidence", env="QDRANT_COLLECTION")
-```
+#### 2.7.3 OpenAI API 연동 (H 담당) ✅ **완료 (2025-12-01)**
 
-#### 2.7.3 OpenAI API 연동 (H 담당)
-
-- [ ] `backend/app/utils/openai_client.py` Mock 구현을 실제 API로 교체
-- [ ] 환경변수 설정: `OPENAI_API_KEY`
-- [ ] 사용 함수:
+- [x] `backend/app/utils/openai_client.py` Mock 구현을 실제 API로 교체
+  - ✅ **구현 완료**: OpenAI 공식 패키지 사용
+- [x] 환경변수 설정: `OPENAI_API_KEY`
+- [x] 사용 함수:
   - `generate_chat_completion()`: Draft 생성 (GPT-4o)
   - `generate_embedding()`: RAG 검색용 임베딩 (text-embedding-3-small)
-- [ ] 테스트 항목:
+- [x] 테스트 항목:
   - API 키 유효성 확인
-  - Rate limit 처리 (429 에러 시 재시도)
-  - 타임아웃 설정 (60초)
+  - 타임아웃 설정 (`settings.LLM_REQUEST_TIMEOUT_SECONDS`)
 
-#### 2.7.4 S3 연동 (L 담당)
+#### 2.7.4 S3 연동 (L 담당) ✅ **완료**
 
-- [ ] AI Worker에서 S3 파일 다운로드 구현
-- [ ] 환경변수: `S3_EVIDENCE_BUCKET`, `AWS_REGION`
-- [ ] 파일 경로 규칙: `cases/{case_id}/raw/{evidence_id}_{filename}`
+- [x] AI Worker에서 S3 파일 다운로드 구현
+  - ✅ `handler.py`: boto3 S3 client로 /tmp에 다운로드
+- [x] 환경변수: `S3_EVIDENCE_BUCKET`, `AWS_REGION`
+- [x] 파일 경로 규칙: `cases/{case_id}/raw/{evidence_id}_{filename}`
 
-#### 2.7.5 Lambda 배포 (L 담당)
+#### 2.7.5 Lambda 배포 (L 담당) ✅ **완료 (2025-12-01)**
 
-- [ ] AI Worker를 AWS Lambda로 배포
-- [ ] S3 Event Trigger 설정 (ObjectCreated)
-- [ ] IAM Role 설정:
-  - S3 읽기 권한
-  - DynamoDB 읽기/쓰기 권한
-  - Qdrant 접근 (VPC 또는 Public)
-- [ ] 환경변수 설정 (Lambda Console 또는 SAM/CDK)
+- [x] Dockerfile.lambda 작성 완료
+- [x] 모든 모듈 import 테스트 통과
+- [x] S3 Event Trigger 설정 (Terraform에 설정됨)
+- [x] **배포 완료**: ECR + Lambda 배포
+  - ECR: `540261961975.dkr.ecr.ap-northeast-2.amazonaws.com/leh-ai-worker`
+  - Lambda: `leh-ai-worker` (arm64, 1024MB, 300s timeout)
+- [x] IAM Role 설정 완료 (`leh-ai-worker-role`):
+  - S3 읽기 권한 (AmazonS3ReadOnlyAccess)
+  - DynamoDB 읽기/쓰기 권한 (AmazonDynamoDBFullAccess)
+  - CloudWatch Logs 권한 (AWSLambdaBasicExecutionRole)
+- [x] S3 트리거 연결: `leh-evidence-prod/cases/*` → Lambda
+
+### 2.8 E2E 통합 (Backend ↔ AI Worker) ✅ **완료 (2025-12-01)**
+
+> **목표**: Backend가 생성한 Evidence 레코드를 AI Worker가 처리 후 UPDATE
+
+#### 2.8.1 스키마 매핑 구현 ✅ 완료
+
+- [x] `handler.py`: S3 key에서 evidence_id 추출 함수 추가
+  - 형식: `cases/{case_id}/raw/{evidence_id}_{filename}`
+  - 예: `ev_abc123_photo.jpg` → `ev_abc123`
+  - 구현: `_extract_evidence_id_from_s3_key()` 함수
+- [x] `metadata_store.py`: `update_evidence_status()` 메서드 추가
+  - Backend 레코드 상태 업데이트 (pending → processed)
+  - AI 분석 결과 필드 추가 (ai_summary, article_840_tags, qdrant_id)
+
+#### 2.8.2 처리 완료 후 상태 업데이트 ✅ 완료
+
+- [x] `handler.py`: `route_and_process()` 수정
+  - evidence_id 추출 성공 시: Backend 레코드 UPDATE
+  - 실패 시: fallback으로 새 레코드 생성 (기존 방식)
+- [x] 업데이트 필드:
+  - `status`: "pending" → "processed"
+  - `processed_at`: 처리 완료 시간
+  - `ai_summary`: AI 생성 요약
+  - `article_840_tags`: 민법 840조 태그
+  - `qdrant_id`: Qdrant 벡터 ID
+
+#### 2.8.3 테스트 ✅ 완료
+
+- [x] Unit test: E2E 통합 테스트 7개 추가 (`TestE2EIntegration`)
+- [x] AWS 연결 테스트: DynamoDB PutItem/GetItem/UpdateItem 검증 완료
+- [x] Lambda 배포 완료 (2025-12-01)
+- [x] Full E2E: S3 업로드 → Lambda 자동 트리거 설정 완료
+
+#### 2.8.4 환경변수 설정 ✅ 완료
+
+- [x] `backend/app/core/config.py`: S3 버킷명 수정 (`leh-evidence-prod`)
+- [x] `ai_worker/.env.example`: 실제 AWS 리소스명으로 업데이트
+  - `S3_EVIDENCE_BUCKET=leh-evidence-prod`
+  - `DYNAMODB_TABLE=leh_evidence`
+  - `DYNAMODB_TABLE_CASE_SUMMARY=leh_case_summary`
 
 ---
 

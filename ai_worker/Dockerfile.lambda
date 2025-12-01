@@ -1,0 +1,14 @@
+# ai_worker/Dockerfile.lambda
+# AWS Lambda 배포용 Dockerfile
+
+FROM public.ecr.aws/lambda/python:3.12
+
+# 의존성 파일 복사 및 설치
+COPY requirements.txt ${LAMBDA_TASK_ROOT}
+RUN pip install --no-cache-dir -r requirements.txt
+
+# 소스 코드 복사
+COPY . ${LAMBDA_TASK_ROOT}
+
+# Lambda 핸들러 설정
+CMD [ "handler.handle" ]

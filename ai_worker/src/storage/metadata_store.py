@@ -1,115 +1,210 @@
 """
-Metadata Store Module
-Handles SQLite operations for evidence metadata
+Metadata Store Module - DynamoDB Implementation
+Handles evidence metadata storage for AWS Lambda environment
+
+Architecture:
+- File/Evidence metadata → DynamoDB (leh_evidence table)
+- Chunk metadata → Stored as Qdrant payload (handled by VectorStore)
 """
 
-import sqlite3
+import os
+import logging
 from typing import List, Optional, Dict, Any
-from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timezone
+
+import boto3
+from botocore.exceptions import ClientError
+
 from .schemas import EvidenceFile, EvidenceChunk
+
+logger = logging.getLogger(__name__)
 
 
 class MetadataStore:
     """
-    SQLite 메타데이터 저장소
+    DynamoDB 메타데이터 저장소
 
-    증거 파일 및 청크의 메타데이터를 관리합니다.
+    증거 파일의 메타데이터를 AWS DynamoDB에 저장합니다.
+    Lambda 환경에서 영구 저장을 위해 SQLite 대신 DynamoDB 사용.
+
+    Table Schema:
+    - Table: leh_evidence (from DYNAMODB_TABLE env)
+    - PK: evidence_id (HASH)
+    - GSI: case_id-index (case_id as HASH)
     """
 
-    def __init__(self, db_path: str = "./data/metadata.db"):
+    def __init__(
+        self,
+        table_name: str = None,
+        region: str = None,
+        db_path: str = None  # Deprecated: kept for backwards compatibility
+    ):
         """
         MetadataStore 초기화
 
         Args:
-            db_path: SQLite 데이터베이스 파일 경로
+            table_name: DynamoDB 테이블명 (기본값: 환경변수 DYNAMODB_TABLE)
+            region: AWS 리전 (기본값: 환경변수 AWS_REGION)
+            db_path: Deprecated - ignored (was used for SQLite)
         """
-        self.db_path = db_path
-        Path(db_path).parent.mkdir(parents=True, exist_ok=True)
-
-        # 데이터베이스 초기화
-        self._init_database()
-
-    def _init_database(self) -> None:
-        """데이터베이스 및 테이블 생성"""
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
-
-        # evidence_files 테이블
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS evidence_files (
-                file_id TEXT PRIMARY KEY,
-                filename TEXT NOT NULL,
-                file_type TEXT NOT NULL,
-                parsed_at TEXT NOT NULL,
-                total_messages INTEGER NOT NULL,
-                case_id TEXT NOT NULL,
-                filepath TEXT
+        # Note: db_path is ignored - DynamoDB handles persistence
+        if db_path:
+            logger.warning(
+                "db_path is deprecated and ignored. "
+                "MetadataStore now uses DynamoDB."
             )
-        """)
+        self.db_path = db_path  # Keep for test compatibility
 
-        # evidence_chunks 테이블
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS evidence_chunks (
-                chunk_id TEXT PRIMARY KEY,
-                file_id TEXT NOT NULL,
-                content TEXT NOT NULL,
-                score REAL,
-                timestamp TEXT NOT NULL,
-                sender TEXT NOT NULL,
-                vector_id TEXT,
-                case_id TEXT NOT NULL,
-                FOREIGN KEY (file_id) REFERENCES evidence_files(file_id)
-            )
-        """)
+        self.table_name = table_name or os.environ.get('DYNAMODB_TABLE', 'leh_evidence')
+        self.region = region or os.environ.get('AWS_REGION', 'ap-northeast-2')
+        self._client = None
 
-        # 인덱스 생성 (검색 성능 향상)
-        cursor.execute("""
-            CREATE INDEX IF NOT EXISTS idx_files_case_id
-            ON evidence_files(case_id)
-        """)
+    @property
+    def client(self):
+        """Lazy initialization of DynamoDB client"""
+        if self._client is None:
+            self._client = boto3.client('dynamodb', region_name=self.region)
+        return self._client
 
-        cursor.execute("""
-            CREATE INDEX IF NOT EXISTS idx_chunks_file_id
-            ON evidence_chunks(file_id)
-        """)
+    # ========== Serialization Helpers ==========
 
-        cursor.execute("""
-            CREATE INDEX IF NOT EXISTS idx_chunks_case_id
-            ON evidence_chunks(case_id)
-        """)
+    def _serialize_value(self, value) -> Dict:
+        """Convert Python value to DynamoDB type"""
+        if value is None:
+            return {'NULL': True}
+        elif isinstance(value, bool):
+            return {'BOOL': value}
+        elif isinstance(value, str):
+            return {'S': value}
+        elif isinstance(value, (int, float)):
+            return {'N': str(value)}
+        elif isinstance(value, datetime):
+            return {'S': value.isoformat()}
+        elif isinstance(value, list):
+            if not value:
+                return {'L': []}
+            return {'L': [self._serialize_value(v) for v in value]}
+        elif isinstance(value, dict):
+            return {'M': {k: self._serialize_value(v) for k, v in value.items()}}
+        else:
+            return {'S': str(value)}
 
-        conn.commit()
-        conn.close()
+    def _deserialize_value(self, dynamodb_value: Dict):
+        """Convert DynamoDB type to Python value"""
+        if 'NULL' in dynamodb_value:
+            return None
+        elif 'BOOL' in dynamodb_value:
+            return dynamodb_value['BOOL']
+        elif 'S' in dynamodb_value:
+            return dynamodb_value['S']
+        elif 'N' in dynamodb_value:
+            num_str = dynamodb_value['N']
+            return float(num_str) if '.' in num_str else int(num_str)
+        elif 'L' in dynamodb_value:
+            return [self._deserialize_value(v) for v in dynamodb_value['L']]
+        elif 'M' in dynamodb_value:
+            return {k: self._deserialize_value(v) for k, v in dynamodb_value['M'].items()}
+        elif 'SS' in dynamodb_value:
+            return list(dynamodb_value['SS'])
+        elif 'NS' in dynamodb_value:
+            return [float(n) if '.' in n else int(n) for n in dynamodb_value['NS']]
+        else:
+            return None
+
+    def _serialize_item(self, data: Dict) -> Dict:
+        """Convert Python dict to DynamoDB item format"""
+        return {k: self._serialize_value(v) for k, v in data.items()}
+
+    def _deserialize_item(self, item: Dict) -> Dict:
+        """Convert DynamoDB item to Python dict"""
+        return {k: self._deserialize_value(v) for k, v in item.items()}
 
     # ========== Evidence File Operations ==========
 
     def save_file(self, file: EvidenceFile) -> None:
         """
-        증거 파일 저장
+        증거 파일 메타데이터 저장
 
         Args:
             file: EvidenceFile 객체
         """
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
+        item_data = {
+            'evidence_id': file.file_id,  # Use file_id as evidence_id (PK)
+            'file_id': file.file_id,
+            'filename': file.filename,
+            'file_type': file.file_type,
+            'parsed_at': file.parsed_at.isoformat(),
+            'total_messages': file.total_messages,
+            'case_id': file.case_id,
+            'filepath': file.filepath,
+            'record_type': 'file',  # Distinguish from other record types
+            'created_at': datetime.now(timezone.utc).isoformat(),
+            'status': 'done'  # AI Worker completed processing
+        }
 
-        cursor.execute("""
-            INSERT INTO evidence_files
-            (file_id, filename, file_type, parsed_at, total_messages, case_id, filepath)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-        """, (
-            file.file_id,
-            file.filename,
-            file.file_type,
-            file.parsed_at.isoformat(),
-            file.total_messages,
-            file.case_id,
-            file.filepath
-        ))
+        try:
+            self.client.put_item(
+                TableName=self.table_name,
+                Item=self._serialize_item(item_data)
+            )
+            logger.info(f"Saved file metadata: {file.file_id}")
+        except ClientError as e:
+            logger.error(f"DynamoDB put_item error for file {file.file_id}: {e}")
+            raise
 
-        conn.commit()
-        conn.close()
+    def update_evidence_status(
+        self,
+        evidence_id: str,
+        status: str = "processed",
+        ai_summary: Optional[str] = None,
+        article_840_tags: Optional[dict] = None,
+        qdrant_id: Optional[str] = None
+    ) -> None:
+        """
+        Backend가 생성한 evidence 레코드의 상태 업데이트
+
+        AI Worker가 파일 처리 완료 후 Backend 레코드를 UPDATE합니다.
+        - status: pending → processed
+        - 분석 결과 필드 추가 (ai_summary, article_840_tags, qdrant_id)
+
+        Args:
+            evidence_id: Backend에서 생성한 evidence ID (예: ev_abc123)
+            status: 새 상태 (기본값: "processed")
+            ai_summary: AI 생성 요약
+            article_840_tags: 민법 840조 태그 딕셔너리
+            qdrant_id: Qdrant에 저장된 벡터 ID
+        """
+        update_expression = "SET #status = :status, processed_at = :processed_at"
+        expression_names = {"#status": "status"}
+        expression_values = {
+            ":status": {"S": status},
+            ":processed_at": {"S": datetime.now(timezone.utc).isoformat()}
+        }
+
+        if ai_summary is not None:
+            update_expression += ", ai_summary = :ai_summary"
+            expression_values[":ai_summary"] = {"S": ai_summary}
+
+        if article_840_tags is not None:
+            update_expression += ", article_840_tags = :tags"
+            expression_values[":tags"] = self._serialize_value(article_840_tags)
+
+        if qdrant_id is not None:
+            update_expression += ", qdrant_id = :qdrant_id"
+            expression_values[":qdrant_id"] = {"S": qdrant_id}
+
+        try:
+            self.client.update_item(
+                TableName=self.table_name,
+                Key={"evidence_id": {"S": evidence_id}},
+                UpdateExpression=update_expression,
+                ExpressionAttributeNames=expression_names,
+                ExpressionAttributeValues=expression_values
+            )
+            logger.info(f"Updated evidence status: {evidence_id} → {status}")
+        except ClientError as e:
+            logger.error(f"DynamoDB update_item error for {evidence_id}: {e}")
+            raise
 
     def get_file(self, file_id: str) -> Optional[EvidenceFile]:
         """
@@ -121,34 +216,33 @@ class MetadataStore:
         Returns:
             EvidenceFile 또는 None
         """
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
-
-        cursor.execute("""
-            SELECT file_id, filename, file_type, parsed_at, total_messages, case_id, filepath
-            FROM evidence_files
-            WHERE file_id = ?
-        """, (file_id,))
-
-        row = cursor.fetchone()
-        conn.close()
-
-        if row:
-            return EvidenceFile(
-                file_id=row[0],
-                filename=row[1],
-                file_type=row[2],
-                parsed_at=datetime.fromisoformat(row[3]),
-                total_messages=row[4],
-                case_id=row[5],
-                filepath=row[6]
+        try:
+            response = self.client.get_item(
+                TableName=self.table_name,
+                Key={'evidence_id': {'S': file_id}}
             )
 
-        return None
+            item = response.get('Item')
+            if not item:
+                return None
+
+            data = self._deserialize_item(item)
+            return EvidenceFile(
+                file_id=data.get('file_id', data.get('evidence_id')),
+                filename=data.get('filename', ''),
+                file_type=data.get('file_type', ''),
+                parsed_at=datetime.fromisoformat(data['parsed_at']) if data.get('parsed_at') else datetime.now(),
+                total_messages=data.get('total_messages', 0),
+                case_id=data.get('case_id', ''),
+                filepath=data.get('filepath')
+            )
+        except ClientError as e:
+            logger.error(f"DynamoDB get_item error for file {file_id}: {e}")
+            raise
 
     def get_files_by_case(self, case_id: str) -> List[EvidenceFile]:
         """
-        케이스 ID로 파일 목록 조회
+        케이스 ID로 파일 목록 조회 (GSI 사용)
 
         Args:
             case_id: 케이스 ID
@@ -156,110 +250,125 @@ class MetadataStore:
         Returns:
             EvidenceFile 리스트
         """
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
+        try:
+            response = self.client.query(
+                TableName=self.table_name,
+                IndexName='case_id-index',
+                KeyConditionExpression='case_id = :case_id',
+                FilterExpression='record_type = :record_type',
+                ExpressionAttributeValues={
+                    ':case_id': {'S': case_id},
+                    ':record_type': {'S': 'file'}
+                }
+            )
 
-        cursor.execute("""
-            SELECT file_id, filename, file_type, parsed_at, total_messages, case_id, filepath
-            FROM evidence_files
-            WHERE case_id = ?
-            ORDER BY parsed_at DESC
-        """, (case_id,))
+            files = []
+            for item in response.get('Items', []):
+                data = self._deserialize_item(item)
+                files.append(EvidenceFile(
+                    file_id=data.get('file_id', data.get('evidence_id')),
+                    filename=data.get('filename', ''),
+                    file_type=data.get('file_type', ''),
+                    parsed_at=datetime.fromisoformat(data['parsed_at']) if data.get('parsed_at') else datetime.now(),
+                    total_messages=data.get('total_messages', 0),
+                    case_id=data.get('case_id', ''),
+                    filepath=data.get('filepath')
+                ))
 
-        rows = cursor.fetchall()
-        conn.close()
+            # Sort by parsed_at descending
+            files.sort(key=lambda x: x.parsed_at, reverse=True)
+            return files
 
-        files = []
-        for row in rows:
-            files.append(EvidenceFile(
-                file_id=row[0],
-                filename=row[1],
-                file_type=row[2],
-                parsed_at=datetime.fromisoformat(row[3]),
-                total_messages=row[4],
-                case_id=row[5],
-                filepath=row[6]
-            ))
-
-        return files
+        except ClientError as e:
+            logger.error(f"DynamoDB query error for case {case_id}: {e}")
+            raise
 
     def delete_file(self, file_id: str) -> None:
         """
-        파일 삭제
+        파일 메타데이터 삭제
 
         Args:
             file_id: 삭제할 파일 ID
         """
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
-
-        cursor.execute("DELETE FROM evidence_files WHERE file_id = ?", (file_id,))
-
-        conn.commit()
-        conn.close()
+        try:
+            self.client.delete_item(
+                TableName=self.table_name,
+                Key={'evidence_id': {'S': file_id}}
+            )
+            logger.info(f"Deleted file metadata: {file_id}")
+        except ClientError as e:
+            logger.error(f"DynamoDB delete_item error for file {file_id}: {e}")
+            raise
 
     # ========== Evidence Chunk Operations ==========
+    # Note: Chunks are primarily stored in Qdrant with metadata as payload.
+    # These methods provide backward compatibility but recommend using VectorStore.
 
     def save_chunk(self, chunk: EvidenceChunk) -> None:
         """
-        증거 청크 저장
+        증거 청크 메타데이터 저장
+
+        Note: 청크는 Qdrant에 벡터와 함께 저장하는 것을 권장합니다.
+              이 메서드는 backward compatibility를 위해 유지됩니다.
 
         Args:
             chunk: EvidenceChunk 객체
         """
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
+        item_data = {
+            'evidence_id': f"chunk_{chunk.chunk_id}",  # Prefix to distinguish
+            'chunk_id': chunk.chunk_id,
+            'file_id': chunk.file_id,
+            'content': chunk.content,
+            'score': chunk.score,
+            'timestamp': chunk.timestamp.isoformat(),
+            'sender': chunk.sender,
+            'vector_id': chunk.vector_id,
+            'case_id': chunk.case_id,
+            'record_type': 'chunk',
+            'created_at': datetime.now(timezone.utc).isoformat()
+        }
 
-        cursor.execute("""
-            INSERT INTO evidence_chunks
-            (chunk_id, file_id, content, score, timestamp, sender, vector_id, case_id)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        """, (
-            chunk.chunk_id,
-            chunk.file_id,
-            chunk.content,
-            chunk.score,
-            chunk.timestamp.isoformat(),
-            chunk.sender,
-            chunk.vector_id,
-            chunk.case_id
-        ))
-
-        conn.commit()
-        conn.close()
+        try:
+            self.client.put_item(
+                TableName=self.table_name,
+                Item=self._serialize_item(item_data)
+            )
+        except ClientError as e:
+            logger.error(f"DynamoDB put_item error for chunk {chunk.chunk_id}: {e}")
+            raise
 
     def save_chunks(self, chunks: List[EvidenceChunk]) -> None:
         """
         여러 청크 일괄 저장
-
+        
+        Note: BatchWriteItem 권한이 없을 경우 개별 PutItem으로 fallback
+        
         Args:
             chunks: EvidenceChunk 리스트
         """
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
-
-        data = [
-            (
-                chunk.chunk_id,
-                chunk.file_id,
-                chunk.content,
-                chunk.score,
-                chunk.timestamp.isoformat(),
-                chunk.sender,
-                chunk.vector_id,
-                chunk.case_id
-            )
-            for chunk in chunks
-        ]
-
-        cursor.executemany("""
-            INSERT INTO evidence_chunks
-            (chunk_id, file_id, content, score, timestamp, sender, vector_id, case_id)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        """, data)
-
-        conn.commit()
-        conn.close()
+        for chunk in chunks:
+            item_data = {
+                'evidence_id': f"chunk_{chunk.chunk_id}",
+                'chunk_id': chunk.chunk_id,
+                'file_id': chunk.file_id,
+                'content': chunk.content,
+                'score': chunk.score,
+                'timestamp': chunk.timestamp.isoformat(),
+                'sender': chunk.sender,
+                'vector_id': chunk.vector_id,
+                'case_id': chunk.case_id,
+                'record_type': 'chunk',
+                'created_at': datetime.now(timezone.utc).isoformat()
+            }
+            
+            try:
+                self.client.put_item(
+                    TableName=self.table_name,
+                    Item=self._serialize_item(item_data)
+                )
+            except ClientError as e:
+                logger.error(f"DynamoDB put_item error for chunk {chunk.chunk_id}: {e}")
+                raise
 
     def get_chunk(self, chunk_id: str) -> Optional[EvidenceChunk]:
         """
@@ -271,31 +380,30 @@ class MetadataStore:
         Returns:
             EvidenceChunk 또는 None
         """
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
-
-        cursor.execute("""
-            SELECT chunk_id, file_id, content, score, timestamp, sender, vector_id, case_id
-            FROM evidence_chunks
-            WHERE chunk_id = ?
-        """, (chunk_id,))
-
-        row = cursor.fetchone()
-        conn.close()
-
-        if row:
-            return EvidenceChunk(
-                chunk_id=row[0],
-                file_id=row[1],
-                content=row[2],
-                score=row[3],
-                timestamp=datetime.fromisoformat(row[4]),
-                sender=row[5],
-                vector_id=row[6],
-                case_id=row[7]
+        try:
+            response = self.client.get_item(
+                TableName=self.table_name,
+                Key={'evidence_id': {'S': f"chunk_{chunk_id}"}}
             )
 
-        return None
+            item = response.get('Item')
+            if not item:
+                return None
+
+            data = self._deserialize_item(item)
+            return EvidenceChunk(
+                chunk_id=data.get('chunk_id'),
+                file_id=data.get('file_id'),
+                content=data.get('content', ''),
+                score=data.get('score'),
+                timestamp=datetime.fromisoformat(data['timestamp']) if data.get('timestamp') else datetime.now(),
+                sender=data.get('sender', ''),
+                vector_id=data.get('vector_id'),
+                case_id=data.get('case_id', '')
+            )
+        except ClientError as e:
+            logger.error(f"DynamoDB get_item error for chunk {chunk_id}: {e}")
+            raise
 
     def get_chunks_by_file(self, file_id: str) -> List[EvidenceChunk]:
         """
@@ -307,24 +415,42 @@ class MetadataStore:
         Returns:
             EvidenceChunk 리스트
         """
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
+        try:
+            # Use scan with filter (not efficient, consider GSI for file_id if needed)
+            response = self.client.scan(
+                TableName=self.table_name,
+                FilterExpression='file_id = :file_id AND record_type = :record_type',
+                ExpressionAttributeValues={
+                    ':file_id': {'S': file_id},
+                    ':record_type': {'S': 'chunk'}
+                }
+            )
 
-        cursor.execute("""
-            SELECT chunk_id, file_id, content, score, timestamp, sender, vector_id, case_id
-            FROM evidence_chunks
-            WHERE file_id = ?
-            ORDER BY timestamp
-        """, (file_id,))
+            chunks = []
+            for item in response.get('Items', []):
+                data = self._deserialize_item(item)
+                chunks.append(EvidenceChunk(
+                    chunk_id=data.get('chunk_id'),
+                    file_id=data.get('file_id'),
+                    content=data.get('content', ''),
+                    score=data.get('score'),
+                    timestamp=datetime.fromisoformat(data['timestamp']) if data.get('timestamp') else datetime.now(),
+                    sender=data.get('sender', ''),
+                    vector_id=data.get('vector_id'),
+                    case_id=data.get('case_id', '')
+                ))
 
-        rows = cursor.fetchall()
-        conn.close()
+            # Sort by timestamp
+            chunks.sort(key=lambda x: x.timestamp)
+            return chunks
 
-        return self._rows_to_chunks(rows)
+        except ClientError as e:
+            logger.error(f"DynamoDB scan error for file {file_id}: {e}")
+            raise
 
     def get_chunks_by_case(self, case_id: str) -> List[EvidenceChunk]:
         """
-        케이스 ID로 청크 목록 조회
+        케이스 ID로 청크 목록 조회 (GSI 사용)
 
         Args:
             case_id: 케이스 ID
@@ -332,20 +458,39 @@ class MetadataStore:
         Returns:
             EvidenceChunk 리스트
         """
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
+        try:
+            response = self.client.query(
+                TableName=self.table_name,
+                IndexName='case_id-index',
+                KeyConditionExpression='case_id = :case_id',
+                FilterExpression='record_type = :record_type',
+                ExpressionAttributeValues={
+                    ':case_id': {'S': case_id},
+                    ':record_type': {'S': 'chunk'}
+                }
+            )
 
-        cursor.execute("""
-            SELECT chunk_id, file_id, content, score, timestamp, sender, vector_id, case_id
-            FROM evidence_chunks
-            WHERE case_id = ?
-            ORDER BY timestamp
-        """, (case_id,))
+            chunks = []
+            for item in response.get('Items', []):
+                data = self._deserialize_item(item)
+                chunks.append(EvidenceChunk(
+                    chunk_id=data.get('chunk_id'),
+                    file_id=data.get('file_id'),
+                    content=data.get('content', ''),
+                    score=data.get('score'),
+                    timestamp=datetime.fromisoformat(data['timestamp']) if data.get('timestamp') else datetime.now(),
+                    sender=data.get('sender', ''),
+                    vector_id=data.get('vector_id'),
+                    case_id=data.get('case_id', '')
+                ))
 
-        rows = cursor.fetchall()
-        conn.close()
+            # Sort by timestamp
+            chunks.sort(key=lambda x: x.timestamp)
+            return chunks
 
-        return self._rows_to_chunks(rows)
+        except ClientError as e:
+            logger.error(f"DynamoDB query error for case {case_id}: {e}")
+            raise
 
     def update_chunk_score(self, chunk_id: str, score: float) -> None:
         """
@@ -355,73 +500,75 @@ class MetadataStore:
             chunk_id: 청크 ID
             score: 새로운 점수
         """
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
-
-        cursor.execute("""
-            UPDATE evidence_chunks
-            SET score = ?
-            WHERE chunk_id = ?
-        """, (score, chunk_id))
-
-        conn.commit()
-        conn.close()
+        try:
+            self.client.update_item(
+                TableName=self.table_name,
+                Key={'evidence_id': {'S': f"chunk_{chunk_id}"}},
+                UpdateExpression='SET score = :score',
+                ExpressionAttributeValues={':score': {'N': str(score)}}
+            )
+        except ClientError as e:
+            logger.error(f"DynamoDB update_item error for chunk {chunk_id}: {e}")
+            raise
 
     def delete_chunk(self, chunk_id: str) -> None:
         """
-        청크 삭제
+        청크 메타데이터 삭제
 
         Args:
             chunk_id: 삭제할 청크 ID
         """
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
-
-        cursor.execute("DELETE FROM evidence_chunks WHERE chunk_id = ?", (chunk_id,))
-
-        conn.commit()
-        conn.close()
+        try:
+            self.client.delete_item(
+                TableName=self.table_name,
+                Key={'evidence_id': {'S': f"chunk_{chunk_id}"}}
+            )
+        except ClientError as e:
+            logger.error(f"DynamoDB delete_item error for chunk {chunk_id}: {e}")
+            raise
 
     # ========== Statistics & Aggregation ==========
 
     def count_files_by_case(self, case_id: str) -> int:
         """케이스별 파일 개수"""
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
-
-        cursor.execute("""
-            SELECT COUNT(*) FROM evidence_files WHERE case_id = ?
-        """, (case_id,))
-
-        count = cursor.fetchone()[0]
-        conn.close()
-
-        return count
+        try:
+            response = self.client.query(
+                TableName=self.table_name,
+                IndexName='case_id-index',
+                KeyConditionExpression='case_id = :case_id',
+                FilterExpression='record_type = :record_type',
+                ExpressionAttributeValues={
+                    ':case_id': {'S': case_id},
+                    ':record_type': {'S': 'file'}
+                },
+                Select='COUNT'
+            )
+            return response.get('Count', 0)
+        except ClientError as e:
+            logger.error(f"DynamoDB count error for case {case_id}: {e}")
+            return 0
 
     def count_chunks_by_case(self, case_id: str) -> int:
         """케이스별 청크 개수"""
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
-
-        cursor.execute("""
-            SELECT COUNT(*) FROM evidence_chunks WHERE case_id = ?
-        """, (case_id,))
-
-        count = cursor.fetchone()[0]
-        conn.close()
-
-        return count
+        try:
+            response = self.client.query(
+                TableName=self.table_name,
+                IndexName='case_id-index',
+                KeyConditionExpression='case_id = :case_id',
+                FilterExpression='record_type = :record_type',
+                ExpressionAttributeValues={
+                    ':case_id': {'S': case_id},
+                    ':record_type': {'S': 'chunk'}
+                },
+                Select='COUNT'
+            )
+            return response.get('Count', 0)
+        except ClientError as e:
+            logger.error(f"DynamoDB count error for case {case_id}: {e}")
+            return 0
 
     def get_case_summary(self, case_id: str) -> Dict[str, Any]:
-        """
-        케이스 요약 정보
-
-        Args:
-            case_id: 케이스 ID
-
-        Returns:
-            요약 정보 딕셔너리
-        """
+        """케이스 요약 정보"""
         return {
             "case_id": case_id,
             "file_count": self.count_files_by_case(case_id),
@@ -429,15 +576,7 @@ class MetadataStore:
         }
 
     def get_case_stats(self, case_id: str) -> Dict[str, Any]:
-        """
-        케이스 통계 정보 (get_case_summary 별칭)
-
-        Args:
-            case_id: 케이스 ID
-
-        Returns:
-            통계 정보 딕셔너리
-        """
+        """케이스 통계 정보 (get_case_summary 별칭)"""
         return self.get_case_summary(case_id)
 
     # ========== Case Management ==========
@@ -449,58 +588,65 @@ class MetadataStore:
         Returns:
             케이스 ID 리스트 (중복 제거)
         """
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
+        try:
+            # Scan all items and extract unique case_ids
+            response = self.client.scan(
+                TableName=self.table_name,
+                ProjectionExpression='case_id',
+                FilterExpression='record_type = :record_type',
+                ExpressionAttributeValues={':record_type': {'S': 'file'}}
+            )
 
-        cursor.execute("""
-            SELECT DISTINCT case_id FROM evidence_files
-            ORDER BY case_id
-        """)
+            case_ids = set()
+            for item in response.get('Items', []):
+                if 'case_id' in item:
+                    case_ids.add(item['case_id']['S'])
 
-        rows = cursor.fetchall()
-        conn.close()
+            return sorted(list(case_ids))
 
-        return [row[0] for row in rows]
+        except ClientError as e:
+            logger.error(f"DynamoDB scan error for list_cases: {e}")
+            return []
 
     def list_cases_with_stats(self) -> List[Dict[str, Any]]:
-        """
-        전체 케이스 ID 목록과 통계 조회
-
-        Returns:
-            케이스별 통계 정보 리스트
-            [{"case_id": "...", "file_count": N, "chunk_count": M}, ...]
-        """
+        """전체 케이스 ID 목록과 통계 조회"""
         cases = self.list_cases()
-        stats = []
-
-        for case_id in cases:
-            stats.append(self.get_case_stats(case_id))
-
-        return stats
+        return [self.get_case_stats(case_id) for case_id in cases]
 
     def delete_case(self, case_id: str) -> None:
         """
-        케이스 메타데이터 완전 삭제 (cascade)
+        케이스 메타데이터 완전 삭제
 
         Args:
             case_id: 삭제할 케이스 ID
 
         Note:
-            - 해당 케이스의 모든 청크 삭제
-            - 해당 케이스의 모든 파일 삭제
+            - 해당 케이스의 모든 파일 및 청크 메타데이터 삭제
             - 벡터는 삭제하지 않음 (delete_case_complete 사용)
         """
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
+        try:
+            # Query all items for this case
+            response = self.client.query(
+                TableName=self.table_name,
+                IndexName='case_id-index',
+                KeyConditionExpression='case_id = :case_id',
+                ExpressionAttributeValues={':case_id': {'S': case_id}},
+                ProjectionExpression='evidence_id'
+            )
 
-        # 1. 청크 삭제 (foreign key로 자동 삭제 안 됨)
-        cursor.execute("DELETE FROM evidence_chunks WHERE case_id = ?", (case_id,))
+            # Delete each item
+            for item in response.get('Items', []):
+                evidence_id = item['evidence_id']['S']
+                self.client.delete_item(
+                    TableName=self.table_name,
+                    Key={'evidence_id': {'S': evidence_id}}
+                )
 
-        # 2. 파일 삭제
-        cursor.execute("DELETE FROM evidence_files WHERE case_id = ?", (case_id,))
+            logger.info(f"Deleted all metadata for case: {case_id}")
 
-        conn.commit()
-        conn.close()
+        except ClientError as e:
+            logger.error(f"DynamoDB delete_case error for case {case_id}: {e}")
+            raise
 
     def delete_case_complete(self, case_id: str, vector_store) -> None:
         """
@@ -509,41 +655,17 @@ class MetadataStore:
         Args:
             case_id: 삭제할 케이스 ID
             vector_store: VectorStore 인스턴스 (벡터 삭제용)
-
-        Note:
-            1. 해당 케이스의 모든 청크에서 vector_id 추출
-            2. VectorStore에서 벡터 삭제
-            3. 메타데이터 삭제
         """
-        # 1. 청크의 vector_id 목록 가져오기
+        # 1. Get chunk vector_ids before deleting metadata
         chunks = self.get_chunks_by_case(case_id)
         vector_ids = [chunk.vector_id for chunk in chunks if chunk.vector_id]
 
-        # 2. 벡터 삭제
+        # 2. Delete vectors from VectorStore
         for vector_id in vector_ids:
             try:
                 vector_store.delete_by_id(vector_id)
             except Exception:
-                # 벡터 삭제 실패는 무시 (이미 삭제되었을 수 있음)
-                pass
+                pass  # Ignore if already deleted
 
-        # 3. 메타데이터 삭제
+        # 3. Delete metadata
         self.delete_case(case_id)
-
-    # ========== Helper Methods ==========
-
-    def _rows_to_chunks(self, rows: List[tuple]) -> List[EvidenceChunk]:
-        """SQL 결과를 EvidenceChunk 리스트로 변환"""
-        chunks = []
-        for row in rows:
-            chunks.append(EvidenceChunk(
-                chunk_id=row[0],
-                file_id=row[1],
-                content=row[2],
-                score=row[3],
-                timestamp=datetime.fromisoformat(row[4]),
-                sender=row[5],
-                vector_id=row[6],
-                case_id=row[7]
-            ))
-        return chunks

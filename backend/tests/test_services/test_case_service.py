@@ -40,6 +40,7 @@ def sample_case():
     case.status = "active"
     case.created_by = "user_456"
     case.created_at = datetime.now(timezone.utc)
+    case.updated_at = datetime.now(timezone.utc)
     return case
 
 

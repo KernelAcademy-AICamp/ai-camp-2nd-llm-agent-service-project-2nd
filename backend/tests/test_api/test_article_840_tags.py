@@ -22,6 +22,7 @@ class TestArticle840Tags:
             "case_id": "case_abc",
             "type": "text",
             "filename": "kakao_chat.txt",
+            "size": 2048,  # File size in bytes
             "s3_key": "cases/case_abc/raw/ev_test123_kakao_chat.txt",
             "content_type": "text/plain",
             "created_at": "2024-12-25T10:00:00+00:00",
@@ -46,6 +47,7 @@ class TestArticle840Tags:
             "case_id": "case_abc",
             "type": "image",
             "filename": "photo.jpg",
+            "size": 1024000,  # File size in bytes
             "s3_key": "cases/case_abc/raw/ev_pending456_photo.jpg",
             "content_type": "image/jpeg",
             "created_at": "2024-12-25T11:00:00+00:00",
@@ -89,8 +91,8 @@ class TestArticle840Tags:
         """
         evidence_id = sample_evidence_with_tags["id"]
 
-        # Mock DynamoDB get_evidence_by_id
-        with patch("app.utils.dynamo.get_evidence_by_id") as mock_get_evidence:
+        # Mock DynamoDB get_evidence_by_id (patch where it's used, not where it's defined)
+        with patch("app.services.evidence_service.get_evidence_by_id") as mock_get_evidence:
             mock_get_evidence.return_value = sample_evidence_with_tags
 
             # Call API
@@ -144,8 +146,8 @@ class TestArticle840Tags:
         """
         evidence_id = sample_evidence_without_tags["id"]
 
-        # Mock DynamoDB get_evidence_by_id
-        with patch("app.utils.dynamo.get_evidence_by_id") as mock_get_evidence:
+        # Mock DynamoDB get_evidence_by_id (patch where it's used, not where it's defined)
+        with patch("app.services.evidence_service.get_evidence_by_id") as mock_get_evidence:
             mock_get_evidence.return_value = sample_evidence_without_tags
 
             # Call API
@@ -180,8 +182,8 @@ class TestArticle840Tags:
         """
         case_id = "case_abc"
 
-        # Mock DynamoDB get_evidence_by_case
-        with patch("app.utils.dynamo.get_evidence_by_case") as mock_get_evidence:
+        # Mock DynamoDB get_evidence_by_case (patch where it's used, not where it's defined)
+        with patch("app.services.evidence_service.get_evidence_by_case") as mock_get_evidence:
             mock_get_evidence.return_value = [
                 sample_evidence_with_tags,
                 sample_evidence_without_tags
@@ -229,6 +231,7 @@ class TestArticle840Tags:
                 "case_id": case_id,
                 "type": "text",
                 "filename": "chat1.txt",
+                "size": 1024,
                 "created_at": "2024-12-25T10:00:00+00:00",
                 "status": "done",
                 "article_840_tags": {
@@ -242,6 +245,7 @@ class TestArticle840Tags:
                 "case_id": case_id,
                 "type": "text",
                 "filename": "chat2.txt",
+                "size": 2048,
                 "created_at": "2024-12-25T11:00:00+00:00",
                 "status": "done",
                 "article_840_tags": {
@@ -255,6 +259,7 @@ class TestArticle840Tags:
                 "case_id": case_id,
                 "type": "text",
                 "filename": "chat3.txt",
+                "size": 3072,
                 "created_at": "2024-12-25T12:00:00+00:00",
                 "status": "done",
                 "article_840_tags": {
@@ -265,8 +270,8 @@ class TestArticle840Tags:
             }
         ]
 
-        # Mock DynamoDB get_evidence_by_case
-        with patch("app.utils.dynamo.get_evidence_by_case") as mock_get_evidence:
+        # Mock DynamoDB get_evidence_by_case (patch where it's used, not where it's defined)
+        with patch("app.services.evidence_service.get_evidence_by_case") as mock_get_evidence:
             mock_get_evidence.return_value = evidence_list
 
             # Call API with categories filter
@@ -307,6 +312,7 @@ class TestArticle840Tags:
                 "case_id": case_id,
                 "type": "text",
                 "filename": "chat1.txt",
+                "size": 1024,
                 "created_at": "2024-12-25T10:00:00+00:00",
                 "status": "done",
                 "article_840_tags": {
@@ -320,6 +326,7 @@ class TestArticle840Tags:
                 "case_id": case_id,
                 "type": "text",
                 "filename": "chat2.txt",
+                "size": 2048,
                 "created_at": "2024-12-25T11:00:00+00:00",
                 "status": "done",
                 "article_840_tags": {
@@ -333,6 +340,7 @@ class TestArticle840Tags:
                 "case_id": case_id,
                 "type": "text",
                 "filename": "chat3.txt",
+                "size": 3072,
                 "created_at": "2024-12-25T12:00:00+00:00",
                 "status": "done",
                 "article_840_tags": {
@@ -343,8 +351,8 @@ class TestArticle840Tags:
             }
         ]
 
-        # Mock DynamoDB get_evidence_by_case
-        with patch("app.utils.dynamo.get_evidence_by_case") as mock_get_evidence:
+        # Mock DynamoDB get_evidence_by_case (patch where it's used, not where it's defined)
+        with patch("app.services.evidence_service.get_evidence_by_case") as mock_get_evidence:
             mock_get_evidence.return_value = evidence_list
 
             # Call API with multiple categories filter
@@ -385,6 +393,7 @@ class TestArticle840Tags:
                 "case_id": case_id,
                 "type": "text",
                 "filename": "chat1.txt",
+                "size": 1024,
                 "created_at": "2024-12-25T10:00:00+00:00",
                 "status": "done",
                 "article_840_tags": {
@@ -398,14 +407,15 @@ class TestArticle840Tags:
                 "case_id": case_id,
                 "type": "image",
                 "filename": "photo.jpg",
+                "size": 512000,
                 "created_at": "2024-12-25T11:00:00+00:00",
                 "status": "pending",
                 # No article_840_tags
             }
         ]
 
-        # Mock DynamoDB get_evidence_by_case
-        with patch("app.utils.dynamo.get_evidence_by_case") as mock_get_evidence:
+        # Mock DynamoDB get_evidence_by_case (patch where it's used, not where it's defined)
+        with patch("app.services.evidence_service.get_evidence_by_case") as mock_get_evidence:
             mock_get_evidence.return_value = evidence_list
 
             # Call API with categories filter

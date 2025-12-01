@@ -12,7 +12,7 @@ Focus: 실제로 로그에 노출될 수 있는 경로 테스트
 
 import logging
 from fastapi import status
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 import pytest
 
 
@@ -111,8 +111,7 @@ class TestSensitiveDataLogging:
 
         # Mock authentication
         from app.core.dependencies import get_current_user_id
-        from app.middleware.error_handler import LEHException
-        
+
         client.app.dependency_overrides[get_current_user_id] = lambda: "user123"
 
         # Mock Service to raise LEHException

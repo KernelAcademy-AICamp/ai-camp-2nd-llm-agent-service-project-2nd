@@ -176,7 +176,7 @@ class EvidenceService:
 
         # Create evidence metadata for DynamoDB
         evidence_metadata = {
-            "id": evidence_id,
+            "evidence_id": evidence_id,
             "case_id": request.case_id,
             "type": evidence_type,
             "filename": filename,
@@ -253,7 +253,7 @@ class EvidenceService:
         # Convert to EvidenceSummary schema
         summaries = [
             EvidenceSummary(
-                id=evidence["id"],
+                id=evidence.get("evidence_id") or evidence.get("id"),
                 case_id=evidence["case_id"],
                 type=evidence["type"],
                 filename=evidence["filename"],
@@ -313,7 +313,7 @@ class EvidenceService:
 
         # Convert to EvidenceDetail schema
         return EvidenceDetail(
-            id=evidence["id"],
+            id=evidence.get("evidence_id") or evidence.get("id"),
             case_id=evidence["case_id"],
             type=evidence["type"],
             filename=evidence["filename"],

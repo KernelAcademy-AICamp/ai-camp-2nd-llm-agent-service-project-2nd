@@ -215,6 +215,7 @@ class TestEvidenceServiceGetList:
                 "case_id": case_id,
                 "type": "image",
                 "filename": "photo.jpg",
+                "size": 512000,
                 "created_at": "2024-01-01T00:00:00",
                 "status": "done"
             }
@@ -266,6 +267,7 @@ class TestEvidenceServiceGetList:
                 "case_id": case_id,
                 "type": "audio",
                 "filename": "recording.mp3",
+                "size": 1048576,
                 "created_at": "2024-01-01T00:00:00",
                 "status": "done",
                 "article_840_tags": {
@@ -279,6 +281,7 @@ class TestEvidenceServiceGetList:
                 "case_id": case_id,
                 "type": "image",
                 "filename": "photo.jpg",
+                "size": 512000,
                 "created_at": "2024-01-02T00:00:00",
                 "status": "done",
                 "article_840_tags": {
@@ -332,7 +335,9 @@ class TestEvidenceServiceGetDetail:
             "case_id": "case_123abc",
             "type": "audio",
             "filename": "recording.mp3",
+            "size": 2097152,
             "s3_key": "cases/case_123abc/raw/recording.mp3",
+            "content_type": "audio/mpeg",
             "created_at": "2024-01-01T00:00:00",
             "status": "done",
             "ai_summary": "테스트 요약",
@@ -375,7 +380,9 @@ class TestEvidenceServiceGetDetail:
             "case_id": "case_123abc",
             "type": "audio",
             "filename": "recording.mp3",
+            "size": 2097152,
             "s3_key": "cases/case_123abc/raw/recording.mp3",
+            "content_type": "audio/mpeg",
             "created_at": "2024-01-01T00:00:00",
             "status": "pending"
         }
