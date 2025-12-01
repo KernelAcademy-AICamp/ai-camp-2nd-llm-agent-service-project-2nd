@@ -30,6 +30,11 @@ export default function LoginForm() {
       // TODO: Consider HTTP-only cookie for better security
       localStorage.setItem('authToken', response.data.access_token);
 
+      // Store user info for display purposes
+      if (response.data.user) {
+        localStorage.setItem('user', JSON.stringify(response.data.user));
+      }
+
       // Redirect to cases page
       router.push('/cases');
     } catch (err) {

@@ -1663,3 +1663,70 @@ Backend와 AI Worker 간 변수명 차이 해결:
 - `/.env.example` - 템플릿 (179 lines)
 - `/docs/ENVIRONMENT.md` - 환경 설정 가이드
 - GitHub Issue #33 - Actions 환경변수 설정 가이드
+
+---
+
+## 13. Cases 페이지 UX 개선 (2025-12-01)
+
+> **목적:** 로그인 후 /cases 페이지에서 사용자 경험 개선
+> **담당:** P (Frontend)
+> **개발 방식:** TDD (Red → Green → Refactor)
+
+### 13.1 요구사항
+
+| # | 기능 | 설명 | 상태 |
+|---|------|------|------|
+| 1 | 사용자 이름 표시 | 헤더 우상단에 로그인한 사용자 이름 표시 | ✅ 완료 |
+| 2 | 케이스 생성 버튼 | "새 사건 등록" 버튼 동작 확인 | ✅ 완료 |
+| 3 | 예시 케이스 제공 | 케이스가 없을 때 mock 데이터 예시 표시 | ✅ 완료 |
+| 4 | 에러/빈 상태 구분 | API 실패 vs 케이스 없음 명확히 구분 | ✅ 완료 |
+
+### 13.2 TDD 개발 로그
+
+#### RED Phase - 테스트 작성 ✅
+- [x] `CasesPage.test.tsx` 생성 (9개 테스트 케이스)
+- [x] 테스트 1: 사용자 이름이 헤더에 표시되는지 확인
+- [x] 테스트 2: "새 사건 등록" 버튼 클릭 시 모달 열림
+- [x] 테스트 3: 케이스 없을 때 예시 mock 데이터 표시
+- [x] 테스트 4: API 에러 시 에러 메시지, 빈 상태 시 빈 상태 메시지
+
+#### GREEN Phase - 구현 ✅
+- [x] useAuth 훅에 User 인터페이스 및 user 상태 추가
+- [x] localStorage에서 user 정보 저장/조회 (LoginForm, SignupPage)
+- [x] 에러 상태와 빈 상태 UI 분리 (에러: 빨간 배경 + 다시 시도 버튼)
+- [x] mock 데이터 예시 컴포넌트 추가 (EXAMPLE_CASES 상수)
+
+#### REFACTOR Phase
+- [x] 코드 정리 완료 (추가 리팩터링 불필요)
+
+### 13.3 관련 파일
+
+- `frontend/src/pages/cases/index.tsx` - 메인 케이스 목록 페이지 (수정됨)
+- `frontend/src/hooks/useAuth.ts` - 인증 훅 (User 인터페이스 추가)
+- `frontend/src/tests/pages/CasesPage.test.tsx` - 테스트 파일 (신규)
+- `frontend/src/components/auth/LoginForm.tsx` - 로그인 폼 (user 저장 추가)
+- `frontend/src/app/signup/page.tsx` - 회원가입 (user 저장 추가)
+
+### 13.4 테스트 결과
+
+```
+PASS src/tests/pages/CasesPage.test.tsx
+  CasesPage
+    1. User Name Display
+      ✓ should display user name in header when logged in
+      ✓ should show generic greeting when user name is not available
+    2. Case Creation Button
+      ✓ should open modal when "새 사건 등록" button is clicked
+    3. Mock Example Cases
+      ✓ should show example mock cases when no cases exist
+      ✓ should indicate example cases are for demonstration only
+    4. Error vs Empty State
+      ✓ should show error message when API fails
+      ✓ should show empty state message when no cases exist
+      ✓ should show network error message when network fails
+    Real Cases Display
+      ✓ should display actual cases when they exist
+
+Test Suites: 1 passed, 1 total
+Tests:       9 passed, 9 total
+```
