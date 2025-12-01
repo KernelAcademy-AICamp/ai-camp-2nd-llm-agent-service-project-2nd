@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { login } from '@/lib/api/auth';
 import { Button, Input } from '@/components/primitives';
 
@@ -52,15 +53,25 @@ export default function LoginForm() {
         error={error && email === '' ? '이메일을 입력해주세요' : undefined}
       />
 
-      <Input
-        id="password"
-        type="password"
-        label="비밀번호"
-        required
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        error={error && password === '' ? '비밀번호를 입력해주세요' : undefined}
-      />
+      <div>
+        <Input
+          id="password"
+          type="password"
+          label="비밀번호"
+          required
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          error={error && password === '' ? '비밀번호를 입력해주세요' : undefined}
+        />
+        <div className="mt-1 text-right">
+          <Link
+            href="/forgot-password"
+            className="text-sm text-deep-trust-blue hover:underline"
+          >
+            비밀번호를 잊으셨나요?
+          </Link>
+        </div>
+      </div>
 
       {error && (
         <div className="text-sm text-error text-center" role="alert">

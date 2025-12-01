@@ -238,6 +238,33 @@
 
 ---
 
+### 1.14 비밀번호 재설정 (Password Reset) ✅ **완료 (2025-12-01)**
+
+> **담당: H (Backend)**
+> **목표**: 이메일 기반 비밀번호 재설정 기능 구현
+
+- [x] `POST /auth/forgot-password` 호출 시:
+  - 이메일 주소를 받아 비밀번호 재설정 토큰을 생성해야 한다.
+  - 토큰은 `password_reset_tokens` 테이블에 저장 (1시간 유효).
+  - AWS SES를 통해 재설정 링크가 포함된 이메일을 발송해야 한다.
+  - 보안: 이메일 존재 여부와 상관없이 항상 성공 응답 반환 (user enumeration 방지).
+- [x] `POST /auth/reset-password` 호출 시:
+  - 유효한 토큰과 새 비밀번호를 받아 비밀번호를 변경해야 한다.
+  - 토큰이 만료되었거나 이미 사용된 경우 400 에러 반환.
+  - 성공 시 토큰을 사용됨으로 마킹.
+- [x] DB 모델 추가:
+  - `PasswordResetToken` 모델: id, user_id, token, expires_at, used_at, created_at
+- [x] 이메일 서비스 구현:
+  - `app/utils/email.py`: AWS SES 기반 이메일 발송
+  - `SES_SENDER_EMAIL` 환경변수 설정 필요
+
+**설정 필요 사항:**
+- AWS SES 발신 이메일 인증 필요 (`aws ses verify-email-identity`)
+- Lambda 환경변수 `SES_SENDER_EMAIL` 설정 필요
+- SES 샌드박스 모드에서는 인증된 이메일로만 발송 가능
+
+---
+
 ## 2. AI Worker (L, S3 Event → DynamoDB / Qdrant) ✅ **완료**
 
 ### 2.1 Event 파싱 ✅
@@ -893,6 +920,36 @@
 - `frontend/src/pages/cases/index.tsx` - 실제 API 연동
 - `frontend/src/tests/case-list-dashboard.test.tsx` - 테스트 mock 수정
 - `frontend/src/tests/draft-tab.test.tsx` - 업로드 상태 assertion 수정
+
+---
+
+### 3.22 비밀번호 재설정 UI ✅ **완료 (2025-12-01)**
+
+> **담당: H (Frontend)**
+> **목표**: 비밀번호 찾기/재설정 페이지 구현
+
+- [x] 비밀번호 찾기 페이지 (`/forgot-password`):
+  - 이메일 입력 폼
+  - `POST /auth/forgot-password` API 연동
+  - 성공 시 "이메일 확인" 안내 화면 표시
+- [x] 비밀번호 재설정 페이지 (`/reset-password?token=xxx`):
+  - URL에서 토큰 파싱 (`useSearchParams`)
+  - 새 비밀번호 입력 + 확인 폼
+  - 비밀번호 일치 검증, 최소 8자 검증
+  - `POST /auth/reset-password` API 연동
+  - 성공 시 로그인 페이지로 리다이렉트 (3초 후 자동)
+  - 토큰 없거나 유효하지 않은 경우 에러 화면
+- [x] 로그인 폼에 링크 추가:
+  - `LoginForm.tsx`에 "비밀번호를 잊으셨나요?" 링크 추가
+- [x] API 클라이언트 함수 추가:
+  - `forgotPassword(email)`: 비밀번호 재설정 요청
+  - `resetPassword(token, newPassword)`: 비밀번호 변경
+
+**변경된 파일:**
+- `frontend/src/app/forgot-password/page.tsx` - 신규
+- `frontend/src/app/reset-password/page.tsx` - 신규
+- `frontend/src/lib/api/auth.ts` - API 함수 추가
+- `frontend/src/components/auth/LoginForm.tsx` - 링크 추가
 
 ---
 
