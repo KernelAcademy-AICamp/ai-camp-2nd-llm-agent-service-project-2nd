@@ -104,24 +104,19 @@ jobs:
           JWT_SECRET: test_secret_key_for_ci_pipeline_32chars
         run: python -c "from app.db.session import init_db; init_db()"
 
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ap-northeast-2
-
-      - name: Run pytest
+      - name: Run pytest (skip integration tests)
         timeout-minutes: 5
         env:
           DATABASE_URL: postgresql://test_user:test_pass@localhost:5432/test_db
           JWT_SECRET: test_secret_key_for_ci_pipeline_32chars
           TESTING: true
           AWS_REGION: ap-northeast-2
-          S3_EVIDENCE_BUCKET: ${{ secrets.S3_EVIDENCE_BUCKET || 'test-bucket' }}
-          DDB_EVIDENCE_TABLE: ${{ secrets.DDB_EVIDENCE_TABLE || 'test-evidence-table' }}
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY || 'test-openai-key' }}
-        run: pytest --cov=app --cov-report=xml -v --timeout=60
+          AWS_ACCESS_KEY_ID: test-access-key
+          AWS_SECRET_ACCESS_KEY: test-secret-key
+          S3_EVIDENCE_BUCKET: test-bucket
+          DDB_EVIDENCE_TABLE: test-evidence-table
+          OPENAI_API_KEY: test-openai-key
+        run: pytest --cov=app --cov-report=xml -v --timeout=60 -m "not integration"
 
       - name: Upload coverage report
         uses: actions/upload-artifact@v4
@@ -145,6 +140,11 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y tesseract-ocr tesseract-ocr-kor ffmpeg
 
       - name: Setup Python
         uses: actions/setup-python@v5

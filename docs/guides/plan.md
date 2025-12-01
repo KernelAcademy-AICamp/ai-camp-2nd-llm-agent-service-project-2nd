@@ -244,47 +244,23 @@
   - `delete_evidence_metadata()`: DeleteItem
   - `clear_case_evidence()`: GSI 쿼리 + BatchDelete
 
-**AI Worker (L 담당) - 2025-11-28 완료**:
-- [x] `ai_worker/src/storage/metadata_store.py` SQLite → DynamoDB 교체
-  - ✅ **구현 완료**: boto3 client 사용, `leh_evidence` 테이블 연동
-- [x] CRUD 함수 구현 및 테스트 (18개 테스트 통과):
-  - `save_file()`, `save_chunk()`, `save_chunks()`: PutItem
-  - `get_file()`, `get_chunk()`, `get_chunks_by_case()`: GetItem/Query
-  - `delete_file()`, `delete_chunk()`, `delete_case()`: DeleteItem
-- [x] BatchWriteItem 권한 이슈 해결:
-  - ❌ BatchWriteItem 권한 없음 → ✅ 개별 PutItem fallback 구현
-
 #### 2.7.2 Qdrant 연동 (L 담당) ✅ **완료 (2025-11-28)**
 
-> **Qdrant 완전 대체**: Qdrant Cloud 사용
+> **Qdrant Cloud 사용**: PR #26 머지 완료
 
 - [x] Qdrant 클라이언트 설정:
-  - **Qdrant Cloud**: `QDRANT_URL`, `QDRANT_API_KEY` 환경변수 사용 ✅
-  - ~~Self-hosted: Docker로 로컬 실행~~ (Cloud 사용으로 불필요)
+  - **Qdrant Cloud**: `QDRANT_URL`, `QDRANT_API_KEY` 환경변수 사용
+  - ✅ 구현 완료: `ai_worker/src/storage/vector_store.py`
 - [x] 컬렉션 설정:
-  - 컬렉션 이름: `leh_evidence` ✅
-  - 벡터 차원: 1536 (OpenAI text-embedding-ada-002) ✅
-  - Distance metric: Cosine ✅
-  - **Payload Indexes**: `case_id`, `file_id`, `chunk_id`, `sender` ✅
-- [x] VectorStore 구현체 수정 (`ai_worker/src/storage/vector_store.py`):
-  - `add_evidence()`, `add_chunk_with_metadata()`: 벡터 저장 ✅
-  - `search_by_embedding()`, `search_by_case()`: 유사 벡터 검색 ✅
-  - `delete_by_case()`: 케이스 삭제 시 관련 벡터 일괄 삭제 ✅
-- [ ] Backend RAG 검색 함수 수정 (`backend/app/utils/qdrant.py`):
-  - `search_evidence_by_semantic(case_id, query, top_k)`: Qdrant 검색으로 교체 (Backend 담당)
-- [x] 테스트 항목:
-  - 벡터 저장 후 검색 시 동일 문서가 최상위에 나오는지 확인 ✅
-  - case_id 필터링이 정상 동작하는지 확인 ✅
-  - 삭제 후 검색되지 않는지 확인 ✅
-  - **총 16개 테스트 통과 (15 unit + 1 integration)** ✅
-
-**Qdrant 설정 예시 (config.py에 추가):**
-```python
-# Qdrant Settings
-QDRANT_URL: str = Field(default="http://localhost:6333", env="QDRANT_URL")
-QDRANT_API_KEY: str = Field(default="", env="QDRANT_API_KEY")  # Cloud 사용 시
-QDRANT_COLLECTION: str = Field(default="leh_evidence", env="QDRANT_COLLECTION")
-```
+  - 컬렉션 이름: `leh_evidence`
+  - 벡터 차원: 1536 (OpenAI text-embedding-3-small)
+  - Distance metric: Cosine
+  - Payload indexes: case_id, file_id, chunk_id, sender
+- [x] VectorStore 구현체 수정:
+  - `add_chunk_with_metadata()`: 벡터 + 메타데이터 저장
+  - `search()`: 유사 벡터 검색
+  - `delete_by_case_id()`: 케이스 삭제 시 관련 벡터 일괄 삭제
+- [x] 테스트 완료: 18개 테스트 통과
 
 #### 2.7.3 OpenAI API 연동 (H 담당)
 
@@ -298,34 +274,64 @@ QDRANT_COLLECTION: str = Field(default="leh_evidence", env="QDRANT_COLLECTION")
   - Rate limit 처리 (429 에러 시 재시도)
   - 타임아웃 설정 (60초)
 
-#### 2.7.4 S3 연동 (L 담당) ⚠️ **버킷 생성 대기**
+#### 2.7.4 S3 연동 (L 담당) ✅ **완료**
 
-- [x] AI Worker에서 S3 파일 다운로드 구현 (`handler.py`)
-  - ✅ `boto3.client('s3').download_file()` 구현 완료
-  - ✅ S3 Event 파싱 로직 구현 완료
-- [x] 환경변수: `S3_BUCKET_NAME`, `AWS_REGION` 설정 완료
-- [ ] **⚠️ S3 버킷 생성 필요**: `leh-evidence-dev` 버킷이 존재하지 않음
-  - Admin 권한으로 버킷 생성 필요
-- [ ] 파일 경로 규칙 확인: `cases/{case_id}/raw/{evidence_id}_{filename}`
+- [x] AI Worker에서 S3 파일 다운로드 구현
+  - ✅ `handler.py`: boto3 S3 client로 /tmp에 다운로드
+- [x] 환경변수: `S3_EVIDENCE_BUCKET`, `AWS_REGION`
+- [x] 파일 경로 규칙: `cases/{case_id}/raw/{evidence_id}_{filename}`
 
-#### 2.7.5 Lambda 배포 (L 담당) ✅ **배포 준비 완료**
+#### 2.7.5 Lambda 배포 (L 담당) 🔄 **준비 완료**
 
 - [x] Dockerfile.lambda 작성 완료
-  - Python 3.12 Lambda base image
-  - handler.handle 엔트리포인트
-- [x] 모든 모듈 import 테스트 통과:
-  - Handler, Storage, Parser, Analysis, Utils
-- [ ] AWS Lambda로 실제 배포:
-  - ECR에 Docker 이미지 푸시
-  - Lambda 함수 생성
-- [ ] S3 Event Trigger 설정 (ObjectCreated)
-  - **⚠️ S3 버킷 생성 후 진행 가능**
+- [x] 모든 모듈 import 테스트 통과
+- [x] S3 Event Trigger 설정 (Terraform에 설정됨)
+- [ ] **배포 대기**: Admin 권한 필요 (S3 버킷 접근)
 - [ ] IAM Role 설정:
   - S3 읽기 권한
   - DynamoDB 읽기/쓰기 권한
-  - Qdrant 접근 (Public endpoint)
-- [ ] 환경변수 설정 (Lambda Console):
-  - `DYNAMODB_TABLE`, `QDRANT_URL`, `QDRANT_API_KEY`, `OPENAI_API_KEY` 등
+  - Qdrant 접근 (VPC 또는 Public)
+
+### 2.8 E2E 통합 (Backend ↔ AI Worker) 🟡 **거의 완료**
+
+> **목표**: Backend가 생성한 Evidence 레코드를 AI Worker가 처리 후 UPDATE
+
+#### 2.8.1 스키마 매핑 구현 ✅ 완료
+
+- [x] `handler.py`: S3 key에서 evidence_id 추출 함수 추가
+  - 형식: `cases/{case_id}/raw/{evidence_id}_{filename}`
+  - 예: `ev_abc123_photo.jpg` → `ev_abc123`
+  - 구현: `_extract_evidence_id_from_s3_key()` 함수
+- [x] `metadata_store.py`: `update_evidence_status()` 메서드 추가
+  - Backend 레코드 상태 업데이트 (pending → processed)
+  - AI 분석 결과 필드 추가 (ai_summary, article_840_tags, qdrant_id)
+
+#### 2.8.2 처리 완료 후 상태 업데이트 ✅ 완료
+
+- [x] `handler.py`: `route_and_process()` 수정
+  - evidence_id 추출 성공 시: Backend 레코드 UPDATE
+  - 실패 시: fallback으로 새 레코드 생성 (기존 방식)
+- [x] 업데이트 필드:
+  - `status`: "pending" → "processed"
+  - `processed_at`: 처리 완료 시간
+  - `ai_summary`: AI 생성 요약
+  - `article_840_tags`: 민법 840조 태그
+  - `qdrant_id`: Qdrant 벡터 ID
+
+#### 2.8.3 테스트 🟡 진행 중
+
+- [x] Unit test: E2E 통합 테스트 7개 추가 (`TestE2EIntegration`)
+- [x] AWS 연결 테스트: DynamoDB PutItem/GetItem/UpdateItem 검증 완료
+- [ ] Lambda 배포 테스트 (Admin 권한 필요)
+- [ ] Full E2E: 실제 파일 업로드 → Lambda → Backend 조회
+
+#### 2.8.4 환경변수 설정 ✅ 완료
+
+- [x] `backend/app/core/config.py`: S3 버킷명 수정 (`leh-evidence-prod`)
+- [x] `ai_worker/.env.example`: 실제 AWS 리소스명으로 업데이트
+  - `S3_EVIDENCE_BUCKET=leh-evidence-prod`
+  - `DYNAMODB_TABLE=leh_evidence`
+  - `DYNAMODB_TABLE_CASE_SUMMARY=leh_case_summary`
 
 ---
 

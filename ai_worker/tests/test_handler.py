@@ -9,7 +9,13 @@ Phase 1: 2.1 Event 파싱 테스트
 
 import json
 from unittest.mock import Mock, patch
-from handler import handle, route_and_process, route_parser
+from handler import (
+    handle,
+    route_and_process,
+    route_parser,
+    _extract_case_id,
+    _extract_evidence_id_from_s3_key
+)
 
 
 class TestS3EventParsing:
@@ -651,3 +657,112 @@ class TestStorageAndAnalysisIntegration:
         ]
         assert result["parser_type"] is not None
         assert result["bucket"] == "complete-bucket"
+
+
+class TestE2EIntegration:
+    """E2E 통합 테스트 (2.8) - Backend ↔ AI Worker"""
+
+    def test_extract_case_id_from_backend_format(self):
+        """
+        Given: Backend 형식 S3 키 (cases/{case_id}/raw/{ev_id}_{filename})
+        When: _extract_case_id() 호출
+        Then: case_id가 정확히 추출됨
+        """
+        # Given
+        object_key = "cases/case_001/raw/ev_abc123_photo.jpg"
+
+        # When
+        case_id = _extract_case_id(object_key, "fallback-bucket")
+
+        # Then
+        assert case_id == "case_001"
+
+    def test_extract_case_id_from_legacy_format(self):
+        """
+        Given: 레거시 형식 S3 키 (evidence/{case_id}/filename)
+        When: _extract_case_id() 호출
+        Then: case_id가 정확히 추출됨
+        """
+        # Given
+        object_key = "evidence/case_002/document.pdf"
+
+        # When
+        case_id = _extract_case_id(object_key, "fallback-bucket")
+
+        # Then
+        assert case_id == "case_002"
+
+    def test_extract_case_id_fallback(self):
+        """
+        Given: 형식이 맞지 않는 S3 키
+        When: _extract_case_id() 호출
+        Then: fallback 값 반환
+        """
+        # Given
+        object_key = "document.pdf"
+
+        # When
+        case_id = _extract_case_id(object_key, "fallback-bucket")
+
+        # Then
+        assert case_id == "fallback-bucket"
+
+    def test_extract_evidence_id_from_backend_format(self):
+        """
+        Given: Backend 형식 S3 키 (cases/{case_id}/raw/{ev_id}_{filename})
+        When: _extract_evidence_id_from_s3_key() 호출
+        Then: evidence_id가 정확히 추출됨 (ev_xxx)
+        """
+        # Given
+        object_key = "cases/case_001/raw/ev_abc123_photo.jpg"
+
+        # When
+        evidence_id = _extract_evidence_id_from_s3_key(object_key)
+
+        # Then
+        assert evidence_id == "ev_abc123"
+
+    def test_extract_evidence_id_with_underscore_in_filename(self):
+        """
+        Given: 파일명에 언더스코어가 포함된 S3 키
+        When: _extract_evidence_id_from_s3_key() 호출
+        Then: evidence_id만 정확히 추출됨
+        """
+        # Given
+        object_key = "cases/case_001/raw/ev_xyz789_my_document_file.pdf"
+
+        # When
+        evidence_id = _extract_evidence_id_from_s3_key(object_key)
+
+        # Then
+        assert evidence_id == "ev_xyz789"
+
+    def test_extract_evidence_id_returns_none_for_legacy_format(self):
+        """
+        Given: 레거시 형식 S3 키 (evidence_id 없음)
+        When: _extract_evidence_id_from_s3_key() 호출
+        Then: None 반환
+        """
+        # Given
+        object_key = "evidence/case_002/document.pdf"
+
+        # When
+        evidence_id = _extract_evidence_id_from_s3_key(object_key)
+
+        # Then
+        assert evidence_id is None
+
+    def test_extract_evidence_id_returns_none_for_non_ev_prefix(self):
+        """
+        Given: ev_ 접두어가 없는 S3 키
+        When: _extract_evidence_id_from_s3_key() 호출
+        Then: None 반환
+        """
+        # Given
+        object_key = "cases/case_001/raw/file_123_photo.jpg"
+
+        # When
+        evidence_id = _extract_evidence_id_from_s3_key(object_key)
+
+        # Then
+        assert evidence_id is None

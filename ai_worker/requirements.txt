@@ -21,8 +21,8 @@ PyPDF2>=3.0.1                  # PDF text extraction
 ffmpeg-python>=0.2.0           # Audio/Video manipulation
 
 # OCR (Image Processing)
-# pytesseract>=0.3.10          # Tesseract OCR (optional, for ImageOCRParser)
-# Pillow>=10.1.0                # Image processing (optional)
+pytesseract>=0.3.10           # Tesseract OCR wrapper (requires tesseract-ocr system package)
+Pillow>=10.1.0                # Image processing (required for ImageOCRParser)
 
 # Testing
 pytest>=7.4.3

@@ -5,7 +5,7 @@ Uses mocking to avoid actual AWS calls
 
 import pytest
 from unittest.mock import MagicMock, patch
-from datetime import datetime, timezone
+from datetime import datetime
 from src.storage.metadata_store import MetadataStore
 from src.storage.schemas import EvidenceFile, EvidenceChunk
 

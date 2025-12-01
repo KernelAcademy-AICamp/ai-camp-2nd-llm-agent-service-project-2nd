@@ -16,7 +16,7 @@ from datetime import datetime, timezone
 
 import boto3
 from pathlib import Path
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional
 
 # Import AI Pipeline modules
 from src.parsers import (
@@ -29,7 +29,6 @@ from src.parsers.text import TextParser
 from src.storage.metadata_store import MetadataStore
 from src.storage.vector_store import VectorStore
 from src.storage.schemas import EvidenceFile
-from src.analysis.summarizer import EvidenceSummarizer
 from src.analysis.article_840_tagger import Article840Tagger
 from src.utils.logging_filter import SensitiveDataFilter
 from src.utils.embeddings import get_embedding  # Embedding utility
@@ -126,26 +125,19 @@ def route_and_process(bucket_name: str, object_key: str) -> Dict[str, Any]:
         logger.info(f"Parsed {object_key} with {parser.__class__.__name__}")
 
         # case_id 추출 (object_key에서 첫 번째 디렉토리 또는 bucket_name)
-        # 예: evidence/{case_id}/file.txt → case_id 추출
+        # 예: cases/{case_id}/raw/ev_xxx_file.txt → case_id 추출
         case_id = _extract_case_id(object_key, bucket_name)
 
+        # evidence_id 추출 (Backend 레코드 업데이트용)
+        # 예: cases/{case_id}/raw/ev_abc123_file.txt → ev_abc123
+        backend_evidence_id = _extract_evidence_id_from_s3_key(object_key)
+
         # 파일 메타데이터 생성
-        file_id = f"file_{uuid.uuid4().hex[:12]}"
+        file_id = backend_evidence_id or f"file_{uuid.uuid4().hex[:12]}"
         source_type = parsed_result[0].metadata.get("source_type", "unknown") if parsed_result else "unknown"
 
         # 메타데이터 저장 (DynamoDB)
         metadata_store = MetadataStore()
-        evidence_file = EvidenceFile(
-            file_id=file_id,
-            filename=file_path.name,
-            file_type=source_type,
-            parsed_at=datetime.now(timezone.utc),
-            total_messages=len(parsed_result),
-            case_id=case_id,
-            filepath=object_key
-        )
-        metadata_store.save_file(evidence_file)
-        logger.info(f"Saved metadata to DynamoDB: file_id={file_id}")
 
         # 벡터 임베딩 및 저장 (Qdrant)
         vector_store = VectorStore()
@@ -182,6 +174,7 @@ def route_and_process(bucket_name: str, object_key: str) -> Dict[str, Any]:
         tagger = Article840Tagger()
 
         tags_list = []
+        all_categories = set()
         for message in parsed_result:
             tagging_result = tagger.tag(message)
             tags_list.append({
@@ -189,6 +182,42 @@ def route_and_process(bucket_name: str, object_key: str) -> Dict[str, Any]:
                 "confidence": tagging_result.confidence,
                 "matched_keywords": tagging_result.matched_keywords
             })
+            all_categories.update(cat.value for cat in tagging_result.categories)
+
+        # AI 요약 생성 (간단한 통계 기반)
+        ai_summary = f"총 {len(parsed_result)}개 메시지 분석 완료. 감지된 태그: {', '.join(all_categories) if all_categories else '없음'}"
+
+        # Article 840 태그 집계
+        article_840_tags = {
+            "categories": list(all_categories),
+            "total_messages": len(parsed_result),
+            "chunks_indexed": len(chunk_ids)
+        }
+
+        # 메타데이터 저장/업데이트 (DynamoDB)
+        if backend_evidence_id:
+            # Backend가 생성한 레코드 업데이트
+            metadata_store.update_evidence_status(
+                evidence_id=backend_evidence_id,
+                status="processed",
+                ai_summary=ai_summary,
+                article_840_tags=article_840_tags,
+                qdrant_id=chunk_ids[0] if chunk_ids else None
+            )
+            logger.info(f"Updated Backend evidence: {backend_evidence_id} → processed")
+        else:
+            # Fallback: 새 레코드 생성 (기존 방식)
+            evidence_file = EvidenceFile(
+                file_id=file_id,
+                filename=file_path.name,
+                file_type=source_type,
+                parsed_at=datetime.now(timezone.utc),
+                total_messages=len(parsed_result),
+                case_id=case_id,
+                filepath=object_key
+            )
+            metadata_store.save_file(evidence_file)
+            logger.info(f"Created new evidence record: {file_id}")
 
         return {
             "status": "processed",
@@ -197,8 +226,10 @@ def route_and_process(bucket_name: str, object_key: str) -> Dict[str, Any]:
             "bucket": bucket_name,
             "case_id": case_id,
             "file_id": file_id,
+            "evidence_id": backend_evidence_id,
             "chunks_indexed": len(chunk_ids),
-            "tags": tags_list
+            "tags": tags_list,
+            "ai_summary": ai_summary
         }
 
     except Exception as e:
@@ -215,6 +246,7 @@ def _extract_case_id(object_key: str, fallback: str) -> str:
     S3 object key에서 case_id 추출
 
     Expected formats:
+    - cases/{case_id}/raw/{evidence_id}_{filename} → case_id (Backend format)
     - evidence/{case_id}/filename.ext → case_id
     - {case_id}/filename.ext → case_id
     - filename.ext → fallback (bucket name)
@@ -228,6 +260,10 @@ def _extract_case_id(object_key: str, fallback: str) -> str:
     """
     parts = object_key.split('/')
 
+    # cases/{case_id}/raw/{evidence_id}_{filename} 패턴 (Backend format)
+    if len(parts) >= 4 and parts[0] == 'cases' and parts[2] == 'raw':
+        return parts[1]
+
     # evidence/{case_id}/file.ext 패턴
     if len(parts) >= 3 and parts[0] == 'evidence':
         return parts[1]
@@ -238,6 +274,35 @@ def _extract_case_id(object_key: str, fallback: str) -> str:
 
     # 파일만 있는 경우 fallback
     return fallback
+
+
+def _extract_evidence_id_from_s3_key(object_key: str) -> Optional[str]:
+    """
+    S3 object key에서 evidence_id 추출 (Backend 레코드 업데이트용)
+
+    Expected format:
+    - cases/{case_id}/raw/{evidence_id}_{filename}
+    - 예: cases/case_001/raw/ev_abc123_photo.jpg → ev_abc123
+
+    Args:
+        object_key: S3 object key
+
+    Returns:
+        evidence_id if found, None otherwise
+    """
+    parts = object_key.split('/')
+
+    # cases/{case_id}/raw/{evidence_id}_{filename} 패턴
+    if len(parts) >= 4 and parts[0] == 'cases' and parts[2] == 'raw':
+        filename = parts[3]
+        # ev_xxx_filename.ext → ev_xxx 추출
+        if filename.startswith('ev_') and '_' in filename[3:]:
+            # ev_abc123_photo.jpg → ['ev', 'abc123', 'photo.jpg']
+            ev_parts = filename.split('_', 2)
+            if len(ev_parts) >= 2:
+                return f"ev_{ev_parts[1]}"
+
+    return None
 
 
 def handle(event, context):

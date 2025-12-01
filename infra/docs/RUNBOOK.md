@@ -21,7 +21,7 @@
 ## 🛠 2. 장애 유형별 대응 시나리오 (SOP)
 
 ### 시나리오 A: AI Worker 멈춤 (업로드 후 무한 '처리 중')
-* **증상:** S3에 파일은 정상적으로 업로드되었으나, DynamoDB/Qdrant에 데이터가 생성되지 않고 UI에서 '처리 중' 상태가 지속됨.
+* **증상:** S3에 파일은 정상적으로 업로드되었으나, DynamoDB/OpenSearch에 데이터가 생성되지 않고 UI에서 '처리 중' 상태가 지속됨.
 * **진단:**
   ```bash
   # 1. CloudWatch Logs에서 최근 에러 확인
@@ -44,7 +44,7 @@
         ```sql
         UPDATE cases SET status = 'active' WHERE id = '{case_id}';
         ```
-    2.  **인덱스 복구:** Qdrant 인덱스가 삭제되었다면, `POST /admin/reindex-case {case_id}` API를 호출하여 DynamoDB에 저장된 데이터를 기반으로 검색 인덱스를 재생성합니다.
+    2.  **인덱스 복구:** OpenSearch 인덱스가 삭제되었다면, `POST /admin/reindex-case {case_id}` API를 호출하여 DynamoDB에 저장된 데이터를 기반으로 검색 인덱스를 재생성합니다.
 
 ### 시나리오 C: OpenAI 비용 급증 (Bill Shock)
 
