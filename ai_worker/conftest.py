@@ -39,7 +39,6 @@ def pytest_collection_modifyitems(config, items):
         for item in items:
             # Skip tests that require external services
             test_file = str(item.fspath)
-            test_name = item.name
 
             # Skip test files that are integration tests
             integration_patterns = [
