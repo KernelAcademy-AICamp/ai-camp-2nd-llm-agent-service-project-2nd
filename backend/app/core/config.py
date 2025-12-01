@@ -86,11 +86,8 @@ class Settings(BaseSettings):
 
     # ============================================
     # S3 Settings
-    # NOTE: "leh-evidence-dev"는 더 이상 사용하지 않음 (임시 로컬 테스트용이었음)
-    # 실제 환경에서는 반드시 S3_EVIDENCE_BUCKET 환경변수를 설정할 것
-    # 예: leh-evidence-prod 또는 Admin이 생성한 실제 버킷 이름
     # ============================================
-    S3_EVIDENCE_BUCKET: str = Field(default="", env="S3_EVIDENCE_BUCKET")  # 환경변수 필수
+    S3_EVIDENCE_BUCKET: str = Field(default="leh-evidence-prod", env="S3_EVIDENCE_BUCKET")
     S3_EVIDENCE_PREFIX: str = Field(default="cases/", env="S3_EVIDENCE_PREFIX")
     S3_PRESIGNED_URL_EXPIRE_SECONDS: int = Field(default=300, env="S3_PRESIGNED_URL_EXPIRE_SECONDS")  # 5 minutes max
 
