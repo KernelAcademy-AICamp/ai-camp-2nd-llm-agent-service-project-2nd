@@ -257,6 +257,7 @@ class EvidenceService:
                 case_id=evidence["case_id"],
                 type=evidence["type"],
                 filename=evidence["filename"],
+                size=evidence.get("size", 0),
                 created_at=datetime.fromisoformat(evidence["created_at"]),
                 status=evidence.get("status", "pending"),
                 article_840_tags=self._parse_article_840_tags(evidence)
@@ -316,6 +317,7 @@ class EvidenceService:
             case_id=evidence["case_id"],
             type=evidence["type"],
             filename=evidence["filename"],
+            size=evidence.get("size", 0),
             s3_key=evidence["s3_key"],
             content_type=evidence.get("content_type", "application/octet-stream"),
             created_at=datetime.fromisoformat(evidence["created_at"]),

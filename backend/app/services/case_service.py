@@ -180,7 +180,7 @@ class CaseService:
 
         # Check if user is owner
         member = self.member_repo.get_member(case_id, user_id)
-        if not member or member.role != "owner":
+        if not member or member.role != CaseMemberRole.OWNER:
             raise PermissionError("Only case owner can delete the case")
 
         # Soft delete case in RDS

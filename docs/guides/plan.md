@@ -628,6 +628,98 @@ QDRANT_COLLECTION: str = Field(default="leh_evidence", env="QDRANT_COLLECTION")
 - [FRONTEND_CLEAN_CODE.md](../FRONTEND_CLEAN_CODE.md) - 코드 컨벤션
 - [랜딩 페이지 베스트 프랙티스](https://www.nngroup.com/articles/landing-page-guidelines/)
 
+### 3.20 케이스 상세 페이지 (Case Detail `/cases/[id]`) UI/UX 개선
+
+> **작업일자:** 2025-12-01
+> **목적:** 케이스 상세 페이지의 레이아웃 개선 및 UI/UX 원칙 준수
+> **파일:** `frontend/src/pages/cases/[id].tsx`
+
+#### 3.20.1 레이아웃 변경
+
+- [x] **좌측 사이드바 레이아웃 적용**
+  - 기존: 상단 탭 네비게이션
+  - 변경: 좌측 고정 사이드바 (256px) + 우측 메인 콘텐츠
+  - 액션 버튼 (증거 업로드, 초안 생성, 케이스 삭제)을 좌측 사이드바로 이동
+  - 탭 네비게이션 (Overview, 증거, 타임라인, 초안)을 좌측 사이드바로 이동
+
+#### 3.20.2 UI/UX 원칙 준수 검증 및 수정
+
+다음 8개 항목의 위반 사항을 식별하고 수정:
+
+- [x] **1. 디자인 토큰 색상 적용**
+  - 위반: `text-gray-*` 사용
+  - 수정: `text-neutral-*` 토큰으로 변경
+  - ✅ 테스트 완료: `case-detail-design-tokens.test.tsx` (7개 테스트)
+
+- [x] **2. WCAG 2.1 AA 터치 타겟 (44×44px)**
+  - 위반: 버튼/링크에 최소 터치 타겟 미적용
+  - 수정: 모든 인터랙티브 요소에 `min-h-[44px]` 적용
+  - ✅ 테스트 완료: `case-detail-accessibility.test.tsx` (4개 테스트)
+
+- [x] **3. Focus Visible 링 스타일**
+  - 위반: 포커스 상태 스타일 누락
+  - 수정: `focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2` 적용
+  - ✅ 테스트 완료: `case-detail-accessibility.test.tsx` (3개 테스트)
+
+- [x] **4. ARIA 라벨 접근성**
+  - 위반: 아이콘 버튼에 `aria-label` 누락
+  - 수정: 모든 버튼/링크에 `aria-label` 추가, 아이콘에 `aria-hidden="true"` 추가
+  - ✅ 테스트 완료: `case-detail-accessibility.test.tsx` (5개 테스트)
+
+- [x] **5. 시맨틱 아이콘 사용**
+  - 위반: Draft 아이콘으로 `BarChart3` 사용 (의미 불일치)
+  - 수정: `Edit3` 아이콘으로 변경
+  - ✅ 구현 완료: 코드에서 `Edit3` 아이콘 적용 확인
+
+- [x] **6. 시맨틱 색상 적용**
+  - 위반: Draft 상태에 `text-accent` 사용
+  - 수정: `text-success` (#2ECC71) 적용
+  - AI 경고 배너에 `bg-warning-light` 적용
+  - ✅ 테스트 완료: `case-detail-design-tokens.test.tsx` (4개 테스트)
+
+- [x] **7. Border Radius 일관성**
+  - 위반: `rounded-md`, `rounded-xl` 혼용
+  - 수정: `rounded-lg` (12px)로 통일
+  - ✅ 테스트 완료: `case-detail-design-tokens.test.tsx` (7개 테스트)
+
+- [x] **8. 시맨틱 HTML 구조**
+  - 위반: 네비게이션에 `<div>` 사용
+  - 수정: `<nav>`, `<ul>`, `<li>`, `role="tab"`, `aria-selected` 적용
+  - ✅ 테스트 완료: `case-detail-accessibility.test.tsx` (7개 테스트)
+
+#### 3.20.3 테스트 항목 (TDD 준수) ✅ **완료**
+
+> **TDD 보완 완료:** 2025-12-01 - 총 83개 테스트 작성 및 통과
+
+- [x] **접근성 테스트** (`src/tests/pages/case-detail-accessibility.test.tsx`)
+  - ✅ 28개 테스트 통과
+  - 터치 타겟 검증 (4개 테스트)
+  - ARIA 라벨 검증 (5개 테스트)
+  - 탭 네비게이션 ARIA 역할 검증 (5개 테스트)
+  - 포커스 스타일 검증 (3개 테스트)
+  - 시맨틱 HTML 구조 검증 (7개 테스트)
+  - 탭 패널 접근성 검증 (2개 테스트)
+
+- [x] **디자인 토큰 테스트** (`src/tests/pages/case-detail-design-tokens.test.tsx`)
+  - ✅ 27개 테스트 통과
+  - Neutral 색상 토큰 검증 (7개 테스트)
+  - 시맨틱 색상 검증 (4개 테스트)
+  - Border Radius 일관성 검증 (7개 테스트)
+  - Primary 색상 악센트 검증 (3개 테스트)
+  - 타이포그래피 토큰 검증 (3개 테스트)
+  - 그림자 토큰 검증 (2개 테스트)
+
+- [x] **레이아웃 테스트** (`src/tests/pages/case-detail-layout.test.tsx`)
+  - ✅ 28개 테스트 통과
+  - 좌측 사이드바 구조 검증 (5개 테스트)
+  - 메인 콘텐츠 영역 검증 (3개 테스트)
+  - Flex 레이아웃 구조 검증 (2개 테스트)
+  - 액션 버튼 검증 (4개 테스트)
+  - 탭 네비게이션 검증 (3개 테스트)
+  - 탭 콘텐츠 전환 검증 (4개 테스트)
+  - 헤더 레이아웃 검증 (5개 테스트)
+  - 페이지 컨테이너 검증 (2개 테스트)
+
 ---
 
 ## 4. 보안 관련 테스트 (전 계층 공통) ✅ **완료**
@@ -1328,3 +1420,33 @@ npm run test:e2e
   4. 필요하면 리팩터링 (구조 변경만)
 - 모든 새로운 기능/수정은:
   - **테스트 → 구현 → 리팩터링** 순서를 따른다.
+
+---
+
+## 11. QA 버그 수정 이력
+
+### 11.1 2025-12-01 QA 리포트 기반 수정 ✅
+
+QA 테스트에서 발견된 36개 Backend 실패, 5개 Frontend 실패를 수정함.
+
+#### Backend 수정사항
+
+| 파일 | 문제 | 수정 내용 | 영향 테스트 |
+|------|------|----------|------------|
+| `backend/app/services/case_service.py:183` | Enum 비교 오류 | `"owner"` → `CaseMemberRole.OWNER` | delete_case 2개 통과 |
+| `backend/app/services/evidence_service.py:260` | size 필드 누락 | `EvidenceSummary`에 `size` 추가 | evidence 23개 통과 |
+| `backend/app/services/evidence_service.py:320` | size 필드 누락 | `EvidenceDetail`에 `size` 추가 | evidence detail 통과 |
+| `backend/.env` | CORS 미설정 | `localhost:3000,8000` 추가 | 로그인 기능 정상화 |
+
+#### Frontend 수정사항
+
+| 파일 | 문제 | 수정 내용 | 영향 테스트 |
+|------|------|----------|------------|
+| `frontend/src/app/page.tsx` | 네비게이션 가드 미구현 | authToken 확인 후 /cases 리다이렉트 | navigation-guard 13개 통과 |
+| `frontend/.env` | API URL 미설정 | `NEXT_PUBLIC_API_BASE_URL` 추가 | API 연결 정상화 |
+
+#### TDD 준수 검증
+
+- ✅ 기존 테스트 실패 (Red) → 코드 수정 → 테스트 통과 (Green)
+- ✅ 테스트와 기능 수정이 같은 PR에 포함됨
+- ✅ 실패하는 테스트를 skip 처리하지 않음

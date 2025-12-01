@@ -30,8 +30,8 @@ export default function LandingPage() {
   const router = useRouter();
   const [isScrolled, setIsScrolled] = useState(false);
 
+  // Navigation Guard: Redirect authenticated users to /cases
   useEffect(() => {
-    // Navigation Guard: Check if already authenticated
     const token = localStorage.getItem('authToken');
     if (token) {
       router.push('/cases');
