@@ -123,7 +123,7 @@
 ### 8.2 허용
 
 - 테스트 전용 Secret/Key (로컬/CI 전용) 사용
-- Localstack, DynamoDB Local, OpenSearch Test Container 등 **격리된 환경**에서의 통합 테스트
+- Localstack, DynamoDB Local, Qdrant Test Container 등 **격리된 환경**에서의 통합 테스트
 - JWT Secret 이 설정되지 않았을 때 서버가 부팅을 거부하는지 확인하는 테스트
 
 ---

@@ -1,5 +1,37 @@
-boto3>=1.34
-opensearch-py>=2.5
-openai>=1.14
-pydantic>=2.6
-redis>=5.0
+# LEH AI Worker - Requirements
+# Merged from leh-ai-pipeline and original ai_worker requirements
+
+# Core Dependencies
+python-dotenv>=1.0.0
+pydantic>=2.5.0
+
+# AWS SDKs
+boto3>=1.34                    # S3, DynamoDB, Lambda
+qdrant-client>=1.7.0           # Qdrant vector database for RAG
+redis>=5.0                     # Cache/Session management
+
+# AI & LLM
+langchain>=0.1.0               # LLM orchestration
+openai>=1.14.0                 # GPT-4o, Whisper, Vision, Embedding
+
+# PDF Parsing
+PyPDF2>=3.0.1                  # PDF text extraction
+
+# Media Processing (Audio/Video)
+ffmpeg-python>=0.2.0           # Audio/Video manipulation
+
+# OCR (Image Processing)
+pytesseract>=0.3.10           # Tesseract OCR wrapper (requires tesseract-ocr system package)
+Pillow>=10.1.0                # Image processing (required for ImageOCRParser)
+
+# Testing
+pytest>=7.4.3
+pytest-cov>=4.1.0
+
+# Development & Code Quality
+black>=23.12.1                 # Code formatter
+flake8>=7.0.0                  # Linter
+mypy>=1.8.0                    # Type checker
+
+# CLI (Optional, for local testing)
+# click>=8.1.7

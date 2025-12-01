@@ -1,0 +1,187 @@
+/**
+ * LEH Design System - Global Styles
+ *
+ * Import order matters:
+ * 1. Design tokens (CSS variables)
+ * 2. Tailwind layers
+ * 3. Base styles
+ * 4. Component classes
+ * 5. Utilities
+ */
+
+/* Import design tokens first */
+@import '../styles/tokens.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ================================================
+   BASE LAYER
+   ================================================ */
+@layer base {
+  :root {
+    /* Font variable for Pretendard */
+    --font-pretendard: 'Pretendard Variable', Pretendard, -apple-system,
+      BlinkMacSystemFont, system-ui, Roboto, 'Helvetica Neue', 'Segoe UI',
+      'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', sans-serif;
+
+    /* Legacy color aliases (for backward compatibility) */
+    --deep-trust-blue: var(--color-secondary);
+    --clarity-teal: var(--color-primary);
+    --calm-grey: var(--color-neutral-50);
+    --accent: var(--color-primary);
+  }
+
+  /* Base body styles */
+  body {
+    @apply bg-neutral-50 text-neutral-800 antialiased;
+    font-family: var(--font-pretendard);
+  }
+
+  /* Global focus styles for accessibility (WCAG 2.1 AA) */
+  *:focus-visible {
+    @apply outline-none ring-2 ring-primary ring-offset-2;
+  }
+
+  /* Remove focus ring for mouse users */
+  *:focus:not(:focus-visible) {
+    @apply outline-none ring-0;
+  }
+
+  /* Reduced motion support (accessibility) */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+
+  /* Selection styling */
+  ::selection {
+    background-color: var(--color-primary-light);
+    color: var(--color-secondary);
+  }
+}
+
+/* ================================================
+   COMPONENT LAYER
+   ================================================ */
+@layer components {
+  /*
+   * Legacy button classes (for backward compatibility)
+   * Use <Button> primitive for new code
+   */
+  .btn-primary {
+    @apply bg-primary text-primary-contrast px-6 py-3 rounded-lg font-semibold
+           hover:bg-primary-hover active:bg-primary-active
+           transition-colors duration-200
+           focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-secondary {
+    @apply bg-white text-primary border-2 border-primary px-6 py-3 rounded-lg font-semibold
+           hover:bg-primary-light active:bg-primary-light
+           transition-colors duration-200
+           focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-danger {
+    @apply bg-error hover:bg-error-hover active:bg-error-active
+           text-error-contrast font-bold py-2 px-4 rounded
+           transition-colors duration-200
+           focus-visible:ring-2 focus-visible:ring-error focus-visible:ring-offset-2
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  /*
+   * Legacy card class (for backward compatibility)
+   * Use <Card> primitive for new code
+   */
+  .card {
+    @apply bg-white rounded-lg shadow-sm border border-neutral-200
+           hover:shadow-md transition-shadow duration-200;
+  }
+
+  /* Legacy text color classes */
+  .text-deep-trust-blue {
+    color: var(--color-secondary);
+  }
+
+  .text-clarity-teal {
+    color: var(--color-primary);
+  }
+
+  .text-accent {
+    color: var(--color-primary);
+  }
+
+  /* Legacy background color classes */
+  .bg-deep-trust-blue {
+    background-color: var(--color-secondary);
+  }
+
+  .bg-clarity-teal {
+    background-color: var(--color-primary);
+  }
+
+  .bg-calm-grey {
+    background-color: var(--color-neutral-50);
+  }
+
+  .bg-accent {
+    background-color: var(--color-primary);
+  }
+}
+
+/* ================================================
+   UTILITIES LAYER
+   ================================================ */
+@layer utilities {
+  /* Smooth scroll */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Legacy focus-visible class */
+  .focus-visible {
+    @apply outline-none ring-2 ring-primary ring-offset-2;
+  }
+
+  /* Screen reader only (accessibility) */
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+  }
+
+  /* Not screen reader only (show on focus) */
+  .not-sr-only {
+    position: static;
+    width: auto;
+    height: auto;
+    padding: 0;
+    margin: 0;
+    overflow: visible;
+    clip: auto;
+    white-space: normal;
+  }
+
+  /* Minimum touch target size (WCAG 2.1 AA: 44x44px) */
+  .touch-target {
+    min-width: var(--touch-target-min);
+    min-height: var(--touch-target-min);
+  }
+}

@@ -34,7 +34,7 @@ LEH는 **이혼 사건 전용 AI 파라리걸 플랫폼**이다.
   * 파일 타입에 맞게 OCR/STT/Parsing을 수행하고,
   * 의미 분석(유책사유, 화자, 감정 등) 및 임베딩을 생성하며,
   * **DynamoDB**에 구조화된 증거 메타데이터를 저장하고,
-  * **OpenSearch**에 사건별 RAG 인덱스를 구축한다.
+  * **Qdrant**에 사건별 RAG 인덱스를 구축한다.
 * 프론트엔드는 이를 기반으로
 
   * **증거 타임라인**
@@ -80,7 +80,7 @@ text
         │  └─────────┬────────────┘     │
         │            ▼                   ▼
         │  ┌────────────────────────────┐
-        │  │ OpenSearch (Case RAG)     │
+        │  │ Qdrant (Case RAG)     │
         │  │ 사건별 임베딩 인덱스       │
         │  └────────────────────────────┘
         │
@@ -120,13 +120,13 @@ text
 * 인증/인가(JWT + Role)
 * 사건 CRUD, 멤버십 관리
 * 증거 업로드용 S3 Presigned URL 발급
-* DynamoDB / OpenSearch 조회 및 집계
+* DynamoDB / Qdrant 조회 및 집계
 * Draft Preview API (RAG + GPT 호출 오케스트레이션)
 * Audit Log 기록
 
 **특징**
 
-* Stateless API (모든 상태는 RDS/DynamoDB/OpenSearch에 저장)
+* Stateless API (모든 상태는 RDS/DynamoDB/Qdrant에 저장)
 * 모든 요청은 HTTPS + JWT 필수
 * AI Worker는 S3 Event 기반으로 직접 트리거되며,
   BE는 **결과 조회 역할**에 집중
@@ -186,7 +186,7 @@ json
   "s3_key": "cases/123/raw/a.jpg",
   "ai_summary": "피고가 고성으로 폭언하는 장면.",
   "insights": ["감정적 폭발", "지속적 폭언 패턴"],
-  "opensearch_id": "case_123_ev_1"
+  "qdrant_id": "case_123_ev_1"
 }
 
 ---
@@ -212,7 +212,7 @@ json
 
   * 누가 언제 무엇을 조회/생성/삭제했는지 기록
 
-증거 자체는 RDS에 저장하지 않고, **증거는 DynamoDB + S3**, 검색은 **OpenSearch**에 맡긴다.
+증거 자체는 RDS에 저장하지 않고, **증거는 DynamoDB + S3**, 검색은 **Qdrant**에 맡긴다.
 
 ---
 
@@ -242,12 +242,12 @@ json
      * 텍스트 추출 + OCR(스캔본일 경우)
 4. 민법 제840 기준 유책사유 라벨링
 5. 요약 및 인사이트 생성
-6. 임베딩 생성 후 OpenSearch에 업로드
+6. 임베딩 생성 후 Qdrant에 업로드
 7. 최종 JSON 메타데이터를 DynamoDB에 저장
 
 ---
 
-### 3.7 OpenSearch — Case RAG Index
+### 3.7 Qdrant — Case RAG Index
 
 **역할**
 
@@ -296,7 +296,7 @@ text
     - 타입 판별
     - OCR/STT/Parsing
     - 유책사유/감정/화자/타임스탬프 추출
-    - Embedding 생성 및 OpenSearch 색인
+    - Embedding 생성 및 Qdrant 색인
     - DynamoDB 메타데이터 저장/갱신
 [8] FE: 사건 증거 목록/타임라인 API 재호출
 [9] BE: DynamoDB에서 사건별 증거 목록 조회 후 FE에 반환
@@ -312,7 +312,7 @@ text
 [3] BE:
     - 사건 메타 조회 (RDS)
     - 관련 증거 후보 조회 (DynamoDB)
-    - OpenSearch로 세부 RAG 검색 수행
+    - Qdrant로 세부 RAG 검색 수행
 [4] BE → GPT-4o:
     - 사건 요약 + 쟁점 + 관련 증거 텍스트를 Prompt로 전송
 [5] GPT-4o:
@@ -342,7 +342,7 @@ text
 
 * S3: SSE-KMS 또는 SSE-S3 적용
 * RDS: 암호화 + VPC 내부 접근 제한
-* DynamoDB / OpenSearch: VPC Endpoints 사용
+* DynamoDB / Qdrant: VPC Endpoints 사용
 * 모든 로그(Audit Log)는 변조 방지를 고려한 별도 저장(예: WORM 로그 보관 정책)
 
 ### 5.3 컴플라이언스
@@ -350,7 +350,7 @@ text
 * AI 출력은 **법률사무 대리 대신 “표현 제안”**으로만 사용
 * 사건 종료:
 
-  * OpenSearch 인덱스 삭제
+  * Qdrant 인덱스 삭제
   * DynamoDB 증거 메타 soft-delete
   * Audit Log는 보관 정책에 따라 유지
 
@@ -383,7 +383,7 @@ repo/
 
 ### 7.2 통합 테스트
 
-* S3 → Lambda → DynamoDB → OpenSearch end-to-end 플로우 테스트
+* S3 → Lambda → DynamoDB → Qdrant end-to-end 플로우 테스트
 * Draft Preview API 호출 시 RAG + GPT 연동 테스트
 * 성능 테스트:
 
@@ -416,7 +416,7 @@ repo/
   * S3 Event 기반 Lambda (필요 시 ECS Batch로 확장)
 * **DB**:
 
-  * RDS(PostgreSQL), DynamoDB, OpenSearch
+  * RDS(PostgreSQL), DynamoDB, Qdrant
 * **모든 서비스**는 VPC 내부에서 동작, 외부 노출은 API Gateway/CloudFront로 제한
 
 ---

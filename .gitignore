@@ -1,51 +1,63 @@
-# ================================
-#   🚨 Paralegal (LEH) – SECURITY FIRST
-#   GitHub 업로드 금지 파일 총정리
-# ================================
+# ==============================================================================
+# 🚨 LEH Project - HYBRID .gitignore
+# Security First + Project Specific + Optimized Defaults
+# ==============================================================================
 
-###################################
-# 1. Python (Backend – FastAPI)
-###################################
+# ==============================================================================
+# 1. SECURITY & CREDENTIALS (ABSOLUTE BLOCK)
+# ==============================================================================
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.cert
+*.crt
+*.p12
+secrets.json
+credentials.json
+*.api_key
+*.token
+# AWS / Cloud Configs
+.aws/
+~/.aws/
+*.tfvars
+
+# ==============================================================================
+# 2. PYTHON (Backend & AI Worker)
+# ==============================================================================
+# Byte-compiled / Optimized / DLL files
 __pycache__/
-*.pyc
-*.pyo
-*.pyd
-*.so
-*.egg-info/
-*.spec
+*.py[cod]
+*.class
 
-# 가상환경
+# Virtual Environments
+.venv/
 venv/
 env/
-.venv/
+ENV/
 .python-version
 
-# 로컬 실행 로그
+# 로그 및 임시 파일
 *.log
 logs/
 tmp/
 temp/
 
-# 모델 캐시, 임시 파일
-*.pickle
-*.pkl
-*.pt
-*.bin
-*.cache/
-
-
 ###################################
 # 2. AI Worker / LLM 파이프라인
 ###################################
-ai_worker/storage/
+# Storage 데이터 파일만 제외 (Python 코드는 포함)
+ai_worker/**/storage/*.db
+ai_worker/**/storage/*.sqlite3
+ai_worker/**/storage/data/
+
+# 기타 AI Worker 제외 폴더
 ai_worker/.cache/
 ai_worker/workflows/local_debug/
-ai_worker/workflows/*.tmp
-workspace/
-rag_cache/
-vector_index/
 
-# OpenAI / Anthropic 임시 키
+# 임시 파일 (확장자 기반)
+*.tmp
 *.api_key
 *.token
 
@@ -57,113 +69,139 @@ vector_index/
 .env
 .env.*
 !.env.example
-
-*.secrets
-secrets.json
-secret.yaml
-secret.key
-credentials/
-config/secret/
-*.pem
-*.key
-*.crt
-
-
-###################################
-# 4. Frontend (Next.js / Node)
-###################################
-node_modules/
-.next/
-dist/
+# Distribution / Packaging
 build/
+dist/
+*.egg-info/
+.eggs/
+
+# Unit Test / Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+coverage.xml
+coverage/
+
+# Linter / Type Checker Cache
+.mypy_cache/
+.ruff_cache/
+.dmypy.json
+dmypy.json
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+
+# ==============================================================================
+# 3. NODE.JS & NEXT.JS (Frontend)
+# ==============================================================================
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Next.js Build Output
+.next/
 out/
-.npm
-.pnpm-store/
-yarn-error.log
-npm-debug.log
-*.lock
 
+# Playwright Test Output
+playwright-report/
+test-results/
+playwright/.cache/
 
-###################################
-# 5. OS & IDE 설정 – 개발자 환경 파일
-###################################
-.DS_Store
-Thumbs.db
-.vscode/
+# Production Build
+build/
+dist/
+
+# Playwright
+playwright-report/
+playwright/.cache/
+test-results/
+
+# Debug Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ==============================================================================
+# 4. IDE & EDITOR (Collaboration Friendly)
+# ==============================================================================
+# VS Code - Ignore personal settings, allow shared configs
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
+
+# JetBrains (IntelliJ, PyCharm)
 .idea/
+
+# Fleet
 .fleet/
+
+# Vim / Emacs / OS
+*~
 *.swp
 *.swo
-*.orig
+.DS_Store
+Thumbs.db
+Desktop.ini
 
+# ==============================================================================
+# 5. PROJECT SPECIFIC (LEH) - CAREFULLY SCOPED
+# ==============================================================================
+# AI Worker Data & Temp
+ai_worker/data/
+ai_worker/temp/
+ai_worker/.cache/
 
-###################################
-# 6. AWS / Terraform / Infra 보안
-###################################
-# AWS credential files
-.aws/
-~/.aws/
+# Evidence Files (Raw uploads)
+# Note: We track docs/pdf, so we only ignore raw evidence uploads
+evidence_raw/
+uploads/
 
-# Terraform sensitive
-*.tfvars
-*.tfstate
-*.tfstate.*
-crash.log
-terraform.tfstate
-terraform.tfstate.backup
-
-# CDK
-cdk.out/
-
-# CloudFormation temp
-*.template.json
-
-
-###################################
-# 7. Docker
-###################################
-docker-compose.override.yml
+# Docker
 docker-data/
 *.pid
 *.sock
 
+# Agent & Personal Configs
+.agent/
+.claude/
+/CLAUDE.md
 
-###################################
-# 8. Database / Storage / Evidence Files
-###################################
-# 법률 증거 파일 무조건 제외
-evidence/
-evidence_raw/
-uploads/
-storage/
-documents_tmp/
-pdf_tmp/
-tmp_exports/
-*.pdf
-*.docx
-*.xlsx
-*.pptx
-*.zip
+# 개인 파일들 담아주세요
+.local/
 
-# SQLite (local test)
-*.db
-*.sqlite3
-
-
-###################################
-# 9. Logs, Reports, Debug Dumps
-###################################
+# ==============================================================================
+# 6. FILE EXTENSIONS (CAUTION: Only generic binaries/logs)
+# ==============================================================================
+# Logs & Databases
 *.log
-debug.log
-error.log
+*.sqlite3
+*.db
 *.dump
-*.bak
+
+# Binary / Media (Locally generated)
+# Note: PDFs in 'docs/' folders SHOULD be tracked.
+# Only ignore these if they are in root or temp folders, but gitignore is recursive.
+# Strategy: Ignore specific heavy media folders instead of global extensions if possible.
+# For now, keeping global ignore for heavy binaries to prevent accidental commit,
+# but using ! to allow specific documentation paths if needed.
 
 
 ###################################
-# 10. Misc – 민감한 개발 산출물
+# 11. Personal Local Files
 ###################################
-*.bak
-*.tmp
-*.old
-*.backup
+# Personal CLAUDE.md (prevent accidental commits)
+/CLAUDE.md
+/claude.md
+docs/guides/CLAUDE.md
+docs/guides/claude.md
+
+# Personal Claude configuration directory
+.claude/
+
+.agent/
+*.pdf

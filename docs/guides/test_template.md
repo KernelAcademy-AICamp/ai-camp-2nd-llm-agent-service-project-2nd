@@ -41,7 +41,7 @@
 
 - 가짜 `case_id` 및 사용자 JWT 토큰
 - S3 client mock (boto3 Stubber)
-- DynamoDB / OpenSearch mock client
+- DynamoDB / Qdrant mock client
 
 ### AI Worker 예시
 
@@ -92,7 +92,7 @@
 ### AI Worker
 
 - DynamoDB에 evidence 레코드가 생성/업데이트되었는지
-- OpenSearch `index()` 가 지정된 인자들로 호출되었는지
+- Qdrant `index()` 가 지정된 인자들로 호출되었는지
 - `labels` 필드 타입이 list 인지
 
 ### Frontend

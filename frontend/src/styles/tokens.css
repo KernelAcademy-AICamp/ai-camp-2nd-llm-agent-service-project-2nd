@@ -1,0 +1,163 @@
+/**
+ * LEH Design System - Design Tokens
+ * Based on Designer Agent System Prompt v1.0
+ *
+ * Single source of truth for all design tokens.
+ * All values follow 8pt grid system.
+ *
+ * Note: This file is imported in globals.css before Tailwind directives.
+ * CSS custom properties are defined directly on :root (no @layer needed).
+ */
+
+:root {
+    /* ================================================
+       SPACING SCALE (8pt Grid)
+       ================================================ */
+    --spacing-0: 0;
+    --spacing-1: 0.25rem;   /* 4px */
+    --spacing-2: 0.5rem;    /* 8px */
+    --spacing-3: 0.75rem;   /* 12px */
+    --spacing-4: 1rem;      /* 16px */
+    --spacing-5: 1.25rem;   /* 20px */
+    --spacing-6: 1.5rem;    /* 24px */
+    --spacing-8: 2rem;      /* 32px */
+    --spacing-10: 2.5rem;   /* 40px */
+    --spacing-12: 3rem;     /* 48px */
+    --spacing-16: 4rem;     /* 64px */
+    --spacing-20: 5rem;     /* 80px */
+    --spacing-24: 6rem;     /* 96px */
+
+    /* ================================================
+       TYPOGRAPHY SCALE
+       Based on 8pt grid with 1.5 line-height base
+       ================================================ */
+    --font-size-xs: 0.75rem;      /* 12px - small/labels */
+    --font-size-sm: 0.875rem;     /* 14px - caption */
+    --font-size-base: 1rem;       /* 16px - body */
+    --font-size-lg: 1.125rem;     /* 18px - body-lg */
+    --font-size-xl: 1.25rem;      /* 20px - title */
+    --font-size-2xl: 1.5rem;      /* 24px - title */
+    --font-size-3xl: 1.875rem;    /* 30px - headline */
+    --font-size-4xl: 2.25rem;     /* 36px - headline */
+    --font-size-5xl: 3rem;        /* 48px - display */
+
+    --line-height-tight: 1.25;
+    --line-height-normal: 1.5;
+    --line-height-relaxed: 1.625;
+
+    --font-weight-normal: 400;
+    --font-weight-medium: 500;
+    --font-weight-semibold: 600;
+    --font-weight-bold: 700;
+
+    /* ================================================
+       SEMANTIC COLORS
+       ================================================ */
+
+    /* Primary - Main brand color (Teal) */
+    --color-primary: #1ABC9C;
+    --color-primary-hover: #16A085;
+    --color-primary-active: #149174;
+    --color-primary-light: rgba(26, 188, 156, 0.1);
+    --color-primary-contrast: #FFFFFF;
+
+    /* Secondary - Trust/Authority (Deep Blue) */
+    --color-secondary: #2C3E50;
+    --color-secondary-hover: #1a252f;
+    --color-secondary-active: #151d25;
+    --color-secondary-light: rgba(44, 62, 80, 0.1);
+    --color-secondary-contrast: #FFFFFF;
+
+    /* Success */
+    --color-success: #2ECC71;
+    --color-success-hover: #27AE60;
+    --color-success-light: rgba(46, 204, 113, 0.1);
+    --color-success-contrast: #FFFFFF;
+
+    /* Warning */
+    --color-warning: #F39C12;
+    --color-warning-hover: #D68910;
+    --color-warning-light: rgba(243, 156, 18, 0.1);
+    --color-warning-contrast: #000000;
+
+    /* Error/Destructive */
+    --color-error: #E74C3C;
+    --color-error-hover: #C0392B;
+    --color-error-active: #a5281d;
+    --color-error-light: rgba(231, 76, 60, 0.1);
+    --color-error-contrast: #FFFFFF;
+
+    /* ================================================
+       NEUTRAL SCALE
+       ================================================ */
+    --color-neutral-50: #F8F9FA;
+    --color-neutral-100: #EEF2F6;
+    --color-neutral-200: #E2E8F0;
+    --color-neutral-300: #CBD5E1;
+    --color-neutral-400: #94A3B8;
+    --color-neutral-500: #64748B;
+    --color-neutral-600: #475569;
+    --color-neutral-700: #334155;
+    --color-neutral-800: #1E293B;
+    --color-neutral-900: #0F172A;
+
+    /* ================================================
+       SURFACE COLORS
+       ================================================ */
+    --color-bg-primary: #FFFFFF;
+    --color-bg-secondary: #F8F9FA;
+    --color-bg-tertiary: #EEF2F6;
+
+    --color-text-primary: #1E293B;
+    --color-text-secondary: #64748B;
+    --color-text-tertiary: #94A3B8;
+    --color-text-inverse: #FFFFFF;
+
+    --color-border-default: #E2E8F0;
+    --color-border-hover: #CBD5E1;
+    --color-border-focus: #1ABC9C;
+
+    /* ================================================
+       SHADOWS
+       ================================================ */
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+
+    /* ================================================
+       BORDER RADIUS
+       ================================================ */
+    --radius-sm: 0.25rem;   /* 4px */
+    --radius-md: 0.5rem;    /* 8px */
+    --radius-lg: 0.75rem;   /* 12px */
+    --radius-xl: 1rem;      /* 16px */
+    --radius-2xl: 1.5rem;   /* 24px */
+    --radius-full: 9999px;
+
+    /* ================================================
+       TRANSITIONS
+       ================================================ */
+    --transition-fast: 150ms ease;
+    --transition-normal: 200ms ease;
+    --transition-slow: 300ms ease;
+
+    /* ================================================
+       Z-INDEX SCALE
+       ================================================ */
+    --z-dropdown: 50;
+    --z-sticky: 100;
+    --z-modal: 200;
+    --z-tooltip: 300;
+    --z-toast: 400;
+
+    /* ================================================
+       ACCESSIBILITY
+       ================================================ */
+    --focus-ring-color: #1ABC9C;
+    --focus-ring-width: 2px;
+    --focus-ring-offset: 2px;
+
+    /* WCAG 2.1 AA: Minimum touch target 44x44px */
+    --touch-target-min: 44px;
+  }

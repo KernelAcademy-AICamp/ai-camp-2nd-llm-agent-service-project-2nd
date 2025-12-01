@@ -27,7 +27,7 @@ LEH 백엔드는 **FastAPI 기반의 Stateless API 서버**로 구성되며, 주
 1. **인증/인가 (JWT)**
 2. **사건/유저/멤버십 관리 (RDS PostgreSQL)**
 3. **증거 업로드 관리 (S3 Presigned URL)**
-4. **증거 분석 결과 조회 (DynamoDB / OpenSearch 조합)**
+4. **증거 분석 결과 조회 (DynamoDB / Qdrant 조합)**
 5. **Draft Preview 생성 API (GPT-4o + 사건별 RAG)**
 
 ---
@@ -47,21 +47,21 @@ backend/
 │   │   ├── session.py           # DB 연결(RDS)
 │   │   ├── models.py            # SQLAlchemy 모델
 │   │   └── schemas.py           # Pydantic 스키마
-│   ├── routers/
+│   ├── api/
 │   │   ├── auth.py              # 로그인/회원 API
 │   │   ├── cases.py             # 사건 CRUD
 │   │   ├── evidence.py          # Presigned URL / 조회
 │   │   ├── draft.py             # Draft Preview API
-│   │   └── search.py            # 사건 RAG 검색 API
+│   │   └── search.py            # 사건 RAG 검색 API [미구현]
 │   ├── services/
 │   │   ├── case_service.py      # 사건 관련 비즈니스 로직
 │   │   ├── evidence_service.py  # S3 연동 및 Dynamo 조회
 │   │   ├── draft_service.py     # Draft 생성(LLM 호출)
-│   │   └── search_service.py    # OpenSearch 쿼리
+│   │   └── search_service.py    # Qdrant 쿼리 [미구현]
 │   ├── utils/
 │   │   ├── s3.py                # Presigned URL 생성기
 │   │   ├── dynamo.py            # DynamoDB Helper
-│   │   ├── opensearch.py        # OS Helper
+│   │   ├── qdrant.py        # OS Helper
 │   │   └── time.py              # 공통 시간/타임존 처리
 │   └── middleware/
 │       ├── auth_middleware.py   # JWT 인증 미들웨어
@@ -180,12 +180,12 @@ json
   "insights": ["감정적 폭발"],
   "content": "...OCR/STT 전문...",
   "s3_key": "cases/123/raw/img01.jpg",
-  "opensearch_id": "case_123_ev_1"
+  "qdrant_id": "case_123_ev_1"
 }
 
 ---
 
-# 🔍 6. OpenSearch 스키마
+# 🔍 6. Qdrant 스키마
 
 각 사건별 index 생성:
 
@@ -233,7 +233,7 @@ json
 
 # 🤖 8. Evidence 조회 프로세스
 
-백엔드는 직접 파일을 분석하지 않고, **AI Worker가 업데이트한 결과(Dynamo + OpenSearch)**를 조회하여 FE에 전달한다.
+백엔드는 직접 파일을 분석하지 않고, **AI Worker가 업데이트한 결과(Dynamo + Qdrant)**를 조회하여 FE에 전달한다.
 
 ## 8.1 Evidence List API
 
@@ -279,7 +279,7 @@ json
 
 1. BE: 사건 정보 조회
 2. BE: DynamoDB에서 증거 목록 Fetch
-3. BE: 증거 요약/내용 기반으로 OpenSearch 쿼리 → 관련 문장 검색
+3. BE: 증거 요약/내용 기반으로 Qdrant 쿼리 → 관련 문장 검색
 4. BE → GPT-4o: 생성 요청 (증거 인용 포함)
 5. GPT 응답 → FE에 전달
 6. FE는 Preview만 제공 (자동 입력 없음)
@@ -295,7 +295,7 @@ json
 * 사건 상태 변경(active → closed)
 * 사건 삭제 시:
 
-  * OpenSearch index 삭제
+  * Qdrant index 삭제
   * DynamoDB soft-delete
 
 ---
@@ -311,7 +311,7 @@ json
 
 ## 10.3 `draft_service.py`
 
-* RAG 검색 (OpenSearch)
+* RAG 검색 (Qdrant)
 * GPT-4o Prompt 생성
 * 증거 인용문 구조화
 * Draft 텍스트 생성
@@ -321,7 +321,7 @@ json
 
 ## 10.4 `search_service.py`
 
-* OpenSearch query builder
+* Qdrant query builder
 * 라벨/날짜/화자 기반 필터 적용
 * 사건 단위 Top-K 검색
 
@@ -358,7 +358,7 @@ DB_URL=postgres://...
 AWS_REGION=ap-northeast-2
 S3_BUCKET=leh-evidence
 DYNAMODB_TABLE=evidence_table
-OPENSEARCH_ENDPOINT=...
+QDRANT_ENDPOINT=...
 OPENAI_API_KEY=...
 JWT_SECRET=...
 
@@ -374,7 +374,7 @@ JWT_SECRET=...
 # 🧪 13. 테스트 전략
 
 * pytest 기반 단위 테스트
-* mock S3/DynamoDB(OpenSearch는 로컬 테스트)
+* mock S3/DynamoDB(Qdrant는 로컬 테스트)
 * integration test: Presigned URL → S3 → Worker → Evidence 조회 흐름
 
 ---

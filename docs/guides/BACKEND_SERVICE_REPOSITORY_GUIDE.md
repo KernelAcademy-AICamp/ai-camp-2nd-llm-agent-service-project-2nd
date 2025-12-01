@@ -18,7 +18,7 @@ backend/app/
   models/          # SQLAlchemy 모델
   services/        # 비즈니스 로직
   repositories/    # DB 및 외부 리소스 접근
-  utils/           # AWS, OpenSearch, DynamoDB Adapter
+  utils/           # AWS, Qdrant, DynamoDB Adapter
 
 ---
 
@@ -154,7 +154,7 @@ async def app_error_handler(request, exc: AppError):
 
 ---
 
-# 5. 외부 연동 (S3 / Dynamo / OpenSearch)
+# 5. 외부 연동 (S3 / Dynamo / Qdrant)
 
 Backend는 **읽기, 조회 중심** 역할이 많다.
 
@@ -253,7 +253,7 @@ class CaseService:
 * **API:** HTTP 200 + `CaseOut` 반환
 * **Service:** 권한 검사 → 상태 변경 → 인덱스 삭제
 * **Repository:** DB 저장
-* **SearchClient:** OpenSearch index 삭제
+* **SearchClient:** Qdrant index 삭제
 
 ### 장점
 

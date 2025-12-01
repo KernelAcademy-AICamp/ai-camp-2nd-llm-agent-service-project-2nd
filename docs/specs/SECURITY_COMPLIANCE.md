@@ -35,7 +35,7 @@ LEH는 **변호사가 사용하는 사건 관리 플랫폼**이므로,
 
 - FE → BE 모든 요청: JWT 인증 필수  
 - 백엔드 → AWS 서비스: IAM 기반 Role Only  
-- 외부 네트워크에서 OpenSearch/DynamoDB 직접 접근 **불가**
+- 외부 네트워크에서 Qdrant/DynamoDB 직접 접근 **불가**
 
 ### ✔ 3. 민감정보의 **저장 최소화**
 
@@ -66,7 +66,7 @@ LEH는 AWS 환경에서 동작하며, 모든 구성 요소는 VPC 내부에서 �
   - AI Worker (Lambda/ECS)  
   - RDS(Postgres)  
   - DynamoDB (VPC Endpoint)  
-  - OpenSearch (VPC Only)
+  - Qdrant (VPC Only)
 
 - **Public Subnet**:  
   - CloudFront → S3 Static Hosting  
@@ -78,13 +78,13 @@ LEH는 AWS 환경에서 동작하며, 모든 구성 요소는 VPC 내부에서 �
 
 - S3 `GetObject` (download-only for processed/)  
 - DynamoDB `Query`/`GetItem`  
-- OpenSearch HTTP request (index-level)
+- Qdrant HTTP request (index-level)
 
 ### AI Worker IAM Role
 
 - S3 `GetObject` / `PutObject`  
 - DynamoDB `PutItem` / `UpdateItem`  
-- OpenSearch `index/write`  
+- Qdrant `index/write`  
 - CloudWatch Logs write
 
 > AI Worker만 증거 메타데이터를 변경할 수 있다 (BE는 Read-Only).
@@ -97,7 +97,7 @@ LEH는 AWS 환경에서 동작하며, 모든 구성 요소는 VPC 내부에서 �
 - 알람(Alarm):  
   - 5xx 증가  
   - Lambda 오류  
-  - OpenSearch cluster health red  
+  - Qdrant cluster health red  
 
 ---
 
@@ -110,7 +110,7 @@ LEH는 AWS 환경에서 동작하며, 모든 구성 요소는 VPC 내부에서 �
 | 사건 메타 | PostgreSQL | 암호화 + RBAC |
 | 증거 원본 (이미지/문서/음성) | **S3(raw/)** | SSE-KMS, Presigned URL 제한 |
 | 증거 분석 결과 | DynamoDB | 접근 제어 + PK 기반 분리 |
-| 임베딩/텍스트 | OpenSearch | 사건 단위 index 격리 |
+| 임베딩/텍스트 | Qdrant | 사건 단위 index 격리 |
 | Draft 초안 | 백엔드 메모리/일시 저장 | 영구 저장 금지 |
 
 ---
@@ -145,7 +145,7 @@ cases/{case_id}/processed/{uuid}.json
 
 ---
 
-## 3.5 OpenSearch 보안
+## 3.5 Qdrant 보안
 
 - Public Endpoint 금지  
 - VPC 전용  
@@ -169,7 +169,7 @@ LEH는 변호사·의뢰인의 개인정보 및 민감정보를 취급하므로 
 - 사건 관련 주민등록번호/계좌번호  
 - 상대방 인적 사항 세부 내용
 
-→ 원본은 **S3에만 저장**, 분석 텍스트는 **DynamoDB/OpenSearch에 저장하되 최소화**.
+→ 원본은 **S3에만 저장**, 분석 텍스트는 **DynamoDB/Qdrant에 저장하되 최소화**.
 
 ## 4.2 FE 금지 규칙
 
@@ -274,7 +274,7 @@ LEH는 **변호사법·전자문서법·민법·개인정보보호법(PIPA)** �
 
 - 연 1회 외부 전문 업체  
 - 예:  
-  - OpenSearch RCE  
+  - Qdrant RCE  
   - Presigned URL 탈취  
   - JWT 변조 공격  
   - AI Worker 취약점 확인

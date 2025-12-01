@@ -24,12 +24,12 @@ AI Worker(L)가 수행하는:
 * 요약(Summarization)
 * 의미 분석(유책사유/화자/감정/시점 등)
 * Embedding 생성
-* 사건별 RAG Index 구축(OpenSearch)
+* 사건별 RAG Index 구축(Qdrant)
 
 전 과정을 상세히 기술한다.
 
 백엔드 및 프론트엔드 개발자는 AI Worker가 **어떤 결과를 생성하며**,
-그 결과가 **DynamoDB/OpenSearch**에서 어떻게 활용되는지 이 문서를 참고한다.
+그 결과가 **DynamoDB/Qdrant**에서 어떻게 활용되는지 이 문서를 참고한다.
 
 ---
 
@@ -39,7 +39,7 @@ LEH AI 파이프라인은 다음 특징을 가진다:
 
 ### ✔ 100% 자동화
 
-S3 업로드 → S3 Event → AI Worker 실행 → DynamoDB / OpenSearch 업데이트
+S3 업로드 → S3 Event → AI Worker 실행 → DynamoDB / Qdrant 업데이트
 
 ### ✔ 증거 타입별 맞춤 처리
 
@@ -89,7 +89,7 @@ S3 업로드 → S3 Event → AI Worker 실행 → DynamoDB / OpenSearch 업데�
 └───────────────────────┬────────────────────────────────┘
                         ▼
                 ┌───────────────┐
-                │ OpenSearch RAG │
+                │ Qdrant RAG │
                 │ 사건별 index   │
                 └──────┬────────┘
                         ▼
@@ -239,7 +239,7 @@ json
 
 * OpenAI text-embedding-3-large
 * 또는 Voyage 등 사건 특화 모델
-* OpenSearch와 호환되는 1536~3072 dimension
+* Qdrant와 호환되는 1536~3072 dimension
 
 ### Embedding 대상
 
@@ -250,7 +250,7 @@ json
 
 ---
 
-# 🔎 7. Step 6 — 사건별 RAG Index 구축 (OpenSearch)
+# 🔎 7. Step 6 — 사건별 RAG Index 구축 (Qdrant)
 
 PDF에서도 RAG 기반 Draft 생성이 핵심 기능으로 강조됨.
 LEH에서는 이를 사건 단위로 완전히 분리한다.
@@ -291,7 +291,7 @@ json
   "insights": ["지속적 고성"],
   "content": "STT 결과 전문",
   "s3_key": "cases/123/raw/xx.m4a",
-  "opensearch_id": "case_123_ev_3"
+  "qdrant_id": "case_123_ev_3"
 }
 
 ---
@@ -324,7 +324,7 @@ json
 ### 필수 파이썬 모듈
 
 * boto3 (S3, DynamoDB)
-* OpenSearch client
+* Qdrant client
 * openai (4o / Whisper)
 * ffmpeg/ffprobe
 * regex/mecab(선택)
@@ -346,7 +346,7 @@ ai_worker/
 │   └── timeline.py
 └── utils/
     ├── s3.py
-    ├── opensearch.py
+    ├── qdrant.py
     ├── dynamo.py
     └── ffmpeg.py
 
@@ -379,7 +379,7 @@ POST /admin/reprocess-evidence
 ### Integration Test
 
 * S3 → Worker → DynamoDB 전체 플로우
-* OpenSearch RAG 쿼리
+* Qdrant RAG 쿼리
 
 ---
 
@@ -388,7 +388,7 @@ POST /admin/reprocess-evidence
 | 목적            | 출처          | 목적지      |
 | ------------- | ----------- | -------- |
 | 증거 metadata   | AI Worker   | DynamoDB |
-| 증거 검색         | OpenSearch  | Backend  |
+| 증거 검색         | Qdrant  | Backend  |
 | Draft Preview | BE → GPT-4o | FE       |
 | Timeline      | DynamoDB    | FE       |
 

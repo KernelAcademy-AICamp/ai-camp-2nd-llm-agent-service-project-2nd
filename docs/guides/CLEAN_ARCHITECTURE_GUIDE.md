@@ -25,7 +25,7 @@
 
 LEH는 다음 구조를 따른다.
 
-Frontend  →  Backend(FastAPI) → S3 / DynamoDB / OpenSearch / RDS
+Frontend  →  Backend(FastAPI) → S3 / DynamoDB / Qdrant / RDS
                       ↑
                AI Worker(Lambda/ECS)
 
@@ -34,7 +34,7 @@ Frontend  →  Backend(FastAPI) → S3 / DynamoDB / OpenSearch / RDS
 | 레이어       | 어떤 것을 참조할 수 있는가?                         |
 | --------- | ---------------------------------------- |
 | Frontend  | API Spec, DTO, 디자인 토큰                    |
-| Backend   | DB, S3, Dynamo, OpenSearch 등 “Infra 추상화” |
+| Backend   | DB, S3, Dynamo, Qdrant 등 “Infra 추상화” |
 | AI Worker | AWS SDK, 모델 호출 adapter                   |
 | Infra     | 자체 구현 없이 AWS 관리형 서비스                     |
 
@@ -112,6 +112,8 @@ Frontend  →  Backend(FastAPI) → S3 / DynamoDB / OpenSearch / RDS
 
 # 4. 폴더 구조 규칙
 
+> **See also:** [FOLDER_STRUCTURE.md](FOLDER_STRUCTURE.md) - 전체 폴더 구조 상세
+
 ## 4.1 Backend (FastAPI)
 
 backend/app/
@@ -126,7 +128,7 @@ backend/app/
 
 * API는 DTO만 알고 있어야 한다.
 * 비즈니스 로직은 service에만 존재.
-* utils는 AWS/OpenSearch 등 “외부 인프라 연동 전용”.
+* utils는 AWS/Qdrant 등 “외부 인프라 연동 전용”.
 
 ---
 
@@ -142,7 +144,7 @@ ai_worker/
   storage/
       dynamo.py
       s3.py
-      opensearch.py
+      qdrant.py
   workflows/
       leh_drive_ingestion_mvp.json
 
@@ -173,6 +175,8 @@ frontend/src/
 ---
 
 # 5. 패턴 적용 지침 (Design Patterns)
+
+> **See also:** [DESIGN_PATTERNS.md](DESIGN_PATTERNS.md) - 디자인 패턴 상세 가이드
 
 Backend와 Worker는 다음 패턴을 강제한다.
 
@@ -224,13 +228,13 @@ Factory를 통해 일관된 형태를 유지한다.
 
 ## 5.4 CQRS 접근 (간접 적용)
 
-* Backend는 **쓰기(RDS)** 와 **읽기(Dynamo/OpenSearch)** 를 분리한다.
+* Backend는 **쓰기(RDS)** 와 **읽기(Dynamo/Qdrant)** 를 분리한다.
 
 원칙:
 
 * 사건 생성 → RDS
 * 사건 증거 조회 → Dynamo
-* 검색 → OpenSearch
+* 검색 → Qdrant
 * Draft → GPT + RAG
 
 ---
@@ -243,7 +247,7 @@ Factory를 통해 일관된 형태를 유지한다.
 
 1. Worker `processors/`에 새로운 처리기 추가
 2. handler에서 extension → processor 매핑만 추가
-3. DynamoDB와 OpenSearch는 동일 구조 사용
+3. DynamoDB와 Qdrant는 동일 구조 사용
 4. Backend/Frontend는 기존 API/컴포넌트 재사용
 
 확장 비용이 최소화된다.

@@ -32,7 +32,7 @@ LEH는 기존 Paralegal 시스템(PDF 기반)보다 진화하여 다음을 핵�
 | ----- | ------------------ | ------------------------------------ |
 | 저장소   | S3 + Google Drive  | **S3 단일화**                           |
 | 처리    | SQS Worker 기반 분석   | **S3 Event 기반 AI Worker**            |
-| DB    | Postgres 중심        | **Postgres + DynamoDB + OpenSearch** |
+| DB    | Postgres 중심        | **Postgres + DynamoDB + Qdrant** |
 | Draft | GPT 기반 텍스트         | **사건별 RAG 기반 논리형 초안**                |
 | 증거    | OCR/STT/텍스트 추출     | **유책사유·화자·감정까지 분석**                  |
 
@@ -66,7 +66,7 @@ PDF에서 제시된 구조(React → FastAPI → S3/SQS Worker)  를 발전시�
     ↓
 [ DynamoDB (Evidence JSON Metadata) ]
     ↓
-[ OpenSearch (Case RAG Index) ]
+[ Qdrant (Case RAG Index) ]
     ↓
 [ RDS/PostgreSQL (Users/Cases) ]
     ↓
@@ -76,7 +76,7 @@ PDF에서 제시된 구조(React → FastAPI → S3/SQS Worker)  를 발전시�
 
 * 기존 SQS 기반 Worker는 제거하고 **S3 Event Trigger** 방식으로 단순화
 * Evidence metadata는 RDS 대신 **DynamoDB**로 이전
-* 벡터 스토어는 pgvector 대신 **OpenSearch** 채택
+* 벡터 스토어는 pgvector 대신 **Qdrant** 채택
 * Draft 생성은 고도화된 **사건 단위 RAG** 기반
 
 ---
@@ -89,7 +89,7 @@ PDF에서 제시된 구조(React → FastAPI → S3/SQS Worker)  를 발전시�
 * 사건 멤버(Role: Lawyer / Staff)
 * 사건 종료 시:
 
-  * OpenSearch index 삭제
+  * Qdrant index 삭제
   * DynamoDB soft-delete
   * S3 원본은 유지(법무법인 소유 목적)
 
@@ -161,7 +161,7 @@ PDF 기반 PRD의 텍스트 처리 흐름 그대로 발전된 버전
 ## 4.5 RAG 검색
 
 * 사건별 index(`case_123`)
-* OpenSearch vector store
+* Qdrant vector store
 * 질의 → GPT → 벡터 검색 → 상위 증거 조합
 
 ---
@@ -219,7 +219,7 @@ json
   "summary": "...",
   "content": "...",
   "s3_key": "cases/123/evidence/abc.jpg",
-  "opensearch_vector_id": "op_123"
+  "qdrant_vector_id": "op_123"
 }
 
 ## PostgreSQL (Users/Cases/Roles/Audit)
@@ -249,7 +249,7 @@ json
 * FastAPI 기반
 * JWT 인증
 * Presigned URL 발급
-* DynamoDB & OpenSearch 연동
+* DynamoDB & Qdrant 연동
 * Draft 생성 API
 * 사건 종료(삭제) API
 
@@ -260,7 +260,7 @@ json
 * Python Lambda(ECS 가능)
 * OCR / STT / Parsing / Embedding
 * DynamoDB write
-* OpenSearch index write
+* Qdrant index write
 * 오류 발생 시 DLQ 기록
 
 ---
@@ -286,7 +286,7 @@ feature/* = 기능 단위
 * React Dashboard
 * FastAPI Backend
 * AI Worker
-* OpenSearch RAG Index
+* Qdrant RAG Index
 * DynamoDB Evidence Store
 * RDS(Postgres)
 * docx Template 기반 Draft Generator

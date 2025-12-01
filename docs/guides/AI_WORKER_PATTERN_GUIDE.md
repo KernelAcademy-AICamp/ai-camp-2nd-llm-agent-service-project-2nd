@@ -2,7 +2,7 @@
 ## LEH AI Worker 고급 패턴 & 클린코드 가이드
 
 > 대상: **L(AI Worker 담당)**, AI 코드 생성기
-> 범위: **S3 Event → 텍스트/이미지/음성 분석 → DynamoDB/OpenSearch 저장**
+> 범위: **S3 Event → 텍스트/이미지/음성 분석 → DynamoDB/Qdrant 저장**
 
 ---
 
@@ -26,10 +26,10 @@ ai_worker/
     ocr_processor.py
     stt_processor.py
     pdf_processor.py
-  storage/                  # DynamoDB / S3 / OpenSearch Adapter Layer
+  storage/                  # DynamoDB / S3 / Qdrant Adapter Layer
     dynamo.py
     s3.py
-    opensearch.py
+    qdrant.py
   workflows/                # workflow 정의 (예: drive ingestion)
     leh_drive_ingestion_mvp.json
 
@@ -51,7 +51,7 @@ ai_worker/
 
 * ❌ 직접 STT/OCR 호출
 * ❌ boto3 DynamoDB SDK를 직접 호출
-* ❌ OpenSearch 클라이언트를 직접 사용하는 것
+* ❌ Qdrant 클라이언트를 직접 사용하는 것
 * ❌ EvidenceRecord 직접 생성 (Factory 사용해야 함)
 
 ---
@@ -115,7 +115,7 @@ def select_processor(ext: str) -> EvidenceProcessor:
 
 # 5. Storage 레이어 (Adapter Pattern)
 
-Worker는 직접 boto3나 OpenSearch SDK를 호출하지 않는다.
+Worker는 직접 boto3나 Qdrant SDK를 호출하지 않는다.
 
 ---
 
@@ -129,11 +129,11 @@ def save_evidence(record: EvidenceRecord) -> None:
     # boto3 dynamodb client 사용
     ...
 
-## 예시: OpenSearch Indexing
+## 예시: Qdrant Indexing
 
 python
 
-# storage/opensearch.py
+# storage/qdrant.py
 
 def index_evidence_vector(record: EvidenceRecord, vector: list[float]) -> None:
     ...
@@ -269,7 +269,7 @@ Worker는 **세 가지 레벨**의 테스트가 필요하다.
 ## 10.2 Storage 테스트
 
 * DynamoDB Local
-* OpenSearch Test Container
+* Qdrant Test Container
 * S3 Localstack
 
 ---

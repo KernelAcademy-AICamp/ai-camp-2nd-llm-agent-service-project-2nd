@@ -26,7 +26,7 @@ LEH는 이혼 사건 관련 민감 데이터를 다루는 서비스입니다.
 
 - Backend API (FastAPI)
 - AI Worker (Lambda/ECS)
-- OpenSearch / DynamoDB / RDS 연동
+- Qdrant / DynamoDB / RDS 연동
 - Frontend (React/Next)
 - 인프라(IaC) 설정
 
@@ -45,7 +45,7 @@ LEH는 다음과 같은 보안 목표를 가진다:
 - 민감 사건/증거 데이터에 대한 **무단 접근 차단**
 - Presigned URL 오·남용 방지
 - JWT 위·변조 방지
-- OpenSearch / DynamoDB / RDS 직접 노출 차단
+- Qdrant / DynamoDB / RDS 직접 노출 차단
 - AI 모델 호출 시 민감정보 최소 전송
 
 자세한 내용은 레포의 `SECURITY_COMPLIANCE.md`를 참고해주세요.

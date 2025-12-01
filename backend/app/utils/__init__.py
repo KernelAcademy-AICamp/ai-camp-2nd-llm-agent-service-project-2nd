@@ -1,1 +1,1 @@
-"""Utility adapters for AWS, OpenSearch, and shared helpers."""
+"""Utility adapters for AWS, Qdrant, and shared helpers."""

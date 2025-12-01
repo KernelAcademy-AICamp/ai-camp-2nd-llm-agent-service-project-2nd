@@ -48,7 +48,7 @@ PRD, 아키텍처, 설계 문서, 코드, 그리고 협업 규칙을 한 번에 
 2. **AI 분석 (L)**
    - S3 Event → AI Worker 자동 실행
    - 텍스트·이미지·오디오·영상·PDF를 타입별 파서로 처리
-   - **DynamoDB / OpenSearch / RDS**에 구조화 + 임베딩 저장
+   - **DynamoDB / Qdrant / RDS**에 구조화 + 임베딩 저장
 
 3. **대시보드 (P)**
    - 사건별 **증거 타임라인**
@@ -72,7 +72,7 @@ PRD, 아키텍처, 설계 문서, 코드, 그리고 협업 규칙을 한 번에 
 | RDB | **PostgreSQL (RDS)** | 사용자, 사건, 권한, 감사 로그 |
 | Evidence Storage | **AWS S3** | 원본 증거 저장소 |
 | Metadata | **AWS DynamoDB** | 증거 분석 결과 JSON, 타임라인 메타 |
-| RAG | **Amazon OpenSearch** | 사건별 임베딩 인덱스(`case_rag_{case_id}`) |
+| RAG | **Amazon Qdrant** | 사건별 임베딩 인덱스(`case_rag_{case_id}`) |
 | Queue | **S3 Event / (옵션 SQS)** | AI Worker 트리거 |
 | AI | **OpenAI (GPT-4o, Whisper, Vision, Embedding)** | OCR/STT/요약/라벨링/초안 생성 |
 | Observability | **CloudWatch, (옵션 Sentry)** | 로그·모니터링 |
@@ -87,14 +87,14 @@ PRD, 아키텍처, 설계 문서, 코드, 그리고 협업 규칙을 한 번에 
 
 - Python 3.11+
 - Node.js 20+
-- AWS 계정 + IAM (S3, DynamoDB, OpenSearch, RDS 등)
+- AWS 계정 + IAM (S3, DynamoDB, Qdrant, RDS 등)
 - OpenAI API 키
 - PostgreSQL 인스턴스 (RDS 또는 로컬)
 
 ### 4.2 레포 클론
 
 bash
-git clone https://github.com/ORG/REPO.git
+git clone `https://github.com/ORG/REPO.git`
 cd REPO
 `
 
@@ -110,7 +110,7 @@ cp .env.example .env
 
 - `S3_EVIDENCE_BUCKET`
 - `DDB_EVIDENCE_TABLE`
-- `OPENSEARCH_HOST`
+- `QDRANT_HOST`
 - `DATABASE_URL` (또는 POSTGRES_* 세트)
 - `OPENAI_API_KEY`
 - 기타 AWS 자격 증명 또는 IAM Role 사용 방식
@@ -134,7 +134,7 @@ pip install -r requirements.txt
 # alembic upgrade head
 
 uvicorn backend.main:app --reload
-# 기본: http://localhost:8000
+# 기본: `http://localhost:8000`
 
 
 ---
@@ -154,7 +154,7 @@ python worker/main.py
   - S3에서 파일 다운로드
   - 타입별 파서 실행 (텍스트/이미지/오디오/영상/PDF)
   - 요약/라벨링/임베딩 생성
-  - DynamoDB + OpenSearch에 결과 반영
+  - DynamoDB + Qdrant에 결과 반영
 
 ---
 
@@ -163,7 +163,7 @@ python worker/main.py
 bash
 cd frontend
 npm install
-npm run dev   # 기본: http://localhost:5173
+npm run dev   # 기본: `http://localhost:5173`
 
 
 - `.env` 내 `VITE_API_BASE_URL`(또는 NEXT_PUBLIC_API_BASE_URL)이 FastAPI 주소와 일치해야 한다.
@@ -174,7 +174,7 @@ npm run dev   # 기본: http://localhost:5173
 | RDB | **PostgreSQL (RDS)** | 사용자, 사건, 권한, 감사 로그 |
 | Evidence Storage | **AWS S3** | 원본 증거 저장소 |
 | Metadata | **AWS DynamoDB** | 증거 분석 결과 JSON, 타임라인 메타 |
-| RAG | **Amazon OpenSearch** | 사건별 임베딩 인덱스(`case_rag_{case_id}`) |
+| RAG | **Amazon Qdrant** | 사건별 임베딩 인덱스(`case_rag_{case_id}`) |
 | Queue | **S3 Event / (옵션 SQS)** | AI Worker 트리거 |
 | AI | **OpenAI (GPT-4o, Whisper, Vision, Embedding)** | OCR/STT/요약/라벨링/초안 생성 |
 | Observability | **CloudWatch, (옵션 Sentry)** | 로그·모니터링 |
@@ -189,14 +189,14 @@ npm run dev   # 기본: http://localhost:5173
 
 - Python 3.11+
 - Node.js 20+
-- AWS 계정 + IAM (S3, DynamoDB, OpenSearch, RDS 등)
+- AWS 계정 + IAM (S3, DynamoDB, Qdrant, RDS 등)
 - OpenAI API 키
 - PostgreSQL 인스턴스 (RDS 또는 로컬)
 
 ### 4.2 레포 클론
 
 ```bash
-git clone https://github.com/ORG/REPO.git
+git clone `https://github.com/ORG/REPO.git`
 cd REPO
 ````
 
@@ -212,7 +212,7 @@ cp .env.example .env
 
 - `S3_EVIDENCE_BUCKET`
 - `DDB_EVIDENCE_TABLE`
-- `OPENSEARCH_HOST`
+- `QDRANT_HOST`
 - `DATABASE_URL` (또는 POSTGRES_* 세트)
 - `OPENAI_API_KEY`
 - 기타 AWS 자격 증명 또는 IAM Role 사용 방식
@@ -256,7 +256,7 @@ python worker/main.py
   - S3에서 파일 다운로드
   - 타입별 파서 실행 (텍스트/이미지/오디오/영상/PDF)
   - 요약/라벨링/임베딩 생성
-  - DynamoDB + OpenSearch에 결과 반영
+  - DynamoDB + Qdrant에 결과 반영
 
 ---
 
@@ -269,13 +269,13 @@ bash
 │   ├── api/                # cases, evidence, auth, draft, search 등
 │   ├── models/             # SQLAlchemy 모델
 │   ├── schemas/            # Pydantic 스키마
-│   ├── services/           # S3/DynamoDB/OpenSearch/Auth 등
+│   ├── services/           # S3/DynamoDB/Qdrant/Auth 등
 │   └── core/               # 설정, 로깅, 보안
 │
 ├── ai_worker/               # AI 파이프라인 워커 (L 리드)
 │   ├── handler.py          # Lambda 엔트리포인트
 │   ├── processor/          # router, text_parser, ocr, stt, semantic, embed 등
-│   └── utils/              # s3, dynamo, opensearch 유틸
+│   └── utils/              # s3, dynamo, qdrant 유틸
 │
 ├── frontend/                # React/Next 대시보드 (P 리드)
 │   └── src/
@@ -329,13 +329,13 @@ npm run dev   # 기본: http://localhost:5173
 │   ├── api/                # cases, evidence, auth, draft, search 등
 │   ├── models/             # SQLAlchemy 모델
 │   ├── schemas/            # Pydantic 스키마
-│   ├── services/           # S3/DynamoDB/OpenSearch/Auth 등
+│   ├── services/           # S3/DynamoDB/Qdrant/Auth 등
 │   └── core/               # 설정, 로깅, 보안
 │
 ├── ai_worker/               # AI 파이프라인 워커 (L 리드)
 │   ├── handler.py          # Lambda 엔트리포인트
 │   ├── processor/          # router, text_parser, ocr, stt, semantic, embed 등
-│   └── utils/              # s3, dynamo, opensearch 유틸
+│   └── utils/              # s3, dynamo, qdrant 유틸
 │
 ├── frontend/                # React/Next 대시보드 (P 리드)
 │   └── src/
@@ -430,7 +430,7 @@ main  ←  dev  ←  feat/*
 
 2. **AI 기반 증거 분석 파이프라인**
 
-   - S3 Event → AI Worker → DynamoDB/OpenSearch/RDS → API
+   - S3 Event → AI Worker → DynamoDB/Qdrant/RDS → API
 
 3. **법적·보안 기준을 충족하는 설계**
 
