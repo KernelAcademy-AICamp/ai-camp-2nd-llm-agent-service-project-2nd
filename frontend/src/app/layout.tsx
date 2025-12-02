@@ -10,6 +10,7 @@
 
 import type { Metadata } from 'next';
 import './globals.css';
+import Footer from '@/components/common/Footer';
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://legalevidence.hub'),
@@ -140,7 +141,12 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className="font-pretendard antialiased">{children}</body>
+      <body className="font-pretendard antialiased">
+        <div className="flex flex-col min-h-screen">
+          <main className="flex-grow">{children}</main>
+          <Footer />
+        </div>
+      </body>
     </html>
   );
 }
