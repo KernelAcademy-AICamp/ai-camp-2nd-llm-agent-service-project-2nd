@@ -206,7 +206,11 @@ export default function CasesPage() {
             </main>
 
             {/* 모달 렌더링 */}
-            <AddCaseModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+            <AddCaseModal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                onSuccess={fetchCases}
+            />
         </div>
     );
 }

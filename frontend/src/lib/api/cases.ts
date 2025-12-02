@@ -32,9 +32,27 @@ export interface CaseListResponse {
  * Get list of cases for current user
  */
 export async function getCases(): Promise<ApiResponse<CaseListResponse>> {
-  return apiRequest<CaseListResponse>('/cases', {
+  const response = await apiRequest<Case[] | CaseListResponse>('/cases', {
     method: 'GET',
   });
+
+  // Handle both array response (from backend) and object response
+  if (response.data) {
+    if (Array.isArray(response.data)) {
+      // Backend returns array directly
+      return {
+        data: {
+          cases: response.data,
+          total: response.data.length,
+        },
+        status: response.status,
+      };
+    }
+    // Already in expected format
+    return response as ApiResponse<CaseListResponse>;
+  }
+
+  return response as ApiResponse<CaseListResponse>;
 }
 
 /**
