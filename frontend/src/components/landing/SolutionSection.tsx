@@ -39,6 +39,7 @@ export default function SolutionSection() {
 
   return (
     <section
+      id="features"
       className="py-20 px-6 bg-neutral-50"
       aria-label="솔루션 핵심 기능"
     >

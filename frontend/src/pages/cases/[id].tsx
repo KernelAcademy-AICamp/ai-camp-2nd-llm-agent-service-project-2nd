@@ -18,6 +18,7 @@ import {
   UploadProgress,
   Evidence as ApiEvidence
 } from '@/lib/api/evidence';
+import { getCase, Case } from '@/lib/api/cases';
 
 /**
  * Convert API evidence response to component Evidence type
@@ -94,6 +95,8 @@ type UploadStatus = {
 export default function CaseDetailPage() {
     const router = useRouter();
     const { id } = router.query;
+    const [caseData, setCaseData] = useState<Case | null>(null);
+    const [isLoadingCase, setIsLoadingCase] = useState(true);
     const [evidenceList, setEvidenceList] = useState<Evidence[]>([]);
     const [isLoadingEvidence, setIsLoadingEvidence] = useState(false);
     const [evidenceError, setEvidenceError] = useState<string | null>(null);
@@ -113,6 +116,22 @@ export default function CaseDetailPage() {
     });
 
     const caseId = typeof id === 'string' ? id : '';
+
+    // Fetch case data
+    useEffect(() => {
+        if (!caseId) return;
+
+        const fetchCaseData = async () => {
+            setIsLoadingCase(true);
+            const response = await getCase(caseId);
+            if (response.data) {
+                setCaseData(response.data);
+            }
+            setIsLoadingCase(false);
+        };
+
+        fetchCaseData();
+    }, [caseId]);
 
     // Fetch evidence list from API
     const fetchEvidenceList = useCallback(async () => {
@@ -307,7 +326,9 @@ export default function CaseDetailPage() {
                             <ArrowLeft className="w-6 h-6" />
                         </Link>
                         <div>
-                            <h1 className="text-xl font-bold text-secondary">김철수 이혼 소송</h1>
+                            <h1 className="text-xl font-bold text-secondary">
+                                {isLoadingCase ? '로딩 중...' : caseData?.title || '사건 정보 없음'}
+                            </h1>
                             <p className="text-xs text-gray-500">Case ID: {id}</p>
                         </div>
                     </div>
@@ -326,8 +347,14 @@ export default function CaseDetailPage() {
                 <section className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 grid gap-4 md:grid-cols-3">
                     <div>
                         <p className="text-xs uppercase tracking-widest text-gray-400 mb-1">의뢰인</p>
-                        <p className="text-base font-semibold text-gray-900">김철수</p>
-                        <p className="text-xs text-gray-500">최근 업데이트: {new Date().toLocaleDateString('ko-KR')}</p>
+                        <p className="text-base font-semibold text-gray-900">
+                            {isLoadingCase ? '로딩 중...' : caseData?.client_name || '-'}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                            최근 업데이트: {caseData?.updated_at
+                                ? new Date(caseData.updated_at).toLocaleDateString('ko-KR')
+                                : new Date().toLocaleDateString('ko-KR')}
+                        </p>
                     </div>
                     <div>
                         <p className="text-xs uppercase tracking-widest text-gray-400 mb-1">증거 현황</p>
@@ -470,18 +497,29 @@ export default function CaseDetailPage() {
                 {activeTab === 'timeline' && (
                     <section className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-4" role="tabpanel" aria-label="타임라인 탭">
                         <h2 className="text-lg font-bold text-gray-900">사건 타임라인</h2>
-                        <p className="text-sm text-gray-500">AI가 추출한 주요 사건들을 시간순으로 정리합니다. 증거 탭에서 “AI 요약”이 쌓일수록 타임라인의 정확도가 향상됩니다.</p>
-                        <ul className="space-y-3">
-                            {evidenceList.map((item) => (
-                                <li key={item.id} className="flex items-start space-x-3 border-l-2 border-accent pl-3">
-                                    <div className="text-xs text-gray-400">{new Date(item.uploadDate).toLocaleDateString()}</div>
-                                    <div>
-                                        <p className="text-sm font-semibold text-gray-800">{item.filename}</p>
-                                        <p className="text-xs text-gray-500">{item.summary ? item.summary : '요약이 곧 제공됩니다. 증거를 검토 중입니다.'}</p>
-                                    </div>
-                                </li>
-                            ))}
-                        </ul>
+                        <p className="text-sm text-gray-500">AI가 추출한 주요 사건들을 시간순으로 정리합니다. 증거 탭에서 "AI 요약"이 쌓일수록 타임라인의 정확도가 향상됩니다.</p>
+                        {isLoadingEvidence ? (
+                            <div className="flex items-center justify-center py-8">
+                                <Loader2 className="w-6 h-6 text-primary animate-spin" />
+                                <span className="ml-2 text-gray-500">타임라인을 불러오는 중...</span>
+                            </div>
+                        ) : evidenceList.length === 0 ? (
+                            <div className="text-center py-8 text-gray-500">
+                                <p>아직 등록된 증거가 없어 타임라인을 표시할 수 없습니다.</p>
+                            </div>
+                        ) : (
+                            <ul className="space-y-3">
+                                {evidenceList.map((item) => (
+                                    <li key={item.id} className="flex items-start space-x-3 border-l-2 border-accent pl-3">
+                                        <div className="text-xs text-gray-400">{new Date(item.uploadDate).toLocaleDateString()}</div>
+                                        <div>
+                                            <p className="text-sm font-semibold text-gray-800">{item.filename}</p>
+                                            <p className="text-xs text-gray-500">{item.summary ? item.summary : '요약이 곧 제공됩니다. 증거를 검토 중입니다.'}</p>
+                                        </div>
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
                     </section>
                 )}
 

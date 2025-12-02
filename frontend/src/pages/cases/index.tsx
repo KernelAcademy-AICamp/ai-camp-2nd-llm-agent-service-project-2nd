@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
+import Link from 'next/link';
 import { Plus, LogOut, RefreshCw, FileText } from 'lucide-react';
 import CaseCard from '@/components/cases/CaseCard';
 import AddCaseModal from '@/components/cases/AddCaseModal';
@@ -117,7 +118,9 @@ export default function CasesPage() {
             {/* Header / Navigation (To be separated later) */}
             <nav className="bg-white border-b border-gray-200 px-6 py-4">
                 <div className="max-w-7xl mx-auto flex justify-between items-center">
-                    <h1 className="text-2xl font-bold text-secondary">LEH</h1>
+                    <Link href="/" className="text-2xl font-bold text-secondary hover:text-primary transition-colors">
+                        LEH
+                    </Link>
                     <div className="flex items-center space-x-4">
                         <span className="text-sm text-neutral-600">
                             {user?.name ? `${user.name}님, 환영합니다.` : '환영합니다.'}

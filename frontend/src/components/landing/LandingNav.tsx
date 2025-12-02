@@ -8,6 +8,8 @@
  * - Calm Control design system compliance
  */
 
+'use client';
+
 import Link from 'next/link';
 
 interface LandingNavProps {
@@ -15,6 +17,14 @@ interface LandingNavProps {
 }
 
 export default function LandingNav({ isScrolled = false }: LandingNavProps) {
+  const scrollToSection = (e: React.MouseEvent<HTMLAnchorElement>, sectionId: string) => {
+    e.preventDefault();
+    const element = document.getElementById(sectionId);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
   return (
     <nav
       className={`sticky top-0 z-50 px-6 py-4 transition-all duration-300 ${
@@ -48,36 +58,38 @@ export default function LandingNav({ isScrolled = false }: LandingNavProps) {
 
         {/* Navigation Menu */}
         <div className="flex items-center space-x-8">
-          <Link
+          <a
             href="#features"
-            className="text-sm font-medium text-neutral-700 hover:text-secondary transition-colors"
+            onClick={(e) => scrollToSection(e, 'features')}
+            className="text-sm font-medium text-neutral-700 hover:text-secondary transition-colors cursor-pointer"
           >
             기능
-          </Link>
-          <Link
+          </a>
+          <a
             href="#pricing"
-            className="text-sm font-medium text-neutral-700 hover:text-secondary transition-colors"
+            onClick={(e) => scrollToSection(e, 'pricing')}
+            className="text-sm font-medium text-neutral-700 hover:text-secondary transition-colors cursor-pointer"
           >
             가격
-          </Link>
-          <Link
+          </a>
+          <a
             href="#testimonials"
-            className="text-sm font-medium text-neutral-700 hover:text-secondary transition-colors"
+            onClick={(e) => scrollToSection(e, 'testimonials')}
+            className="text-sm font-medium text-neutral-700 hover:text-secondary transition-colors cursor-pointer"
           >
             고객사례
-          </Link>
+          </a>
           <Link
             href="/login"
-            className="text-sm font-medium text-neutral-700 hover:text-secondary transition-colors"
+            className="btn-primary text-sm px-4 py-2 focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:outline-none"
           >
             로그인
           </Link>
           <Link
             href="/signup"
             className="btn-primary text-sm px-4 py-2 focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:outline-none"
-            aria-label="무료체험 시작하기"
           >
-            무료체험
+            회원가입
           </Link>
         </div>
       </div>

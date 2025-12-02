@@ -47,6 +47,14 @@ export async function apiRequest<T>(
     if (!response.ok) {
       // Handle both error formats: { error: { message: "..." } } and { detail: "..." }
       const errorMessage = data?.error?.message || data?.detail || 'An error occurred';
+
+      // Handle 401 Unauthorized - clear token and redirect to login
+      if (response.status === 401 && typeof window !== 'undefined') {
+        localStorage.removeItem('authToken');
+        // Redirect to login page
+        window.location.href = '/login';
+      }
+
       return {
         error: errorMessage,
         status: response.status,
