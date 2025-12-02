@@ -57,7 +57,7 @@ export default function SignupPage() {
       }
 
       // Store auth token
-      // TODO: Consider HTTP-only cookie for better security
+      // NOTE: See Issue #63 for HTTP-only cookie migration plan
       localStorage.setItem('authToken', response.data.access_token);
 
       // Store user info for display purposes

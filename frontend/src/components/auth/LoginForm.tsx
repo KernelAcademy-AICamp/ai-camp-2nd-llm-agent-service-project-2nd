@@ -28,7 +28,7 @@ export default function LoginForm() {
       }
 
       // Store auth token in localStorage
-      // TODO: Consider HTTP-only cookie for better security
+      // NOTE: See Issue #63 for HTTP-only cookie migration plan
       localStorage.setItem('authToken', response.data.access_token);
 
       // Store user info for display purposes
@@ -38,8 +38,7 @@ export default function LoginForm() {
 
       // Redirect to cases page
       router.push('/cases');
-    } catch (err) {
-      console.error('Login error:', err);
+    } catch {
       setError('로그인 중 오류가 발생했습니다.');
     } finally {
       setLoading(false);

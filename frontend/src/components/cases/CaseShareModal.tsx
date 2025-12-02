@@ -69,7 +69,8 @@ export default function CaseShareModal({ isOpen, onClose, caseTitle }: CaseShare
     }
     setIsSubmitting(true);
     try {
-      // TODO: API call to share case
+      // FUTURE: Implement case sharing API (backend endpoint needed)
+      // Planned: POST /cases/{caseId}/share with { userIds, permissions }
       setShareMessage('케이스가 선택한 팀원과 공유되었습니다.');
     } finally {
       setIsSubmitting(false);

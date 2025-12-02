@@ -94,12 +94,12 @@ export default function BillingPage() {
   };
 
   const handleDownloadInvoice = (invoiceUrl: string) => {
-    // TODO: Implement invoice download via API
+    // FUTURE: Invoice download API (GET /billing/invoices/{id}/download)
     window.open(invoiceUrl, '_blank');
   };
 
   const handleUpdatePaymentMethod = () => {
-    // TODO: Implement payment method update modal
+    // FUTURE: Payment method update modal (requires payment gateway integration)
   };
 
   return (

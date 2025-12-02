@@ -1,4 +1,4 @@
-// TODO: TDD tests - Skip until implementation is complete
+// SKIPPED: TDD tests pending - See Issue #68 for activation plan
 /**
  * Plan 3.20.3 - Case Detail Page Layout Tests
  *

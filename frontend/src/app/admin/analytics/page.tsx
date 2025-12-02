@@ -73,10 +73,10 @@ export default function AnalyticsDashboard() {
   const [selectedDateRange, setSelectedDateRange] = useState('last-6-months');
 
   const handleRefresh = () => {
-    // TODO: Implement analytics data refresh via API
+    // FUTURE: Analytics refresh API (GET /admin/analytics?refresh=true)
   };
   const handleExportPDF = () => {
-    // TODO: Implement PDF export functionality
+    // See Issue #60 for PDF export implementation
   };
 
   const getActivityLevelColor = (level: string) => {
