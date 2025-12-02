@@ -89,7 +89,10 @@ const DOCUMENT_TEMPLATES = [
     },
 ];
 
-const sanitizeDraftHtml = (html: string) => DOMPurify.sanitize(html, SANITIZE_OPTIONS);
+const sanitizeDraftHtml = (html: string) =>
+    typeof window === 'undefined' ? html : DOMPurify.sanitize(html, SANITIZE_OPTIONS);
+type IntervalHandle = ReturnType<typeof setInterval> | number;
+type TimeoutHandle = ReturnType<typeof setTimeout> | number;
 const stripHtml = (html: string) => html.replace(/<[^>]+>/g, '').trim();
 
 const generateId = () => {
@@ -165,8 +168,8 @@ export default function DraftPreviewPanel({
     const [isTrackChangesEnabled, setIsTrackChangesEnabled] = useState(false);
     const [collabStatus, setCollabStatus] = useState<string | null>(null);
     const editorRef = useRef<HTMLDivElement>(null);
-    const autosaveTimerRef = useRef<NodeJS.Timeout | null>(null);
-    const collabSyncTimerRef = useRef<NodeJS.Timeout | null>(null);
+    const autosaveTimerRef = useRef<IntervalHandle | null>(null);
+    const collabSyncTimerRef = useRef<TimeoutHandle | null>(null);
     const versionHistoryRef = useRef<DraftVersionSnapshot[]>([]);
     const lastSavedAtRef = useRef<string | null>(null);
     const lastImportedDraftRef = useRef<string | null>(null);
@@ -280,9 +283,10 @@ export default function DraftPreviewPanel({
     }, [editorHtml]);
 
     useEffect(() => {
-        autosaveTimerRef.current = window.setInterval(() => {
+        const timer = window.setInterval(() => {
             recordVersion('auto');
         }, AUTOSAVE_INTERVAL_MS);
+        autosaveTimerRef.current = timer;
 
         return () => {
             if (autosaveTimerRef.current) {
@@ -357,7 +361,7 @@ export default function DraftPreviewPanel({
             clearTimeout(collabSyncTimerRef.current);
         }
 
-        collabSyncTimerRef.current = window.setTimeout(() => {
+        const timeout = window.setTimeout(() => {
             channelRef.current?.postMessage({
                 type: 'content-update',
                 caseId,
@@ -368,6 +372,7 @@ export default function DraftPreviewPanel({
                 timestamp: Date.now(),
             });
         }, 500);
+        collabSyncTimerRef.current = timeout;
 
         return () => {
             if (collabSyncTimerRef.current) {
