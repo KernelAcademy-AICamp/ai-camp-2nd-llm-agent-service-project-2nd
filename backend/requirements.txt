@@ -41,3 +41,4 @@ mangum>=0.17.0
 # Testing (optional)
 pytest>=7.4.3
 pytest-asyncio>=0.21.0
+pytest-cov>=4.1.0

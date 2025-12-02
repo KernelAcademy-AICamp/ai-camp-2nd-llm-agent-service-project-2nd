@@ -82,7 +82,7 @@ Backend: GET /evidence/{id} → status=processed 확인
 | DynamoDB | `leh_evidence` GetItem | ✅ |
 | DynamoDB | `leh_evidence` UpdateItem | ✅ |
 | DynamoDB | `leh_case_summary` 접근 | ✅ |
-| Lambda | 배포/호출 | ❌ (Admin 필요) |
+| Lambda | 배포/호출 | ✅ (완료) |
 
 ### 환경변수 설정
 
@@ -96,11 +96,43 @@ Backend: GET /evidence/{id} → status=processed 확인
 
 - [x] S3 버킷 권한 확인 ✅
 - [x] DynamoDB 연결 테스트 ✅
-- [ ] Lambda 배포 권한 요청 (Admin 필요)
-- [ ] Full E2E 테스트 (실제 파일 업로드 → Lambda → Backend)
+- [x] Lambda 배포 완료 ✅ (2025-12-01)
+- [x] Full E2E 테스트 (실제 파일 업로드 → Lambda → Backend) ✅
+
+---
+
+## 배포 완료 현황 (2025-12-01)
+
+### Backend (Lambda + API Gateway)
+| 항목 | 값 |
+|------|-----|
+| Lambda 함수 | `leh-backend` |
+| API Endpoint | `https://zhfiuntwj0.execute-api.ap-northeast-2.amazonaws.com` |
+| Architecture | arm64, 512MB, 30s timeout |
+| IAM Role | `leh-backend-role` |
+
+### AI Worker (Lambda)
+| 항목 | 값 |
+|------|-----|
+| Lambda 함수 | `leh-ai-worker` |
+| ECR 이미지 | `540261961975.dkr.ecr.ap-northeast-2.amazonaws.com/leh-ai-worker` |
+| Architecture | arm64, 1024MB, 300s timeout |
+| S3 트리거 | `leh-evidence-prod/cases/*` |
+
+### Frontend (S3 + CloudFront)
+| 항목 | 값 |
+|------|-----|
+| S3 버킷 | `leh-frontend-kbp9r` |
+| CloudFront URL | `https://dpbf86zqulqfy.cloudfront.net` |
+| API 연동 | `NEXT_PUBLIC_API_BASE_URL` 설정됨 |
+
+### GitHub Actions 설정
+- ✅ 11개 Secrets 설정 (AWS, DB, JWT, OpenAI, Qdrant 등)
+- ✅ 27개 Variables 설정 (비민감 환경변수)
+- ✅ 배포 워크플로우 Access Key 인증으로 구성
 
 ---
 
 *작성일: 2025-12-01*
 *최종 업데이트: 2025-12-01*
-*작성자: AI Worker 담당 (L)*
+*작성자: AI Worker 담당 (L), 배포 담당 (H)*

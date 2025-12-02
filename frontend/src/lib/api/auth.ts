@@ -28,17 +28,12 @@ export async function login(
   email: string,
   password: string
 ): Promise<ApiResponse<LoginResponse>> {
-  // Create form data for OAuth2 password flow
-  const formData = new URLSearchParams();
-  formData.append('username', email); // OAuth2 uses 'username' field
-  formData.append('password', password);
-
   return apiRequest<LoginResponse>('/auth/login', {
     method: 'POST',
     headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
+      'Content-Type': 'application/json',
     },
-    body: formData.toString(),
+    body: JSON.stringify({ email, password }),
   });
 }
 
@@ -82,5 +77,36 @@ export async function signup(
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(data),
+  });
+}
+
+/**
+ * Request password reset email
+ */
+export async function forgotPassword(
+  email: string
+): Promise<ApiResponse<{ message: string }>> {
+  return apiRequest<{ message: string }>('/auth/forgot-password', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ email }),
+  });
+}
+
+/**
+ * Reset password with token
+ */
+export async function resetPassword(
+  token: string,
+  newPassword: string
+): Promise<ApiResponse<{ message: string }>> {
+  return apiRequest<{ message: string }>('/auth/reset-password', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ token, new_password: newPassword }),
   });
 }

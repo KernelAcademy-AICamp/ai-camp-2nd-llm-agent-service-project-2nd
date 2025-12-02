@@ -240,6 +240,33 @@
 
 ---
 
+### 1.14 비밀번호 재설정 (Password Reset) ✅ **완료 (2025-12-01)**
+
+> **담당: H (Backend)**
+> **목표**: 이메일 기반 비밀번호 재설정 기능 구현
+
+- [x] `POST /auth/forgot-password` 호출 시:
+  - 이메일 주소를 받아 비밀번호 재설정 토큰을 생성해야 한다.
+  - 토큰은 `password_reset_tokens` 테이블에 저장 (1시간 유효).
+  - AWS SES를 통해 재설정 링크가 포함된 이메일을 발송해야 한다.
+  - 보안: 이메일 존재 여부와 상관없이 항상 성공 응답 반환 (user enumeration 방지).
+- [x] `POST /auth/reset-password` 호출 시:
+  - 유효한 토큰과 새 비밀번호를 받아 비밀번호를 변경해야 한다.
+  - 토큰이 만료되었거나 이미 사용된 경우 400 에러 반환.
+  - 성공 시 토큰을 사용됨으로 마킹.
+- [x] DB 모델 추가:
+  - `PasswordResetToken` 모델: id, user_id, token, expires_at, used_at, created_at
+- [x] 이메일 서비스 구현:
+  - `app/utils/email.py`: AWS SES 기반 이메일 발송
+  - `SES_SENDER_EMAIL` 환경변수 설정 필요
+
+**설정 필요 사항:**
+- AWS SES 발신 이메일 인증 필요 (`aws ses verify-email-identity`)
+- Lambda 환경변수 `SES_SENDER_EMAIL` 설정 필요
+- SES 샌드박스 모드에서는 인증된 이메일로만 발송 가능
+
+---
+
 ## 2. AI Worker (L, S3 Event → DynamoDB / Qdrant) ✅ **완료**
 
 ### 2.1 Event 파싱 ✅
@@ -869,6 +896,65 @@
 
 ---
 
+### 3.21 Frontend API 연동 ✅ **완료 (2025-12-01)**
+
+> **담당: H (Backend)**
+> **목표**: Mock 데이터 제거 및 실제 Backend API 연동
+
+- [x] API 클라이언트 JWT 인증 추가:
+  - `frontend/src/lib/api/client.ts` 수정
+  - localStorage에서 `authToken` 읽어 `Authorization: Bearer` 헤더 추가
+  - 에러 응답 형식 통일 (`error.message` + `detail` 모두 처리)
+- [x] 사건 목록 API 연동:
+  - `frontend/src/pages/cases/index.tsx` 수정
+  - Mock 데이터(`MOCK_CASES`) 제거
+  - `getCases()` API 호출로 실제 데이터 로드
+  - `useAuth` 훅 연동 (인증 상태 확인)
+  - API 응답 형식 매핑 (`snake_case` → `camelCase`)
+- [x] 테스트 Mock 업데이트:
+  - `frontend/src/tests/case-list-dashboard.test.tsx` 수정
+  - `useAuth` 훅 mock 추가 (isAuthenticated, isLoading, logout)
+  - `getCases` API mock 추가
+  - `getByRole` → `findByRole` 변경 (비동기 로딩 대기)
+
+**변경된 파일:**
+- `frontend/src/lib/api/client.ts` - JWT 인증 헤더 추가
+- `frontend/src/pages/cases/index.tsx` - 실제 API 연동
+- `frontend/src/tests/case-list-dashboard.test.tsx` - 테스트 mock 수정
+- `frontend/src/tests/draft-tab.test.tsx` - 업로드 상태 assertion 수정
+
+---
+
+### 3.22 비밀번호 재설정 UI ✅ **완료 (2025-12-01)**
+
+> **담당: H (Frontend)**
+> **목표**: 비밀번호 찾기/재설정 페이지 구현
+
+- [x] 비밀번호 찾기 페이지 (`/forgot-password`):
+  - 이메일 입력 폼
+  - `POST /auth/forgot-password` API 연동
+  - 성공 시 "이메일 확인" 안내 화면 표시
+- [x] 비밀번호 재설정 페이지 (`/reset-password?token=xxx`):
+  - URL에서 토큰 파싱 (`useSearchParams`)
+  - 새 비밀번호 입력 + 확인 폼
+  - 비밀번호 일치 검증, 최소 8자 검증
+  - `POST /auth/reset-password` API 연동
+  - 성공 시 로그인 페이지로 리다이렉트 (3초 후 자동)
+  - 토큰 없거나 유효하지 않은 경우 에러 화면
+- [x] 로그인 폼에 링크 추가:
+  - `LoginForm.tsx`에 "비밀번호를 잊으셨나요?" 링크 추가
+- [x] API 클라이언트 함수 추가:
+  - `forgotPassword(email)`: 비밀번호 재설정 요청
+  - `resetPassword(token, newPassword)`: 비밀번호 변경
+
+**변경된 파일:**
+- `frontend/src/app/forgot-password/page.tsx` - 신규
+- `frontend/src/app/reset-password/page.tsx` - 신규
+- `frontend/src/lib/api/auth.ts` - API 함수 추가
+- `frontend/src/components/auth/LoginForm.tsx` - 링크 추가
+
+---
+
 ## 4. 보안 관련 테스트 (전 계층 공통) ✅ **완료**
 
 - [x] HTTP 응답 헤더에는:
@@ -937,6 +1023,47 @@
 - [x] Secrets 사용 시:
   - `secrets.XXX` 참조만 사용
   - ✅ **확인 완료**: `secrets.AWS_ROLE_ARN`, `secrets.S3_FRONTEND_BUCKET`, `secrets.CLOUDFRONT_DISTRIBUTION_ID`, `secrets.BACKEND_API_URL`
+
+### 5.5 GitHub Secrets & Variables 설정 ✅ **완료 (2025-12-01)**
+
+> **담당: H (Backend)**
+> **목표**: GitHub Actions에서 사용할 환경 변수 및 Secrets 설정
+> **관련 이슈**: Issue #30, Issue #33
+
+#### 5.5.1 GitHub Secrets (민감 정보) - 11개
+
+| Secret | 용도 | 상태 |
+|--------|------|------|
+| `AWS_ACCESS_KEY_ID` | AWS IAM 인증 | ✅ |
+| `AWS_SECRET_ACCESS_KEY` | AWS IAM 인증 | ✅ |
+| `DATABASE_URL` | PostgreSQL RDS 연결 | ✅ |
+| `JWT_SECRET` | JWT 토큰 서명 | ✅ |
+| `OPENAI_API_KEY` | OpenAI API | ✅ |
+| `QDRANT_API_KEY` | Qdrant Cloud | ✅ |
+| `POSTGRES_PASSWORD` | DB 비밀번호 | ✅ |
+| `ADMIN_DEFAULT_PASSWORD` | 관리자 초기 비밀번호 | ✅ |
+| `S3_FRONTEND_BUCKET` | 프론트엔드 S3 버킷 | ✅ |
+| `CLOUDFRONT_DISTRIBUTION_ID` | CloudFront 배포 ID | ✅ |
+| `BACKEND_API_URL` | Lambda API Gateway URL | ✅ |
+
+#### 5.5.2 GitHub Variables (비민감 정보) - 27개
+
+- [x] **AWS 설정**: `AWS_REGION`, `S3_EVIDENCE_BUCKET`, `S3_EVIDENCE_PREFIX`, `S3_PRESIGNED_URL_EXPIRE_SECONDS`
+- [x] **애플리케이션**: `APP_ENV`, `APP_DEBUG`, `LOG_LEVEL`, `CORS_ALLOW_ORIGINS`, `BACKEND_BASE_URL`
+- [x] **JWT**: `JWT_ALGORITHM`, `JWT_ACCESS_TOKEN_EXPIRE_MINUTES`, `ADMIN_DEFAULT_EMAIL`
+- [x] **OpenAI**: `OPENAI_API_BASE`, `OPENAI_MODEL_CHAT`, `OPENAI_MODEL_EMBEDDING`, `OPENAI_MODEL_VISION`, `OPENAI_MODEL_STT`, `LLM_REQUEST_TIMEOUT_SECONDS`
+- [x] **Qdrant**: `QDRANT_HOST`, `QDRANT_PORT`, `QDRANT_COLLECTION_PREFIX`, `QDRANT_DEFAULT_TOP_K`, `QDRANT_USE_HTTPS`
+- [x] **PostgreSQL**: `POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_DB`, `POSTGRES_USER`
+- [x] **DynamoDB**: `DDB_EVIDENCE_TABLE`, `DDB_CASE_SUMMARY_TABLE`
+
+#### 5.5.3 배포 워크플로우 수정
+
+- [x] `.github/workflows/deploy_paralegal.yml` 수정:
+  - OIDC 인증 → Access Key 인증으로 변경
+  - `aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}`
+  - `aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}`
+
+**참고**: OIDC 방식이 보안상 더 권장되나, 초기 설정 간소화를 위해 Access Key 방식 사용. 추후 OIDC로 마이그레이션 권장.
 
 ---
 

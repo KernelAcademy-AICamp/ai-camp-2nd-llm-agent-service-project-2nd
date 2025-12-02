@@ -11,9 +11,11 @@
 | Terraform S3 Event Trigger | ✅ | S3 → Lambda 설정 완료 |
 | Lambda Dockerfile | ✅ | 배포 준비 완료 |
 
-### 1.2 미완료 작업 (핵심 Gap)
+### 1.2 ~~미완료 작업~~ 해결됨 ✅
 
-#### Gap 1: 스키마 불일치
+> **2025-12-01 업데이트**: 아래 Gap들은 모두 해결되었습니다.
+
+#### ~~Gap 1~~: 스키마 불일치 → **해결됨**
 **Backend가 생성하는 Evidence 레코드:**
 ```python
 {
@@ -40,7 +42,7 @@
 
 **문제:** Backend와 AI Worker가 **다른 레코드**를 생성함
 
-#### Gap 2: AI Worker 트리거 미구현
+#### ~~Gap 2~~: AI Worker 트리거 → **해결됨 (S3 Event Trigger)**
 ```python
 # backend/app/services/evidence_service.py:195-197
 # TODO: Trigger AI Worker via SNS or direct Lambda invocation
@@ -48,9 +50,10 @@
 # For now, evidence will stay in "pending" status until AI Worker picks it up
 ```
 
-#### Gap 3: 상태 동기화 없음
-- AI Worker가 처리 완료해도 Backend 레코드는 `status=pending` 유지
-- Frontend에서 처리 완료 여부 확인 불가
+#### ~~Gap 3~~: 상태 동기화 → **해결됨 (`update_evidence_status()`)**
+- ~~AI Worker가 처리 완료해도 Backend 레코드는 `status=pending` 유지~~
+- ~~Frontend에서 처리 완료 여부 확인 불가~~
+- ✅ AI Worker가 `update_evidence_status()`로 Backend 레코드 직접 UPDATE
 
 ---
 
@@ -286,23 +289,25 @@ def test_e2e_backend_ai_worker_integration():
 
 ## 5. 작업 체크리스트
 
-### Phase 1: AI Worker 수정
-- [ ] `handler.py`: `extract_evidence_id_from_s3_key()` 함수 추가
-- [ ] `metadata_store.py`: `update_evidence_status()` 메서드 추가
-- [ ] `handler.py`: `route_and_process()` 수정 - UPDATE 로직 추가
+### Phase 1: AI Worker 수정 ✅ 완료
+- [x] `handler.py`: `extract_evidence_id_from_s3_key()` 함수 추가
+- [x] `metadata_store.py`: `update_evidence_status()` 메서드 추가
+- [x] `handler.py`: `route_and_process()` 수정 - UPDATE 로직 추가
 
-### Phase 2: 테스트
-- [ ] Unit test: `test_update_evidence_status()`
-- [ ] Integration test: E2E 흐름 테스트
-- [ ] 기존 테스트 통과 확인
+### Phase 2: 테스트 ✅ 완료
+- [x] Unit test: `test_update_evidence_status()`
+- [x] Integration test: E2E 흐름 테스트
+- [x] 기존 테스트 통과 확인
 
-### Phase 3: 문서화
-- [ ] 환경변수 확인 및 문서화
-- [ ] API 흐름 다이어그램 업데이트
+### Phase 3: 문서화 ✅ 완료
+- [x] 환경변수 확인 및 문서화
+- [x] API 흐름 다이어그램 업데이트
 
-### Phase 4: 배포 준비
-- [ ] Lambda 배포 테스트 (로컬 Docker)
-- [ ] S3 버킷 권한 확인 (Admin 필요)
+### Phase 4: 배포 ✅ 완료 (2025-12-01)
+- [x] Lambda 배포 완료 (`leh-ai-worker`)
+- [x] S3 트리거 연결 완료 (`leh-evidence-prod/cases/*`)
+- [x] Backend Lambda 배포 완료 (`leh-backend`)
+- [x] Frontend S3/CloudFront 배포 완료
 
 ---
 

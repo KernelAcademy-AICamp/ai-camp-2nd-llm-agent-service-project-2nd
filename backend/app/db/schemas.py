@@ -49,6 +49,30 @@ class TokenResponse(BaseModel):
 
 
 # ============================================
+# Password Reset Schemas
+# ============================================
+class ForgotPasswordRequest(BaseModel):
+    """Forgot password request schema"""
+    email: EmailStr
+
+
+class ForgotPasswordResponse(BaseModel):
+    """Forgot password response schema"""
+    message: str
+
+
+class ResetPasswordRequest(BaseModel):
+    """Reset password request schema"""
+    token: str
+    new_password: str = Field(..., min_length=8)
+
+
+class ResetPasswordResponse(BaseModel):
+    """Reset password response schema"""
+    message: str
+
+
+# ============================================
 # User Management Schemas
 # ============================================
 class UserInviteRequest(BaseModel):
