@@ -48,6 +48,7 @@ describe('Plan 3.17 - AI Traceability Panel', () => {
         test('Draft 텍스트 내 evidence 참조가 data-evidence-id 속성으로 마크업되어 있어야 한다', () => {
             const { container } = render(
                 <DraftPreviewPanel
+                    caseId="case-traceability"
                     draftText={mockDraftTextWithTraceability}
                     citations={mockCitations}
                     isGenerating={false}
@@ -67,6 +68,7 @@ describe('Plan 3.17 - AI Traceability Panel', () => {
         test('Evidence 참조 영역은 시각적으로 구분 가능한 스타일이 적용되어야 한다 (hover 효과)', () => {
             const { container } = render(
                 <DraftPreviewPanel
+                    caseId="case-traceability"
                     draftText={mockDraftTextWithTraceability}
                     citations={mockCitations}
                     isGenerating={false}
@@ -89,6 +91,7 @@ describe('Plan 3.17 - AI Traceability Panel', () => {
             const { container } = render(
                 <div>
                     <DraftPreviewPanel
+                        caseId="case-traceability"
                         draftText={mockDraftTextWithTraceability}
                         citations={mockCitations}
                         isGenerating={false}
@@ -324,6 +327,7 @@ describe('Plan 3.17 - AI Traceability Panel', () => {
         test('Evidence 참조 hover 시 Clarity Teal 색상이 적용되어야 한다', () => {
             const { container } = render(
                 <DraftPreviewPanel
+                    caseId="case-traceability"
                     draftText={mockDraftTextWithTraceability}
                     citations={mockCitations}
                     isGenerating={false}

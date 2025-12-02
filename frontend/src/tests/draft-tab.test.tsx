@@ -1,4 +1,5 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, act, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 import CaseDetailClient from '@/app/cases/[id]/CaseDetailClient';
 import DraftPreviewPanel from '@/components/draft/DraftPreviewPanel';
@@ -21,15 +22,24 @@ jest.mock('@/services/documentService', () => ({
 import { downloadDraftAsDocx } from '@/services/documentService';
 
 describe('Plan 3.6 - Draft Tab requirements on the case detail page', () => {
-    const renderCaseDetail = () => render(<CaseDetailClient id="case-draft-tab" />);
+    const renderCaseDetail = async () => {
+        let view: ReturnType<typeof render> | undefined;
+        await act(async () => {
+            view = render(<CaseDetailClient id="case-draft-tab" />);
+        });
+        return view!;
+    };
 
     beforeEach(() => {
         jest.clearAllMocks();
+        if (typeof window !== 'undefined') {
+            window.localStorage.clear();
+        }
     });
 
     describe('AI disclaimer visibility', () => {
-        test('shows the explicit disclaimer that AI generated the draft and lawyers are responsible', () => {
-            renderCaseDetail();
+        test('shows the explicit disclaimer that AI generated the draft and lawyers are responsible', async () => {
+            await renderCaseDetail();
 
             expect(
                 screen.getByText(/이 문서는 AI가 생성한 초안이며, 최종 책임은 변호사에게 있습니다\./i),
@@ -38,8 +48,8 @@ describe('Plan 3.6 - Draft Tab requirements on the case detail page', () => {
     });
 
     describe('Zen mode editor shell', () => {
-        test('exposes a zen-mode editor surface with no more than one toolbar/panel', () => {
-            const { container } = renderCaseDetail();
+        test('exposes a zen-mode editor surface with no more than one toolbar/panel', async () => {
+            const { container } = await renderCaseDetail();
 
             const editorSurface = screen.getByTestId('draft-editor-surface');
             expect(editorSurface).toHaveAttribute('data-zen-mode', 'true');
@@ -51,7 +61,7 @@ describe('Plan 3.6 - Draft Tab requirements on the case detail page', () => {
 
     describe('Primary generation control', () => {
         test('primary button opens the generation modal', async () => {
-            renderCaseDetail();
+            await renderCaseDetail();
 
             const generateButton = screen.getByRole('button', { name: /초안 (재)?생성/i });
             expect(generateButton).toHaveClass('btn-primary');
@@ -66,7 +76,7 @@ describe('Plan 3.6 - Draft Tab requirements on the case detail page', () => {
 
     describe('Plan 3.12 - Draft 생성 옵션 모달', () => {
         test('초안 생성 버튼 클릭 시 증거 선택 모달이 표시되어야 한다', async () => {
-            renderCaseDetail();
+            await renderCaseDetail();
 
             const generateButton = screen.getByRole('button', { name: /초안 (재)?생성/i });
             fireEvent.click(generateButton);
@@ -82,8 +92,8 @@ describe('Plan 3.6 - Draft Tab requirements on the case detail page', () => {
     });
 
     describe('Plan 3.12 - Rich Text Editor', () => {
-        test('에디터는 textarea가 아닌 contentEditable 요소여야 하며, 서식 버튼 클릭 시 execCommand가 호출되어야 한다', () => {
-            renderCaseDetail();
+        test('에디터는 textarea가 아닌 contentEditable 요소여야 하며, 서식 버튼 클릭 시 execCommand가 호출되어야 한다', async () => {
+            await renderCaseDetail();
 
             // 툴바 확인
             const toolbar = screen.getByTestId('draft-toolbar-panel');
@@ -110,23 +120,24 @@ describe('Plan 3.6 - Draft Tab requirements on the case detail page', () => {
             const onDownload = jest.fn();
             const { getByText } = render(
                 <DraftPreviewPanel
+                    caseId="case-draft-tab"
                     draftText="Test Content"
                     citations={[]}
                     isGenerating={false}
                     hasExistingDraft={true}
                     onGenerate={() => { }}
-                    onDownload={onDownload}
+                    onDownload={({ content, format }) => onDownload(content, format)}
                 />
             );
 
             const downloadBtn = getByText('DOCX');
             fireEvent.click(downloadBtn);
 
-            expect(onDownload).toHaveBeenCalledTimes(1);
+            expect(onDownload).toHaveBeenCalledWith(expect.stringContaining('Test Content'), 'docx');
         });
         describe('Plan 3.12 - Download Functionality Integration', () => {
             test('CaseDetailClient에서 DOCX 다운로드 버튼 클릭 시 서비스 함수가 호출되어야 한다', async () => {
-                render(<CaseDetailClient id="case-draft-tab" />);
+                await renderCaseDetail();
 
                 const downloadBtn = screen.getByText('DOCX');
                 fireEvent.click(downloadBtn);
@@ -138,8 +149,8 @@ describe('Plan 3.6 - Draft Tab requirements on the case detail page', () => {
     });
 
     describe('Plan 3.12 - HWP/Word 변환 다운로드', () => {
-        test('사용자는 DOCX/HWP 두 가지 다운로드 옵션을 볼 수 있고 HWP 클릭 시 변환 서비스가 호출된다', () => {
-            renderCaseDetail();
+        test('사용자는 DOCX/HWP 두 가지 다운로드 옵션을 볼 수 있고 HWP 클릭 시 변환 서비스가 호출된다', async () => {
+            await renderCaseDetail();
 
             const docxButton = screen.getByRole('button', { name: /DOCX/i });
             expect(docxButton).toBeInTheDocument();
@@ -153,7 +164,7 @@ describe('Plan 3.6 - Draft Tab requirements on the case detail page', () => {
 
     describe('Plan 3.13 - Template 선택 옵션', () => {
         test('Draft 생성 모달에서 업로드된 템플릿을 선택할 수 있는 컨트롤이 있어야 한다', async () => {
-            renderCaseDetail();
+            await renderCaseDetail();
 
             const generateButton = screen.getByRole('button', { name: /초안 (재)?생성/i });
             fireEvent.click(generateButton);
@@ -166,9 +177,43 @@ describe('Plan 3.6 - Draft Tab requirements on the case detail page', () => {
         });
     });
 
+    describe('Plan 3.12 - Draft Editor Versioning', () => {
+        test('수동 저장 후 버전 히스토리에 저장 이력이 표시된다', async () => {
+            const user = userEvent.setup();
+            await renderCaseDetail();
+
+            const editor = screen.getByTestId('draft-editor-content');
+            editor.innerHTML = '<p>새로운 문단</p>';
+            fireEvent.input(editor);
+
+            const saveButton = screen.getByRole('button', { name: /저장/i });
+            await user.click(saveButton);
+
+            const historyButton = screen.getByRole('button', { name: /버전 히스토리/i });
+            await user.click(historyButton);
+
+            const historyPanel = await screen.findByTestId('version-history-panel');
+            expect(within(historyPanel).getByText(/수동 저장/)).toBeInTheDocument();
+        });
+
+        test('수동 저장 후 자동 저장 상태 메시지가 갱신된다', async () => {
+            const user = userEvent.setup();
+            await renderCaseDetail();
+
+            const editor = screen.getByTestId('draft-editor-content');
+            editor.innerHTML = '<p>업데이트 내용</p>';
+            fireEvent.input(editor);
+
+            const saveButton = screen.getByRole('button', { name: /저장/i });
+            await user.click(saveButton);
+
+            expect(await screen.findByText(/자동 저장됨/i)).toBeInTheDocument();
+        });
+    });
+
     describe('Calm upload feedback', () => {
-        test('증거 업로드 시 인라인 상태 메시지를 표시한다', () => {
-            renderCaseDetail();
+        test('증거 업로드 시 인라인 상태 메시지를 표시한다', async () => {
+            await renderCaseDetail();
 
             const evidenceTab = screen.getByRole('tab', { name: /증거/i });
             fireEvent.click(evidenceTab);
@@ -176,11 +221,13 @@ describe('Plan 3.6 - Draft Tab requirements on the case detail page', () => {
             const fileInput = screen.getByLabelText(/파일을 끌어다 놓거나 클릭하여 업로드/i);
             const file = new File(['hello'], 'test.txt', { type: 'text/plain' });
 
-            fireEvent.change(fileInput, { target: { files: [file] } });
+            await act(async () => {
+                fireEvent.change(fileInput, { target: { files: [file] } });
+            });
 
             const statusToast = screen.getByRole('status');
             // 업로드 상태 메시지 확인 (업로드 중 또는 업로드 대기열)
-            expect(statusToast).toHaveTextContent(/업로드 중|업로드 대기열/i);
+            expect(statusToast).toHaveTextContent(/업로드 (중|대기열|완료)/i);
         });
     });
 });

@@ -1,7 +1,7 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
-import { ArrowLeft, CheckCircle2, Filter, Shield, Sparkles, Loader2 } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { ArrowLeft, CheckCircle2, Filter, Shield, Sparkles, Loader2, AlertCircle, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
 import EvidenceUpload from '@/components/evidence/EvidenceUpload';
 import EvidenceTable from '@/components/evidence/EvidenceTable';
@@ -14,40 +14,10 @@ import {
   getPresignedUploadUrl,
   uploadToS3,
   notifyUploadComplete,
+  getEvidence,
   UploadProgress
 } from '@/lib/api/evidence';
-
-// Mock Data
-const MOCK_EVIDENCE: Evidence[] = [
-    {
-        id: '1',
-        caseId: '1',
-        filename: '녹취록_20240501.mp3',
-        type: 'audio',
-        status: 'completed',
-        uploadDate: '2024-05-01T10:00:00Z',
-        summary: '피고의 폭언이 담긴 통화 녹음',
-        size: 15 * 1024 * 1024,
-    },
-    {
-        id: '2',
-        caseId: '1',
-        filename: '카카오톡_대화내역.txt',
-        type: 'text',
-        status: 'processing',
-        uploadDate: '2024-05-02T09:30:00Z',
-        size: 50 * 1024,
-    },
-    {
-        id: '3',
-        caseId: '1',
-        filename: '폭행_상해_진단서.pdf',
-        type: 'pdf',
-        status: 'queued',
-        uploadDate: '2024-05-03T14:20:00Z',
-        size: 2 * 1024 * 1024,
-    },
-];
+import { mapApiEvidenceListToEvidence } from '@/lib/utils/evidenceMapper';
 
 const INITIAL_DRAFT_CONTENT = `Ⅰ. 핵심 주장 요약
 - 피고의 반복적인 언어적 폭력과 경제적 통제 사실이 다수의 증거에서 확인됩니다.
@@ -93,7 +63,9 @@ interface CaseDetailClientProps {
 }
 
 export default function CaseDetailClient({ id }: CaseDetailClientProps) {
-    const [evidenceList] = useState<Evidence[]>(MOCK_EVIDENCE);
+    const [evidenceList, setEvidenceList] = useState<Evidence[]>([]);
+    const [isLoadingEvidence, setIsLoadingEvidence] = useState(true);
+    const [evidenceError, setEvidenceError] = useState<string | null>(null);
     const [draftContent, setDraftContent] = useState(INITIAL_DRAFT_CONTENT);
     const [draftCitations, setDraftCitations] = useState<DraftCitation[]>(INITIAL_CITATIONS);
     const [isGeneratingDraft, setIsGeneratingDraft] = useState(false);
@@ -110,6 +82,36 @@ export default function CaseDetailClient({ id }: CaseDetailClientProps) {
     });
 
     const caseId = id || '';
+
+    // Fetch evidence list from API
+    const fetchEvidence = useCallback(async () => {
+        if (!caseId) return;
+
+        setIsLoadingEvidence(true);
+        setEvidenceError(null);
+
+        try {
+            const response = await getEvidence(caseId);
+            if (response.error) {
+                setEvidenceError(response.error);
+                setEvidenceList([]);
+            } else if (response.data) {
+                const mappedEvidence = mapApiEvidenceListToEvidence(response.data.evidence);
+                setEvidenceList(mappedEvidence);
+            }
+        } catch (err) {
+            console.error('Failed to fetch evidence:', err);
+            setEvidenceError('증거 목록을 불러오는데 실패했습니다.');
+            setEvidenceList([]);
+        } finally {
+            setIsLoadingEvidence(false);
+        }
+    }, [caseId]);
+
+    // Load evidence on mount
+    useEffect(() => {
+        fetchEvidence();
+    }, [fetchEvidence]);
 
     const handleUpload = useCallback(async (files: File[]) => {
         if (files.length === 0 || !caseId) return;
@@ -191,6 +193,8 @@ export default function CaseDetailClient({ id }: CaseDetailClientProps) {
                 tone: 'success',
                 message: `${successCount}개 파일 업로드 완료. AI가 증거를 분석 중입니다.`,
             });
+            // Refresh evidence list after successful upload
+            fetchEvidence();
         } else if (successCount > 0) {
             setUploadFeedback({
                 tone: 'info',
@@ -204,7 +208,7 @@ export default function CaseDetailClient({ id }: CaseDetailClientProps) {
         }
 
         setTimeout(() => setUploadFeedback(null), 5000);
-    }, [caseId]);
+    }, [caseId, fetchEvidence]);
 
     const openDraftModal = () => {
         setIsDraftModalOpen(true);
@@ -238,9 +242,9 @@ export default function CaseDetailClient({ id }: CaseDetailClientProps) {
         }, GENERATION_DELAY_MS);
     };
 
-    const handleDownload = async (format: DraftDownloadFormat = 'docx') => {
+    const handleDownload = async (content: string, format: DraftDownloadFormat = 'docx') => {
         if (!id) return;
-        await downloadDraftAsDocx(draftContent, id, format);
+        await downloadDraftAsDocx(content, id, format);
     };
 
     const tabItems: { id: CaseDetailTab; label: string; description: string }[] = useMemo(
@@ -380,12 +384,50 @@ export default function CaseDetailClient({ id }: CaseDetailClientProps) {
                                     </h2>
                                     <p className="text-xs text-gray-500">상태 컬럼을 통해 AI 분석 파이프라인의 진행 상황을 확인하세요.</p>
                                 </div>
-                                <button className="flex items-center text-sm text-neutral-600 hover:text-gray-900 bg-white border border-gray-300 px-3 py-1.5 rounded-md shadow-sm">
-                                    <Filter className="w-4 h-4 mr-2" />
-                                    뷰 필터
-                                </button>
+                                <div className="flex items-center space-x-2">
+                                    <button
+                                        onClick={fetchEvidence}
+                                        disabled={isLoadingEvidence}
+                                        className="flex items-center text-sm text-neutral-600 hover:text-gray-900 bg-white border border-gray-300 px-3 py-1.5 rounded-md shadow-sm disabled:opacity-50"
+                                    >
+                                        <RefreshCw className={`w-4 h-4 mr-2 ${isLoadingEvidence ? 'animate-spin' : ''}`} />
+                                        새로고침
+                                    </button>
+                                    <button className="flex items-center text-sm text-neutral-600 hover:text-gray-900 bg-white border border-gray-300 px-3 py-1.5 rounded-md shadow-sm">
+                                        <Filter className="w-4 h-4 mr-2" />
+                                        뷰 필터
+                                    </button>
+                                </div>
                             </div>
-                            <EvidenceTable items={evidenceList} />
+                            {isLoadingEvidence && (
+                                <div className="flex items-center justify-center py-8">
+                                    <Loader2 className="w-6 h-6 text-accent animate-spin" />
+                                    <span className="ml-2 text-gray-500">증거 목록을 불러오는 중...</span>
+                                </div>
+                            )}
+                            {evidenceError && !isLoadingEvidence && (
+                                <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start space-x-3">
+                                    <AlertCircle className="w-5 h-5 text-red-500 mt-0.5" />
+                                    <div>
+                                        <p className="text-sm font-medium text-red-700">{evidenceError}</p>
+                                        <button
+                                            onClick={fetchEvidence}
+                                            className="text-sm text-red-600 hover:text-red-800 underline mt-1"
+                                        >
+                                            다시 시도
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                            {!isLoadingEvidence && !evidenceError && evidenceList.length === 0 && (
+                                <div className="text-center py-8">
+                                    <p className="text-gray-500">등록된 증거가 없습니다.</p>
+                                    <p className="text-sm text-gray-400 mt-1">위 영역에 파일을 업로드하여 증거를 추가하세요.</p>
+                                </div>
+                            )}
+                            {!isLoadingEvidence && !evidenceError && evidenceList.length > 0 && (
+                                <EvidenceTable items={evidenceList} />
+                            )}
                         </section>
                     </div>
                 )}
@@ -430,12 +472,13 @@ export default function CaseDetailClient({ id }: CaseDetailClientProps) {
                             </div>
                         </div>
                         <DraftPreviewPanel
+                            caseId={caseId}
                             draftText={draftContent}
                             citations={draftCitations}
                             isGenerating={isGeneratingDraft}
                             hasExistingDraft={hasGeneratedDraft}
                             onGenerate={openDraftModal}
-                            onDownload={handleDownload}
+                            onDownload={({ content, format }) => handleDownload(content, format)}
                         />
                     </section>
                 )}

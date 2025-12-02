@@ -495,6 +495,15 @@
 - [x] 리치 텍스트 에디터는:
   - 기본적으로 **문서 본문만 보여주는 Zen 모드**에 가깝게, 불필요한 패널을 최소화해야 한다.
 - [x] “초안 생성/재생성” 버튼은 항상 Primary 스타일이어야 하며, 클릭 후 로딩 상태를 명확히 보여줘야 한다.
+- [x] Issue #57 — CaseDetailClient Evidence API 연동:
+  - CaseDetailClient/Draft 탭 컴포넌트에서 Mock 데이터 제거.
+  - `GET /cases/{id}/evidence` 연동 및 업로드 진행 상태 표시.
+  - 관련 Jest 테스트(`draft-tab.test.tsx`)에서 API mock을 통한 act 경고 제거.
+- [x] Issue #73 — 웹 편집기(Hancom/대체) 통합 1단계:
+  - DraftPreviewPanel → Draft EditorPanel 확장 (웹 WYSIWYG, Tip-less Zen UI).
+  - 자동 저장(5분), 수동 저장, 버전 히스토리(10개) 로컬 보관.
+  - 증거 인용 data-evidence-id 보존 + Traceability Panel 연동 유지.
+  - DOCX/HWP 내보내기 시 실시간 편집본 전달, 새 Jest 케이스로 버전 히스토리 검증.
 
 ### 3.7 의뢰인 증거 제출 포털
 
@@ -553,6 +562,10 @@
 - [x] Issue #59 — AdminRoles API 연동:
   - Mock 데이터 사용 제거, `GET /admin/roles`, `PUT /admin/roles/{role}` 연동.
   - 권한 토글 시 Optimistic Update + 실패시 롤백 처리.
+- [x] Issue #58 — AdminUsers API 연동:
+  - Mock 사용자 목록 제거, `GET /admin/users`, `DELETE /admin/users/{id}` 연동.
+  - 사용자 삭제/초대 UI에 로딩 스피너, 에러/리트라이 메시지 추가.
+  - `admin-users-page.test.tsx`에서 API mock + 대기 로직 반영.
 - [x] 케이스 공유 모달:
   - 팀원 검색 및 선택.
   - 읽기/쓰기 권한 설정.
