@@ -2,7 +2,6 @@
 Tests for evidence utility functions
 """
 
-import pytest
 import sys
 import os
 from app.utils.evidence import generate_evidence_id, extract_filename_from_s3_key
