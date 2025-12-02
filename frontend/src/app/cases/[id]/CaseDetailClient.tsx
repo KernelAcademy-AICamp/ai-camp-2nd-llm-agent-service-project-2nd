@@ -1,7 +1,7 @@
+'use client';
+
 import { useCallback, useMemo, useState } from 'react';
-import Head from 'next/head';
-import { useRouter } from 'next/router';
-import { ArrowLeft, CheckCircle2, Filter, Shield, Sparkles, Upload, Loader2 } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Filter, Shield, Sparkles, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import EvidenceUpload from '@/components/evidence/EvidenceUpload';
 import EvidenceTable from '@/components/evidence/EvidenceTable';
@@ -88,9 +88,11 @@ type UploadStatus = {
   total: number;
 };
 
-export default function CaseDetailPage() {
-    const router = useRouter();
-    const { id } = router.query;
+interface CaseDetailClientProps {
+  id: string;
+}
+
+export default function CaseDetailClient({ id }: CaseDetailClientProps) {
     const [evidenceList] = useState<Evidence[]>(MOCK_EVIDENCE);
     const [draftContent, setDraftContent] = useState(INITIAL_DRAFT_CONTENT);
     const [draftCitations, setDraftCitations] = useState<DraftCitation[]>(INITIAL_CITATIONS);
@@ -107,7 +109,7 @@ export default function CaseDetailPage() {
         total: 0,
     });
 
-    const caseId = typeof id === 'string' ? id : '';
+    const caseId = id || '';
 
     const handleUpload = useCallback(async (files: File[]) => {
         if (files.length === 0 || !caseId) return;
@@ -133,7 +135,6 @@ export default function CaseDetailPage() {
             }));
 
             try {
-                // Step 1: Get presigned URL from backend
                 const presignedResult = await getPresignedUploadUrl(
                     caseId,
                     file.name,
@@ -146,7 +147,6 @@ export default function CaseDetailPage() {
 
                 const { upload_url, evidence_temp_id, s3_key } = presignedResult.data;
 
-                // Step 2: Upload file directly to S3
                 const uploadSuccess = await uploadToS3(
                     upload_url,
                     file,
@@ -162,7 +162,6 @@ export default function CaseDetailPage() {
                     throw new Error('S3 upload failed');
                 }
 
-                // Step 3: Notify backend of completed upload
                 const completeResult = await notifyUploadComplete({
                     case_id: caseId,
                     evidence_temp_id,
@@ -185,7 +184,6 @@ export default function CaseDetailPage() {
             }));
         }
 
-        // Upload complete - show feedback
         setUploadStatus(prev => ({ ...prev, isUploading: false }));
 
         if (failCount === 0) {
@@ -241,7 +239,7 @@ export default function CaseDetailPage() {
     };
 
     const handleDownload = async (format: DraftDownloadFormat = 'docx') => {
-        if (!id || typeof id !== 'string') return;
+        if (!id) return;
         await downloadDraftAsDocx(draftContent, id, format);
     };
 
@@ -257,11 +255,6 @@ export default function CaseDetailPage() {
 
     return (
         <div className="min-h-screen bg-neutral-50">
-            <Head>
-                <title>사건 상세 | Legal Evidence Hub</title>
-            </Head>
-
-            {/* Header */}
             <header className="bg-white border-b border-gray-200 px-6 py-4 sticky top-0 z-10">
                 <div className="max-w-7xl mx-auto flex items-center justify-between">
                     <div className="flex items-center">
@@ -410,7 +403,7 @@ export default function CaseDetailPage() {
                 {activeTab === 'timeline' && (
                     <section className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-4" role="tabpanel" aria-label="타임라인 탭">
                         <h2 className="text-lg font-bold text-gray-900">사건 타임라인</h2>
-                        <p className="text-sm text-gray-500">AI가 추출한 주요 사건들을 시간순으로 정리합니다. 증거 탭에서 “AI 요약”이 쌓일수록 타임라인의 정확도가 향상됩니다.</p>
+                        <p className="text-sm text-gray-500">AI가 추출한 주요 사건들을 시간순으로 정리합니다. 증거 탭에서 "AI 요약"이 쌓일수록 타임라인의 정확도가 향상됩니다.</p>
                         <ul className="space-y-3">
                             {evidenceList.map((item) => (
                                 <li key={item.id} className="flex items-start space-x-3 border-l-2 border-accent pl-3">
