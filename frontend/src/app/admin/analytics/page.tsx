@@ -72,8 +72,12 @@ export default function AnalyticsDashboard() {
   const [lastUpdated] = useState(new Date().toLocaleString('ko-KR'));
   const [selectedDateRange, setSelectedDateRange] = useState('last-6-months');
 
-  const handleRefresh = () => console.log('Refreshing analytics data...');
-  const handleExportPDF = () => console.log('Exporting analytics to PDF...');
+  const handleRefresh = () => {
+    // TODO: Implement analytics data refresh via API
+  };
+  const handleExportPDF = () => {
+    // TODO: Implement PDF export functionality
+  };
 
   const getActivityLevelColor = (level: string) => {
     switch (level) {

@@ -12,18 +12,21 @@ interface AddCaseModalProps {
 
 const AddCaseModal: React.FC<AddCaseModalProps> = ({ isOpen, onClose, onSuccess }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
 
-  // Reset form when modal opens
+  // Reset form and error when modal opens
   useEffect(() => {
     if (isOpen && formRef.current) {
       formRef.current.reset();
+      setErrorMessage(null);
     }
   }, [isOpen]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setErrorMessage(null);
 
     const formData = new FormData(formRef.current!);
     const title = formData.get('title') as string;
@@ -38,7 +41,7 @@ const AddCaseModal: React.FC<AddCaseModalProps> = ({ isOpen, onClose, onSuccess 
       });
 
       if (response.error) {
-        alert(`사건 등록 실패: ${response.error}`);
+        setErrorMessage(`사건 등록 실패: ${response.error}`);
         return;
       }
 
@@ -79,6 +82,11 @@ const AddCaseModal: React.FC<AddCaseModalProps> = ({ isOpen, onClose, onSuccess 
       }
     >
       <form ref={formRef} id="add-case-form" onSubmit={handleSubmit} className="space-y-4">
+        {errorMessage && (
+          <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm" role="alert">
+            {errorMessage}
+          </div>
+        )}
         <div>
           <label
             htmlFor="case-title"

@@ -1,14 +1,15 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
-import ClientEvidencePortal from '@/pages/portal';
+import ClientEvidencePortal from '@/app/portal/page';
 
-jest.mock('next/router', () => ({
+jest.mock('next/navigation', () => ({
     useRouter: () => ({
-        query: {
-            firm: 'LEH 로펌',
-            case: '김 vs 박 사건',
-        },
+        push: jest.fn(),
+        replace: jest.fn(),
+        back: jest.fn(),
     }),
+    usePathname: () => '/portal',
+    useSearchParams: () => new URLSearchParams('firm=LEH 로펌&case=김 vs 박 사건'),
 }));
 
 describe('Plan 3.7 - Client Evidence Submission Portal', () => {

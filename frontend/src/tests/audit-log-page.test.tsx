@@ -16,7 +16,17 @@ import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 
 // 활동 로그 페이지 컴포넌트
-import AuditLogPage from '@/pages/admin/audit';
+import AuditLogPage from '@/app/admin/audit/page';
+
+jest.mock('next/navigation', () => ({
+    useRouter: () => ({
+        push: jest.fn(),
+        replace: jest.fn(),
+        back: jest.fn(),
+    }),
+    usePathname: () => '/admin/audit',
+    useSearchParams: () => new URLSearchParams(),
+}));
 
 describe('Plan 3.17 - Audit Log Page (활동 로그 페이지)', () => {
   describe('3.17.1 - Page Structure and Navigation', () => {

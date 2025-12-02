@@ -1,18 +1,21 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import CasesPage from '@/pages/cases';
+import CasesPage from '@/app/cases/page';
 
-// next/router 모의 설정
-jest.mock('next/router', () => ({
+// next/navigation 모의 설정
+jest.mock('next/navigation', () => ({
   useRouter() {
     return {
-      route: '/cases',
-      pathname: '/cases',
-      query: '',
-      asPath: '/cases',
-      replace: jest.fn(),
       push: jest.fn(),
+      replace: jest.fn(),
+      back: jest.fn(),
     };
+  },
+  usePathname() {
+    return '/cases';
+  },
+  useSearchParams() {
+    return new URLSearchParams();
   },
 }));
 

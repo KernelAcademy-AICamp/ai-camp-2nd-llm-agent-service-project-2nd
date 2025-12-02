@@ -1,13 +1,17 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
-import CaseDetailPage from '@/pages/cases/[id]';
+import CaseDetailClient from '@/app/cases/[id]/CaseDetailClient';
 import DraftPreviewPanel from '@/components/draft/DraftPreviewPanel';
 
-// Case detail page relies on the router query param to know which case is open.
-jest.mock('next/router', () => ({
+// Case detail page relies on the router param to know which case is open.
+jest.mock('next/navigation', () => ({
     useRouter: () => ({
-        query: { id: 'case-draft-tab' },
+        push: jest.fn(),
+        replace: jest.fn(),
+        back: jest.fn(),
     }),
+    usePathname: () => '/cases/case-draft-tab',
+    useSearchParams: () => new URLSearchParams(),
 }));
 
 jest.mock('@/services/documentService', () => ({
@@ -17,7 +21,7 @@ jest.mock('@/services/documentService', () => ({
 import { downloadDraftAsDocx } from '@/services/documentService';
 
 describe('Plan 3.6 - Draft Tab requirements on the case detail page', () => {
-    const renderCaseDetail = () => render(<CaseDetailPage />);
+    const renderCaseDetail = () => render(<CaseDetailClient id="case-draft-tab" />);
 
     beforeEach(() => {
         jest.clearAllMocks();
@@ -121,8 +125,8 @@ describe('Plan 3.6 - Draft Tab requirements on the case detail page', () => {
             expect(onDownload).toHaveBeenCalledTimes(1);
         });
         describe('Plan 3.12 - Download Functionality Integration', () => {
-            test('CaseDetailPage에서 DOCX 다운로드 버튼 클릭 시 서비스 함수가 호출되어야 한다', async () => {
-                render(<CaseDetailPage />);
+            test('CaseDetailClient에서 DOCX 다운로드 버튼 클릭 시 서비스 함수가 호출되어야 한다', async () => {
+                render(<CaseDetailClient id="case-draft-tab" />);
 
                 const downloadBtn = screen.getByText('DOCX');
                 fireEvent.click(downloadBtn);

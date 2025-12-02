@@ -94,11 +94,12 @@ export default function BillingPage() {
   };
 
   const handleDownloadInvoice = (invoiceUrl: string) => {
-    console.log('Downloading invoice:', invoiceUrl);
+    // TODO: Implement invoice download via API
+    window.open(invoiceUrl, '_blank');
   };
 
   const handleUpdatePaymentMethod = () => {
-    console.log('Update payment method');
+    // TODO: Implement payment method update modal
   };
 
   return (

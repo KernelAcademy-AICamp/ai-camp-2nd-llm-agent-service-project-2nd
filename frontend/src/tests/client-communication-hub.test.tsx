@@ -1,12 +1,15 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import ClientCommunicationHub from '@/pages/communications';
+import ClientCommunicationHub from '@/app/communications/page';
 
-jest.mock('next/router', () => ({
+jest.mock('next/navigation', () => ({
     useRouter: () => ({
-        query: { caseId: 'case-comm-001', client: '홍길동' },
         push: jest.fn(),
+        replace: jest.fn(),
+        back: jest.fn(),
     }),
+    usePathname: () => '/communications',
+    useSearchParams: () => new URLSearchParams('caseId=case-comm-001&client=홍길동'),
 }));
 
 describe('Plan 3.14 - 의뢰인 소통 허브', () => {

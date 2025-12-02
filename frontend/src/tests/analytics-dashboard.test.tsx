@@ -10,7 +10,23 @@ import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 
 // 성과 분석 대시보드 컴포넌트
-import AnalyticsDashboard from '@/pages/admin/analytics';
+import AnalyticsDashboard from '@/app/admin/analytics/page';
+
+jest.mock('next/navigation', () => ({
+  useRouter() {
+    return {
+      push: jest.fn(),
+      replace: jest.fn(),
+      back: jest.fn(),
+    };
+  },
+  usePathname() {
+    return '/admin/analytics';
+  },
+  useSearchParams() {
+    return new URLSearchParams();
+  },
+}));
 
 describe('Plan 3.18 - Analytics Dashboard (성과 분석 대시보드)', () => {
   describe('3.18.1 - Page Structure', () => {

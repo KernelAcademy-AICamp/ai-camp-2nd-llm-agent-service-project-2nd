@@ -1,14 +1,15 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import TemplateManagerPage from '@/pages/templates';
+import TemplateManagerPage from '@/app/templates/page';
 
-jest.mock('next/router', () => ({
+jest.mock('next/navigation', () => ({
     useRouter: () => ({
-        route: '/templates',
-        pathname: '/templates',
-        query: {},
-        asPath: '/templates',
+        push: jest.fn(),
+        replace: jest.fn(),
+        back: jest.fn(),
     }),
+    usePathname: () => '/templates',
+    useSearchParams: () => new URLSearchParams(),
 }));
 
 describe('Plan 3.13 - 변호사 전용 템플릿 관리', () => {

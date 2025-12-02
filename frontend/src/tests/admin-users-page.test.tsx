@@ -1,16 +1,20 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import AdminUsersPage from '@/pages/admin/users';
+import AdminUsersPage from '@/app/admin/users/page';
 
-jest.mock('next/router', () => ({
+jest.mock('next/navigation', () => ({
   useRouter() {
     return {
-      route: '/admin/users',
-      pathname: '/admin/users',
-      query: {},
-      asPath: '/admin/users',
       push: jest.fn(),
+      replace: jest.fn(),
+      back: jest.fn(),
     };
+  },
+  usePathname() {
+    return '/admin/users';
+  },
+  useSearchParams() {
+    return new URLSearchParams();
   },
 }));
 

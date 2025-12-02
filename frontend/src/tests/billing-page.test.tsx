@@ -25,7 +25,23 @@ import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 
 // 구독 현황 페이지 컴포넌트
-import BillingPage from '@/pages/settings/billing';
+import BillingPage from '@/app/settings/billing/page';
+
+jest.mock('next/navigation', () => ({
+  useRouter() {
+    return {
+      push: jest.fn(),
+      replace: jest.fn(),
+      back: jest.fn(),
+    };
+  },
+  usePathname() {
+    return '/settings/billing';
+  },
+  useSearchParams() {
+    return new URLSearchParams();
+  },
+}));
 
 describe('Plan 3.16 - Billing Page (구독 현황 페이지)', () => {
   describe('3.16.1 - Page Structure and Navigation', () => {

@@ -16,37 +16,23 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
 
-// Mock next/router
-jest.mock('next/router', () => ({
+// Mock next/navigation
+jest.mock('next/navigation', () => ({
     useRouter: () => ({
-        query: { id: 'test-case-123' },
         push: jest.fn(),
-        pathname: '/cases/[id]',
+        replace: jest.fn(),
+        back: jest.fn(),
     }),
-}));
-
-// Mock next/head
-jest.mock('next/head', () => ({
-    __esModule: true,
-    default: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-}));
-
-// Mock next/link
-jest.mock('next/link', () => ({
-    __esModule: true,
-    default: ({ children, href, ...props }: any) => (
-        <a href={href} {...props}>
-            {children}
-        </a>
-    ),
+    usePathname: () => '/cases/test-case-123',
+    useSearchParams: () => new URLSearchParams(),
 }));
 
 // Import the page component
-import CaseDetailPage from '../../pages/cases/[id]';
+import CaseDetailClient from '@/app/cases/[id]/CaseDetailClient';
 
 describe.skip('Plan 3.20.3 - Case Detail Page Accessibility', () => {
     beforeEach(() => {
-        render(<CaseDetailPage />);
+        render(<CaseDetailClient id="test-case-123" />);
     });
 
     describe('Touch Targets (WCAG 2.1 AA - 44×44px minimum)', () => {

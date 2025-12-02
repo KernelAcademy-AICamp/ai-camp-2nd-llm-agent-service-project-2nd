@@ -10,15 +10,17 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 
-// Mock Next.js router
+// Mock Next.js navigation
 const mockPush = jest.fn();
 const mockReplace = jest.fn();
-jest.mock('next/router', () => ({
+jest.mock('next/navigation', () => ({
     useRouter: () => ({
         push: mockPush,
         replace: mockReplace,
-        pathname: '/cases',
+        back: jest.fn(),
     }),
+    usePathname: () => '/cases',
+    useSearchParams: () => new URLSearchParams(),
 }));
 
 // Mock cases API
@@ -28,7 +30,7 @@ jest.mock('@/lib/api/cases', () => ({
 }));
 
 // Import after mocks
-import CasesPage from '@/pages/cases/index';
+import CasesPage from '@/app/cases/page';
 import { getCases } from '@/lib/api/cases';
 
 const mockGetCases = getCases as jest.MockedFunction<typeof getCases>;
