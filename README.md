@@ -58,21 +58,35 @@ LEH는 **이혼 사건 전용 AI 파라리걸 & 증거 허브** 플랫폼입니�
 
 ## 4. 시작하기 (Getting Started)
 
-### 4.1 사전 요구사항
+### 4.1 Quick Start (원클릭 설정)
+
+```bash
+# 1. 레포 클론
+git clone https://github.com/KernelAcademy-AICamp/ai-camp-2nd-llm-agent-service-project-2nd.git
+cd ai-camp-2nd-llm-agent-service-project-2nd
+
+# 2. 환경 변수 설정
+cp .env.example .env
+# .env 파일 편집하여 필수 값 입력
+
+# 3. 전체 설정 (Makefile 사용)
+make setup
+
+# 4. 개발 서버 실행 (각각 별도 터미널)
+make dev-backend   # http://localhost:8000
+make dev-frontend  # http://localhost:3000
+```
+
+> **Makefile 명령어 전체 보기**: `make help`
+
+### 4.2 사전 요구사항
 
 - Python 3.11+
 - Node.js 18+
 - AWS 계정 + IAM (S3, DynamoDB 등)
 - OpenAI API 키
 
-### 4.2 레포 클론
-
-```bash
-git clone https://github.com/KernelAcademy-AICamp/ai-camp-2nd-llm-agent-service-project-2nd.git
-cd ai-camp-2nd-llm-agent-service-project-2nd
-```
-
-### 4.3 환경 변수 설정
+### 4.4 환경 변수 설정
 
 LEH는 **통합 `.env` 파일**을 사용합니다:
 
@@ -89,7 +103,7 @@ cp .env.example .env
 
 > `.env`는 절대 Git에 커밋하지 않습니다.
 
-### 4.4 백엔드 실행 (FastAPI)
+### 4.5 백엔드 실행 (FastAPI)
 
 ```bash
 cd backend
@@ -100,7 +114,7 @@ uvicorn app.main:app --reload
 # http://localhost:8000
 ```
 
-### 4.5 프론트엔드 실행 (Next.js)
+### 4.6 프론트엔드 실행 (Next.js)
 
 ```bash
 cd frontend
@@ -109,7 +123,7 @@ npm run dev
 # http://localhost:3000
 ```
 
-### 4.6 AI Worker 실행 (로컬 테스트)
+### 4.7 AI Worker 실행 (로컬 테스트)
 
 ```bash
 cd ai_worker
@@ -155,6 +169,7 @@ python -m handler
 │   └── business/         # 비즈니스 문서
 │
 ├── CLAUDE.md             # AI 에이전트 규칙
+├── Makefile              # 개발 자동화 스크립트
 └── README.md             # 이 파일
 ```
 
