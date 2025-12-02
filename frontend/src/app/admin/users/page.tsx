@@ -1,28 +1,45 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-
-type AdminRole = 'Admin' | 'Attorney' | 'Staff';
-type AdminUserStatus = 'active' | 'invited' | 'inactive';
-
-type AdminUser = {
-  id: string;
-  name: string;
-  email: string;
-  role: AdminRole;
-  status: AdminUserStatus;
-};
-
-const MOCK_USERS: AdminUser[] = [
-  { id: 'user-1', name: '홍길동', email: 'hong@example.com', role: 'Admin', status: 'active' },
-  { id: 'user-2', name: '이영희', email: 'lee@example.com', role: 'Attorney', status: 'active' },
-  { id: 'user-3', name: '김철수', email: 'kim@example.com', role: 'Staff', status: 'invited' },
-];
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Loader2, AlertCircle, RefreshCw } from 'lucide-react';
+import { getAdminUsers, deleteUser as deleteUserApi } from '@/lib/api/admin';
+import { mapApiAdminUsersToAdminUsers, AdminUser } from '@/lib/utils/adminMapper';
 
 export default function AdminUsersPage() {
-  const [users, setUsers] = useState<AdminUser[]>(MOCK_USERS);
+  const [users, setUsers] = useState<AdminUser[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [inviteMessage, setInviteMessage] = useState('');
+  const [isDeleting, setIsDeleting] = useState<string | null>(null);
+
+  // Fetch users from API
+  const fetchUsers = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const response = await getAdminUsers();
+      if (response.error) {
+        setError(response.error);
+        setUsers([]);
+      } else if (response.data) {
+        const mappedUsers = mapApiAdminUsersToAdminUsers(response.data.users);
+        setUsers(mappedUsers);
+      }
+    } catch (err) {
+      console.error('Failed to fetch users:', err);
+      setError('사용자 목록을 불러오는데 실패했습니다.');
+      setUsers([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  // Load users on mount
+  useEffect(() => {
+    fetchUsers();
+  }, [fetchUsers]);
 
   const filteredUsers = useMemo(() => {
     const keyword = search.trim().toLowerCase();
@@ -34,12 +51,30 @@ export default function AdminUsersPage() {
     );
   }, [search, users]);
 
-  const handleDeleteUser = (userId: string) => {
-    setUsers((prev) => prev.filter((user) => user.id !== userId));
+  const handleDeleteUser = async (userId: string) => {
+    setIsDeleting(userId);
+    try {
+      const response = await deleteUserApi(userId);
+      if (response.error) {
+        setError(response.error);
+      } else {
+        // Remove from local state after successful API call
+        setUsers((prev) => prev.filter((user) => user.id !== userId));
+        setInviteMessage('사용자가 삭제되었습니다.');
+        setTimeout(() => setInviteMessage(''), 3000);
+      }
+    } catch (err) {
+      console.error('Failed to delete user:', err);
+      setError('사용자 삭제에 실패했습니다.');
+    } finally {
+      setIsDeleting(null);
+    }
   };
 
   const handleInvite = () => {
-    setInviteMessage('초대 링크가 전송되었습니다.');
+    // FUTURE: Implement invite modal with email input (POST /admin/users/invite)
+    setInviteMessage('초대 기능은 준비 중입니다.');
+    setTimeout(() => setInviteMessage(''), 3000);
   };
 
   return (
@@ -69,13 +104,47 @@ export default function AdminUsersPage() {
                 placeholder="이름 또는 이메일으로 검색"
                 className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-accent focus:border-accent bg-white"
               />
+              <button
+                type="button"
+                onClick={fetchUsers}
+                disabled={isLoading}
+                className="px-3 py-2 border border-gray-300 rounded-md text-sm bg-white hover:bg-gray-50 disabled:opacity-50"
+                aria-label="새로고침"
+              >
+                <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+              </button>
               <button type="button" className="btn-primary text-sm px-4 py-2" onClick={handleInvite}>
                 사용자 초대
               </button>
             </div>
           </div>
 
-          <div className="overflow-x-auto">
+          {/* Loading State */}
+          {isLoading && (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="w-6 h-6 text-accent animate-spin" />
+              <span className="ml-2 text-gray-500">사용자 목록을 불러오는 중...</span>
+            </div>
+          )}
+
+          {/* Error State */}
+          {error && !isLoading && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start space-x-3 mb-4">
+              <AlertCircle className="w-5 h-5 text-red-500 mt-0.5" />
+              <div>
+                <p className="text-sm font-medium text-red-700">{error}</p>
+                <button
+                  onClick={fetchUsers}
+                  className="text-sm text-red-600 hover:text-red-800 underline mt-1"
+                >
+                  다시 시도
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Table */}
+          {!isLoading && <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200 border border-gray-100 rounded-lg bg-white text-sm">
               <thead className="bg-gray-50">
                 <tr>
@@ -105,9 +174,11 @@ export default function AdminUsersPage() {
                       <button
                         type="button"
                         onClick={() => handleDeleteUser(user.id)}
-                        className="btn-danger text-xs px-3 py-1.5"
+                        disabled={isDeleting === user.id}
+                        className="btn-danger text-xs px-3 py-1.5 disabled:opacity-50 inline-flex items-center"
                         aria-label={`${user.name} 삭제`}
                       >
+                        {isDeleting === user.id && <Loader2 className="w-3 h-3 mr-1 animate-spin" />}
                         삭제
                       </button>
                     </td>
@@ -122,7 +193,7 @@ export default function AdminUsersPage() {
                 )}
               </tbody>
             </table>
-          </div>
+          </div>}
 
           {inviteMessage && (
             <div className="mt-4 rounded-md bg-accent/10 text-secondary px-4 py-3 text-sm">{inviteMessage}</div>

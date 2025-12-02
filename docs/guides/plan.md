@@ -550,6 +550,9 @@
 - [x] 권한 설정 페이지 (/admin/roles):
   - 역할별(Admin, Attorney, Staff) 권한 매트릭스 UI (토글 스위치).
   - 권한 변경 시 즉시 반영 및 알림.
+- [x] Issue #59 — AdminRoles API 연동:
+  - Mock 데이터 사용 제거, `GET /admin/roles`, `PUT /admin/roles/{role}` 연동.
+  - 권한 토글 시 Optimistic Update + 실패시 롤백 처리.
 - [x] 케이스 공유 모달:
   - 팀원 검색 및 선택.
   - 읽기/쓰기 권한 설정.
