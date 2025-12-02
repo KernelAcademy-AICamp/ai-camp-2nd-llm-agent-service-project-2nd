@@ -227,14 +227,36 @@ describe('Plan 3.6 - Draft Tab requirements on the case detail page', () => {
         });
 
         test('선택한 텍스트에 코멘트를 추가하면 코멘트 목록에 표시된다', async () => {
+            await renderCaseDetail();
+
+            const editor = screen.getByTestId('draft-editor-content');
+            const range = document.createRange();
+            range.selectNodeContents(editor);
             const selectionMock = {
                 toString: () => '테스트 문장',
-                rangeCount: 0,
+                rangeCount: 1,
+                isCollapsed: false,
+                getRangeAt: () => range,
                 removeAllRanges: jest.fn(),
+                addRange: jest.fn(),
+                collapse: jest.fn(),
+                collapseToEnd: jest.fn(),
+                collapseToStart: jest.fn(),
+                deleteFromDocument: jest.fn(),
+                empty: jest.fn(),
+                extend: jest.fn(),
+                modify: jest.fn(),
+                setBaseAndExtent: jest.fn(),
+                setPosition: jest.fn(),
+                anchorNode: range.startContainer,
+                anchorOffset: 0,
+                focusNode: range.endContainer,
+                focusOffset: 0,
+                containsNode: () => true,
+                removeRange: jest.fn(),
+                type: 'Range',
             } as unknown as Selection;
             const spy = jest.spyOn(window, 'getSelection').mockReturnValue(selectionMock);
-
-            await renderCaseDetail();
 
             const textarea = screen.getByLabelText('코멘트 작성');
             await userEvent.type(textarea, '검토 필요');

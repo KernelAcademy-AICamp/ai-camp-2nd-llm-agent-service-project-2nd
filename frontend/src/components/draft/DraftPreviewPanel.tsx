@@ -49,7 +49,7 @@ const HISTORY_LIMIT = 10;
 const CHANGELOG_LIMIT = 20;
 const SANITIZE_OPTIONS = {
     ALLOWED_TAGS: ['b', 'i', 'u', 'strong', 'em', 'p', 'br', 'span', 'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'h4'],
-    ALLOWED_ATTR: ['class', 'data-evidence-id', 'data-comment-id'],
+    ALLOWED_ATTR: ['class', 'data-evidence-id', 'data-comment-id', 'data-change-id'],
 };
 
 const DOCUMENT_TEMPLATES = [
@@ -166,6 +166,7 @@ export default function DraftPreviewPanel({
     const [collabStatus, setCollabStatus] = useState<string | null>(null);
     const editorRef = useRef<HTMLDivElement>(null);
     const autosaveTimerRef = useRef<NodeJS.Timeout | null>(null);
+    const collabSyncTimerRef = useRef<NodeJS.Timeout | null>(null);
     const versionHistoryRef = useRef<DraftVersionSnapshot[]>([]);
     const lastSavedAtRef = useRef<string | null>(null);
     const lastImportedDraftRef = useRef<string | null>(null);
@@ -173,6 +174,7 @@ export default function DraftPreviewPanel({
     const changeLogRef = useRef<DraftChangeLogEntry[]>([]);
     const channelRef = useRef<BroadcastChannel | null>(null);
     const clientIdRef = useRef<string>(generateId());
+    const lastRemoteUpdateRef = useRef<number>(0);
 
     const sanitizedDraftText = useMemo(() => sanitizeDraftHtml(draftText), [draftText]);
     const pageCount = useMemo(() => Math.max(1, Math.ceil(stripHtml(editorHtml).length / 1800)), [editorHtml]);
@@ -297,7 +299,16 @@ export default function DraftPreviewPanel({
         channelRef.current = channel;
 
         const handleMessage = (event: MessageEvent) => {
-            const data = event.data as { type: string; caseId: string; clientId: string; savedAt?: string };
+            const data = event.data as {
+                type: string;
+                caseId: string;
+                clientId: string;
+                savedAt?: string;
+                html?: string;
+                comments?: DraftCommentSnapshot[];
+                changeLog?: DraftChangeLogEntry[];
+                timestamp?: number;
+            };
             if (!data || data.caseId !== caseId || data.clientId === clientIdRef.current) {
                 return;
             }
@@ -306,6 +317,20 @@ export default function DraftPreviewPanel({
             }
             if (data.type === 'save') {
                 setCollabStatus('동료가 방금 저장했습니다');
+                setTimeout(() => setCollabStatus(null), 4000);
+            }
+            if (data.type === 'content-update' && data.timestamp) {
+                if (data.timestamp <= lastRemoteUpdateRef.current) {
+                    return;
+                }
+                lastRemoteUpdateRef.current = data.timestamp;
+                const sanitized = sanitizeDraftHtml(data.html || '');
+                setEditorHtml(sanitized);
+                setComments(data.comments || []);
+                setChangeLog(data.changeLog || []);
+                persistCurrentState(sanitized, undefined, undefined, data.comments || [], data.changeLog || []);
+                lastImportedDraftRef.current = sanitized;
+                setCollabStatus('동료가 편집 내용을 동기화했습니다.');
                 setTimeout(() => setCollabStatus(null), 4000);
             }
         };
@@ -322,6 +347,34 @@ export default function DraftPreviewPanel({
             window.clearInterval(presenceInterval);
         };
     }, [caseId]);
+
+    useEffect(() => {
+        if (!channelRef.current) {
+            return;
+        }
+
+        if (collabSyncTimerRef.current) {
+            clearTimeout(collabSyncTimerRef.current);
+        }
+
+        collabSyncTimerRef.current = window.setTimeout(() => {
+            channelRef.current?.postMessage({
+                type: 'content-update',
+                caseId,
+                clientId: clientIdRef.current,
+                html: editorHtml,
+                comments,
+                changeLog,
+                timestamp: Date.now(),
+            });
+        }, 500);
+
+        return () => {
+            if (collabSyncTimerRef.current) {
+                clearTimeout(collabSyncTimerRef.current);
+            }
+        };
+    }, [caseId, editorHtml, comments, changeLog]);
 
     const handleFormat = (command: string) => {
         document.execCommand(command, false, undefined);
@@ -342,12 +395,54 @@ export default function DraftPreviewPanel({
         }
     };
 
+    const insertTrackChangeMarkup = (text: string) => {
+        const safeText = DOMPurify.sanitize(text, { ALLOWED_TAGS: [], ALLOWED_ATTR: [] });
+        const changeId = generateId();
+        document.execCommand(
+            'insertHTML',
+            false,
+            `<span class="track-change-insert" data-change-id="${changeId}">${safeText}</span>`
+        );
+        const entry: DraftChangeLogEntry = {
+            id: changeId,
+            action: 'insert',
+            snippet: safeText,
+            createdAt: new Date().toISOString(),
+        };
+        setChangeLog((prev) => {
+            const updated = [entry, ...prev].slice(0, CHANGELOG_LIMIT);
+            persistCurrentState(editorRef.current?.innerHTML || editorHtml, undefined, undefined, undefined, updated);
+            return updated;
+        });
+    };
+
+    const handleBeforeInput = (event: React.FormEvent<HTMLDivElement>) => {
+        if (!isTrackChangesEnabled) {
+            return;
+        }
+        const nativeEvent = event.nativeEvent as InputEvent;
+        if (!nativeEvent || nativeEvent.isComposing) {
+            return;
+        }
+        if (nativeEvent.inputType === 'insertText' && nativeEvent.data) {
+            event.preventDefault();
+            insertTrackChangeMarkup(nativeEvent.data);
+            const html = sanitizeDraftHtml(editorRef.current?.innerHTML || editorHtml);
+            setEditorHtml(html);
+            persistCurrentState(html);
+        }
+    };
+
     const handleEditorInput = (event: React.FormEvent<HTMLDivElement>) => {
         const html = sanitizeDraftHtml((event.currentTarget as HTMLDivElement).innerHTML);
         setEditorHtml(html);
 
         const inputEvent = event.nativeEvent as InputEvent;
         if (isTrackChangesEnabled && inputEvent) {
+            if (inputEvent.inputType === 'insertText') {
+                persistCurrentState(html);
+                return;
+            }
             const snippet = (inputEvent.data || window.getSelection()?.toString() || '변경됨').trim() || '변경됨';
             const action: 'insert' | 'delete' | 'edit' = inputEvent.inputType?.startsWith('delete')
                 ? 'delete'
@@ -417,6 +512,36 @@ export default function DraftPreviewPanel({
         setIsCitationModalOpen(false);
     };
 
+    const wrapSelectionWithSpan = (className: string, attributes: Record<string, string>) => {
+        const selection = window.getSelection();
+        if (!selection || selection.rangeCount === 0 || selection.isCollapsed) {
+            return false;
+        }
+        const range = selection.getRangeAt(0);
+        const span = document.createElement('span');
+        span.className = className;
+        Object.entries(attributes).forEach(([key, value]) => span.setAttribute(key, value));
+        try {
+            range.surroundContents(span);
+        } catch {
+            const selectedHtml = selection.toString();
+            if (!selectedHtml) return false;
+            const safeSelection = DOMPurify.sanitize(selectedHtml, { ALLOWED_TAGS: [], ALLOWED_ATTR: [] });
+            document.execCommand(
+                'insertHTML',
+                false,
+                `<span class="${className}" ${Object.entries(attributes)
+                    .map(([key, value]) => `${key}="${value}"`)
+                    .join(' ')}>${safeSelection}</span>`
+            );
+        }
+        selection.removeAllRanges();
+        const html = sanitizeDraftHtml(editorRef.current?.innerHTML || editorHtml);
+        setEditorHtml(html);
+        persistCurrentState(html);
+        return true;
+    };
+
     const handleAddComment = () => {
         const selection = window.getSelection();
         const quote = selection?.toString().trim();
@@ -437,9 +562,10 @@ export default function DraftPreviewPanel({
             createdAt: new Date().toISOString(),
             resolved: false,
         };
+        wrapSelectionWithSpan('comment-highlight', { 'data-comment-id': comment.id });
         setComments((prev) => {
             const updated = [comment, ...prev];
-            persistCurrentState(editorHtml, undefined, undefined, updated);
+            persistCurrentState(editorRef.current?.innerHTML || editorHtml, undefined, undefined, updated);
             return updated;
         });
         setNewCommentText('');
@@ -450,7 +576,23 @@ export default function DraftPreviewPanel({
             const updated = prev.map((comment) =>
                 comment.id === commentId ? { ...comment, resolved: !comment.resolved } : comment
             );
-            persistCurrentState(editorHtml, undefined, undefined, updated);
+            const editorEl = editorRef.current;
+            if (editorEl) {
+                const highlights = editorEl.querySelectorAll(`[data-comment-id="${commentId}"]`);
+                const resolved = updated.find((c) => c.id === commentId)?.resolved;
+                highlights.forEach((node) => {
+                    if (resolved) {
+                        node.classList.add('comment-highlight-resolved');
+                    } else {
+                        node.classList.remove('comment-highlight-resolved');
+                    }
+                });
+                const html = sanitizeDraftHtml(editorEl.innerHTML);
+                setEditorHtml(html);
+                persistCurrentState(html, undefined, undefined, updated);
+            } else {
+                persistCurrentState(editorHtml, undefined, undefined, updated);
+            }
             return updated;
         });
     };
@@ -614,6 +756,7 @@ export default function DraftPreviewPanel({
                     suppressContentEditableWarning
                     aria-label="Draft content"
                     onClick={handleEditorClick}
+                    onBeforeInput={handleBeforeInput}
                     onInput={handleEditorInput}
                     className="w-full min-h-[320px] bg-transparent p-6 text-gray-800 leading-relaxed focus:outline-none overflow-auto cursor-pointer [&_.evidence-ref]:underline [&_.evidence-ref]:text-secondary [&_.evidence-ref]:cursor-pointer [&_.evidence-ref:hover]:text-accent [&_.evidence-ref]:decoration-dotted"
                     dangerouslySetInnerHTML={{ __html: editorHtml }}
