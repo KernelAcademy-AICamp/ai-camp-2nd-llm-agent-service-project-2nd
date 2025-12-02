@@ -141,7 +141,7 @@ export default function CasesPage() {
                     </div>
                     <button
                         onClick={() => setIsModalOpen(true)}
-                        className="btn-primary flex items-center shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all"
+                        className="flex items-center px-4 py-2 bg-blue-500 text-white font-medium rounded-lg shadow-lg hover:bg-blue-600 hover:shadow-xl transform hover:-translate-y-0.5 transition-all"
                     >
                         <Plus className="w-5 h-5 mr-2" />
                         새 사건 등록
@@ -151,7 +151,7 @@ export default function CasesPage() {
                 {/* Case Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {cases.map((caseItem) => (
-                        <CaseCard key={caseItem.id} caseData={caseItem} />
+                        <CaseCard key={caseItem.id} caseData={caseItem} onDelete={fetchCases} />
                     ))}
                 </div>
 

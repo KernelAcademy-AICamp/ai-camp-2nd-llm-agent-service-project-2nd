@@ -33,11 +33,20 @@ export async function apiRequest<T>(
       },
     });
 
-    const data = await response.json();
+    // Handle empty responses (e.g., 204 No Content)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let data: any = null;
+    const contentType = response.headers.get('content-type');
+    if (contentType && contentType.includes('application/json')) {
+      const text = await response.text();
+      if (text) {
+        data = JSON.parse(text);
+      }
+    }
 
     if (!response.ok) {
       // Handle both error formats: { error: { message: "..." } } and { detail: "..." }
-      const errorMessage = data.error?.message || data.detail || 'An error occurred';
+      const errorMessage = data?.error?.message || data?.detail || 'An error occurred';
       return {
         error: errorMessage,
         status: response.status,
