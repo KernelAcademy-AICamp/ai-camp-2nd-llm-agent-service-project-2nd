@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import {
-  ChevronRight, Shield, Lock, CheckCircle2, AlertCircle,
+  ChevronRight, ChevronLeft, Shield, Lock, CheckCircle2, AlertCircle,
   Eye, Plus, Edit, Trash2, LogIn, FileDown
 } from 'lucide-react';
 
@@ -41,6 +41,8 @@ export default function AuditLogPage() {
   const [endDate, setEndDate] = useState('');
   const [selectedUser, setSelectedUser] = useState('all');
   const [selectedActions, setSelectedActions] = useState<string[]>(['LOGIN', 'VIEW', 'CREATE', 'UPDATE', 'DELETE']);
+  const [currentPage, setCurrentPage] = useState(1);
+  const logsPerPage = 10;
 
   const uniqueUsers = Array.from(new Set(auditLogs.map((log) => log.user.email)));
 
@@ -115,9 +117,9 @@ export default function AuditLogPage() {
       <section className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm mb-6">
         <h2 className="text-lg font-semibold text-secondary mb-4">필터</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div><label className="block text-sm font-medium text-neutral-700 mb-2">시작 날짜</label><input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md" /></div>
-          <div><label className="block text-sm font-medium text-neutral-700 mb-2">종료 날짜</label><input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md" /></div>
-          <div><label className="block text-sm font-medium text-neutral-700 mb-2">사용자 선택</label><select value={selectedUser} onChange={(e) => setSelectedUser(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md"><option value="all">전체 사용자</option>{uniqueUsers.map((email) => <option key={email} value={email}>{email}</option>)}</select></div>
+          <div><label htmlFor="startDate" className="block text-sm font-medium text-neutral-700 mb-2">시작 날짜</label><input id="startDate" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md" /></div>
+          <div><label htmlFor="endDate" className="block text-sm font-medium text-neutral-700 mb-2">종료 날짜</label><input id="endDate" type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md" /></div>
+          <div><label htmlFor="userSelect" className="block text-sm font-medium text-neutral-700 mb-2">사용자 선택</label><select id="userSelect" value={selectedUser} onChange={(e) => setSelectedUser(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md"><option value="all">전체 사용자</option>{uniqueUsers.map((email) => <option key={email} value={email}>{email}</option>)}</select></div>
           <div className="flex items-end">{hasActiveFilters && <button onClick={resetFilters} className="w-full px-4 py-2 bg-gray-200 text-neutral-700 rounded-md hover:bg-gray-300">필터 초기화</button>}</div>
         </div>
         <div className="mt-4">
@@ -125,7 +127,7 @@ export default function AuditLogPage() {
           <div className="flex flex-wrap gap-3">
             {(['LOGIN', 'VIEW', 'CREATE', 'UPDATE', 'DELETE'] as const).map((action) => (
               <label key={action} className="flex items-center space-x-2 cursor-pointer">
-                <input type="checkbox" checked={selectedActions.includes(action)} onChange={() => toggleActionFilter(action)} className="w-4 h-4 text-accent border-gray-300 rounded" />
+                <input type="checkbox" aria-label={action} checked={selectedActions.includes(action)} onChange={() => toggleActionFilter(action)} className="w-4 h-4 text-accent border-gray-300 rounded" />
                 <span className="text-sm text-neutral-700">{action}</span>
               </label>
             ))}
@@ -136,14 +138,14 @@ export default function AuditLogPage() {
       <section className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
         <div className="flex items-center justify-between mb-6">
           <div><h2 className="text-xl font-semibold text-secondary">활동 로그</h2><p className="text-sm text-neutral-600 mt-1">총 {filteredLogs.length} 개의 로그</p></div>
-          <button onClick={handleExportCSV} className="inline-flex items-center px-4 py-2 bg-accent text-white rounded-md hover:bg-accent-dark"><FileDown className="w-4 h-4 mr-2" />CSV 다운로드</button>
+          <button onClick={handleExportCSV} aria-label="CSV 다운로드" className="inline-flex items-center px-4 py-2 bg-accent text-white rounded-md hover:bg-accent-dark"><FileDown className="w-4 h-4 mr-2" />CSV 다운로드</button>
         </div>
         {filteredLogs.length === 0 ? (
           <div className="text-center py-12"><AlertCircle className="w-12 h-12 text-gray-400 mx-auto mb-4" /><p className="text-neutral-600">로그가 없습니다</p></div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead><tr className="border-b border-gray-200"><th className="text-left py-3 px-4 text-sm font-semibold text-secondary">날짜/시간</th><th className="text-left py-3 px-4 text-sm font-semibold text-secondary">사용자</th><th className="text-left py-3 px-4 text-sm font-semibold text-secondary">작업</th><th className="text-left py-3 px-4 text-sm font-semibold text-secondary">대상</th><th className="text-left py-3 px-4 text-sm font-semibold text-secondary">IP 주소</th></tr></thead>
+              <thead><tr className="border-b border-gray-200"><th scope="col" className="text-left py-3 px-4 text-sm font-semibold text-secondary">날짜/시간</th><th scope="col" className="text-left py-3 px-4 text-sm font-semibold text-secondary">사용자</th><th scope="col" className="text-left py-3 px-4 text-sm font-semibold text-secondary">작업</th><th scope="col" className="text-left py-3 px-4 text-sm font-semibold text-secondary">대상</th><th scope="col" className="text-left py-3 px-4 text-sm font-semibold text-secondary">IP 주소</th></tr></thead>
               <tbody>
                 {filteredLogs.map((log) => (
                   <tr key={log.id} className="border-b border-gray-100 hover:bg-gray-50">
@@ -158,6 +160,29 @@ export default function AuditLogPage() {
             </table>
           </div>
         )}
+        <div className="flex items-center justify-end mt-4 pt-4 border-t border-gray-200">
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+              aria-label="이전 페이지"
+              className="p-2 border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <span className="text-sm text-neutral-700">
+              페이지 {currentPage} / {Math.max(1, Math.ceil(filteredLogs.length / logsPerPage))}
+            </span>
+            <button
+              onClick={() => setCurrentPage((prev) => Math.min(prev + 1, Math.ceil(filteredLogs.length / logsPerPage)))}
+              disabled={currentPage >= Math.ceil(filteredLogs.length / logsPerPage)}
+              aria-label="다음 페이지"
+              className="p-2 border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
       </section>
     </div>
   );

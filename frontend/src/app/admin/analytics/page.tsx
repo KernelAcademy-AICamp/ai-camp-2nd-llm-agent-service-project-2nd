@@ -115,10 +115,10 @@ export default function AnalyticsDashboard() {
         </div>
         <div className="flex items-center space-x-3">
           <div className="text-sm text-neutral-600">마지막 업데이트: {lastUpdated}</div>
-          <button onClick={handleRefresh} className="inline-flex items-center px-4 py-2 bg-white border border-gray-300 text-neutral-700 rounded-md hover:bg-gray-50">
+          <button onClick={handleRefresh} aria-label="새로고침" className="inline-flex items-center px-4 py-2 bg-white border border-gray-300 text-neutral-700 rounded-md hover:bg-gray-50">
             <RefreshCw className="w-4 h-4 mr-2" />새로고침
           </button>
-          <button onClick={handleExportPDF} className="inline-flex items-center px-4 py-2 bg-accent text-white rounded-md hover:bg-accent-dark">
+          <button onClick={handleExportPDF} aria-label="PDF 다운로드" className="inline-flex items-center px-4 py-2 bg-accent text-white rounded-md hover:bg-accent-dark">
             <Download className="w-4 h-4 mr-2" />PDF 다운로드
           </button>
         </div>
@@ -152,7 +152,7 @@ export default function AnalyticsDashboard() {
         <section className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-semibold text-secondary">월별 사건 수</h2>
-            <select value={selectedDateRange} onChange={(e) => setSelectedDateRange(e.target.value)} className="px-3 py-1 border border-gray-300 rounded-md text-sm">
+            <select aria-label="기간 선택" value={selectedDateRange} onChange={(e) => setSelectedDateRange(e.target.value)} className="px-3 py-1 border border-gray-300 rounded-md text-sm">
               <option value="last-3-months">최근 3개월</option>
               <option value="last-6-months">최근 6개월</option>
               <option value="last-12-months">최근 12개월</option>
