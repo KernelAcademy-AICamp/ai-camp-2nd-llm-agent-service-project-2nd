@@ -5,7 +5,11 @@
 
 import { apiRequest, ApiResponse } from './client';
 
-export interface Case {
+/**
+ * API Case type - matches backend snake_case convention
+ * Use mapApiCaseToCase() from '@/lib/utils/caseMapper' to convert to frontend Case type
+ */
+export interface ApiCase {
   id: string;
   title: string;
   client_name: string;
@@ -24,7 +28,7 @@ export interface CreateCaseRequest {
 }
 
 export interface CaseListResponse {
-  cases: Case[];
+  cases: ApiCase[];
   total: number;
 }
 
@@ -32,7 +36,7 @@ export interface CaseListResponse {
  * Get list of cases for current user
  */
 export async function getCases(): Promise<ApiResponse<CaseListResponse>> {
-  const response = await apiRequest<Case[] | CaseListResponse>('/cases', {
+  const response = await apiRequest<ApiCase[] | CaseListResponse>('/cases', {
     method: 'GET',
   });
 
@@ -58,8 +62,8 @@ export async function getCases(): Promise<ApiResponse<CaseListResponse>> {
 /**
  * Get a single case by ID
  */
-export async function getCase(caseId: string): Promise<ApiResponse<Case>> {
-  return apiRequest<Case>(`/cases/${caseId}`, {
+export async function getCase(caseId: string): Promise<ApiResponse<ApiCase>> {
+  return apiRequest<ApiCase>(`/cases/${caseId}`, {
     method: 'GET',
   });
 }
@@ -69,8 +73,8 @@ export async function getCase(caseId: string): Promise<ApiResponse<Case>> {
  */
 export async function createCase(
   data: CreateCaseRequest
-): Promise<ApiResponse<Case>> {
-  return apiRequest<Case>('/cases', {
+): Promise<ApiResponse<ApiCase>> {
+  return apiRequest<ApiCase>('/cases', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -84,9 +88,9 @@ export async function createCase(
  */
 export async function updateCaseStatus(
   caseId: string,
-  status: Case['status']
-): Promise<ApiResponse<Case>> {
-  return apiRequest<Case>(`/cases/${caseId}/status`, {
+  status: ApiCase['status']
+): Promise<ApiResponse<ApiCase>> {
+  return apiRequest<ApiCase>(`/cases/${caseId}/status`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',

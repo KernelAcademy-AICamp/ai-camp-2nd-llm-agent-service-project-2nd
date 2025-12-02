@@ -7,7 +7,8 @@ import CaseCard from '@/components/cases/CaseCard';
 import AddCaseModal from '@/components/cases/AddCaseModal';
 import { Case } from '@/types/case';
 import { useAuth } from '@/hooks/useAuth';
-import { getCases, Case as ApiCase } from '@/lib/api/cases';
+import { getCases } from '@/lib/api/cases';
+import { mapApiCaseToCase } from '@/lib/utils/caseMapper';
 
 // Example mock cases for demonstration
 const EXAMPLE_CASES: Case[] = [
@@ -30,20 +31,6 @@ const EXAMPLE_CASES: Case[] = [
         lastUpdated: new Date().toISOString(),
     },
 ];
-
-// Helper function to map API response to frontend Case type
-function mapApiCaseToCase(apiCase: ApiCase): Case {
-    return {
-        id: apiCase.id,
-        title: apiCase.title,
-        clientName: apiCase.client_name,
-        status: apiCase.status === 'active' ? 'open' : apiCase.status === 'closed' ? 'closed' : 'open',
-        evidenceCount: apiCase.evidence_count,
-        draftStatus: apiCase.draft_status === 'completed' ? 'ready' :
-                     apiCase.draft_status === 'in_progress' ? 'generating' : 'not_started',
-        lastUpdated: apiCase.updated_at,
-    };
-}
 
 // Error type for distinguishing different error states
 type ErrorType = 'network' | 'server' | null;
