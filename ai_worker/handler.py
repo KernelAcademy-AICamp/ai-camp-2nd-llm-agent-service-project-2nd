@@ -31,7 +31,7 @@ from src.storage.vector_store import VectorStore
 from src.storage.schemas import EvidenceFile
 from src.analysis.article_840_tagger import Article840Tagger
 from src.utils.logging_filter import SensitiveDataFilter
-from src.utils.embeddings import get_embedding  # Embedding utility
+from src.utils.embeddings import get_embedding_with_fallback  # Embedding utility with fallback
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -148,12 +148,10 @@ def route_and_process(bucket_name: str, object_key: str) -> Dict[str, Any]:
             content = message.content
             timestamp = message.timestamp.isoformat() if message.timestamp else datetime.now(timezone.utc).isoformat()
 
-            # Embedding 생성
-            try:
-                embedding = get_embedding(content)
-            except Exception as e:
-                logger.warning(f"Embedding generation failed for chunk {idx}: {e}")
-                continue
+            # Embedding 생성 (with fallback - never fails)
+            embedding, is_real_embedding = get_embedding_with_fallback(content)
+            if not is_real_embedding:
+                logger.info(f"Using fallback embedding for chunk {idx}")
 
             # Qdrant에 벡터 + 메타데이터 저장
             vector_store.add_chunk_with_metadata(

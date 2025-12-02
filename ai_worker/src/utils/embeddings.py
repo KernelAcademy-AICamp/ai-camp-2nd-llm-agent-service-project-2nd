@@ -30,6 +30,52 @@ def _get_client() -> OpenAI:
     return _client
 
 
+def generate_fallback_embedding(
+    text: str,
+    dimensions: int = DEFAULT_DIMENSIONS
+) -> List[float]:
+    """
+    Generate a deterministic fallback embedding using hash-based approach.
+    Used when OpenAI API fails or is unavailable.
+
+    Args:
+        text: Text to embed
+        dimensions: Target embedding dimensions
+
+    Returns:
+        List of floats (pseudo-embedding vector)
+
+    Note:
+        This is NOT semantically meaningful - only for fallback indexing.
+        Search quality will be degraded but data won't be lost.
+    """
+    import hashlib
+
+    if not text or not text.strip():
+        return [0.0] * dimensions
+
+    # Create deterministic hash from text
+    text_hash = hashlib.sha256(text.encode('utf-8')).hexdigest()
+
+    # Convert hash to floats (normalized between -1 and 1)
+    embedding = []
+    for i in range(0, min(len(text_hash), dimensions * 2), 2):
+        if len(embedding) >= dimensions:
+            break
+        hex_pair = text_hash[i:i+2]
+        value = (int(hex_pair, 16) - 128) / 128.0  # Normalize to [-1, 1]
+        embedding.append(value)
+
+    # Pad with zeros if needed (hash is shorter than dimensions)
+    while len(embedding) < dimensions:
+        idx = len(embedding) % (len(text_hash) // 2)
+        hex_pair = text_hash[idx*2:(idx+1)*2]
+        value = (int(hex_pair, 16) - 128) / 128.0
+        embedding.append(value)
+
+    return embedding[:dimensions]
+
+
 def get_embedding(
     text: str,
     model: str = DEFAULT_MODEL
@@ -69,6 +115,51 @@ def get_embedding(
     except Exception as e:
         logger.error(f"Embedding generation failed: {e}")
         raise
+
+
+def get_embedding_with_fallback(
+    text: str,
+    model: str = DEFAULT_MODEL
+) -> tuple:
+    """
+    Generate embedding with automatic fallback on failure.
+
+    Args:
+        text: Text to embed
+        model: OpenAI embedding model name
+
+    Returns:
+        Tuple of (embedding vector, is_real_embedding)
+        - is_real_embedding=True: OpenAI embedding succeeded
+        - is_real_embedding=False: Using fallback hash-based embedding
+
+    Note:
+        This function NEVER raises exceptions for API failures.
+        Always returns a usable embedding for indexing.
+    """
+    if not text or not text.strip():
+        logger.warning("Empty text provided, using zero vector")
+        return [0.0] * get_embedding_dimension(model), False
+
+    # Truncate if too long
+    max_chars = 30000
+    if len(text) > max_chars:
+        text = text[:max_chars]
+        logger.warning(f"Text truncated to {max_chars} characters")
+
+    try:
+        client = _get_client()
+        response = client.embeddings.create(
+            input=text,
+            model=model
+        )
+        return response.data[0].embedding, True
+
+    except Exception as e:
+        logger.warning(f"OpenAI embedding failed, using fallback: {e}")
+        dimensions = get_embedding_dimension(model)
+        fallback = generate_fallback_embedding(text, dimensions)
+        return fallback, False
 
 
 def get_embeddings_batch(
