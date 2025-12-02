@@ -119,6 +119,9 @@ export function Modal({
     (event: KeyboardEvent) => {
       if (!isOpen || !modalRef.current) return;
 
+      // Skip if IME composition is in progress (for Korean/Japanese/Chinese input)
+      if (event.isComposing || event.keyCode === 229) return;
+
       // Close on Escape
       if (event.key === 'Escape' && closeOnEscape) {
         event.preventDefault();
