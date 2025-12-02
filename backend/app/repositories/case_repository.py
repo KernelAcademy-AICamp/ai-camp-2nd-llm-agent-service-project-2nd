@@ -18,7 +18,7 @@ class CaseRepository:
     def __init__(self, session: Session):
         self.session = session
 
-    def create(self, title: str, description: Optional[str], created_by: str) -> Case:
+    def create(self, title: str, description: Optional[str], created_by: str, client_name: Optional[str] = None) -> Case:
         """
         Create a new case in the database
 
@@ -26,6 +26,7 @@ class CaseRepository:
             title: Case title
             description: Case description (optional)
             created_by: User ID who created the case
+            client_name: Client name (optional)
 
         Returns:
             Created Case instance
@@ -33,6 +34,7 @@ class CaseRepository:
         case = Case(
             id=f"case_{uuid.uuid4().hex[:12]}",
             title=title,
+            client_name=client_name,
             description=description,
             status="active",
             created_by=created_by,

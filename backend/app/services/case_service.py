@@ -67,6 +67,7 @@ class CaseService:
         # Create case in database
         case = self.case_repo.create(
             title=case_data.title,
+            client_name=case_data.client_name,
             description=case_data.description,
             created_by=user_id
         )
