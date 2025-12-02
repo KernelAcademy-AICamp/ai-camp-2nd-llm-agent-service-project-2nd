@@ -1,5 +1,8 @@
-import { useState } from 'react';
+'use client';
+
+import { useState, useMemo } from 'react';
 import { Loader2, FileText, Download, Sparkles, Bold, Italic, Underline, List } from 'lucide-react';
+import DOMPurify from 'dompurify';
 import { DraftCitation } from '@/types/draft';
 import { DraftDownloadFormat } from '@/services/documentService';
 import EvidenceTraceabilityPanel from './EvidenceTraceabilityPanel';
@@ -24,6 +27,17 @@ export default function DraftPreviewPanel({
     const buttonLabel = hasExistingDraft ? '초안 재생성' : '초안 생성';
     const [selectedEvidenceId, setSelectedEvidenceId] = useState<string | null>(null);
     const [isTraceabilityPanelOpen, setIsTraceabilityPanelOpen] = useState(false);
+
+    // Sanitize HTML to prevent XSS attacks while preserving allowed elements
+    const sanitizedDraftText = useMemo(() => {
+        if (typeof window === 'undefined') {
+            return draftText; // SSR fallback - sanitization happens on client
+        }
+        return DOMPurify.sanitize(draftText, {
+            ALLOWED_TAGS: ['b', 'i', 'u', 'strong', 'em', 'p', 'br', 'span', 'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'h4'],
+            ALLOWED_ATTR: ['class', 'data-evidence-id'],
+        });
+    }, [draftText]);
 
     const handleFormat = (command: string) => {
         document.execCommand(command, false, undefined);
@@ -134,7 +148,7 @@ export default function DraftPreviewPanel({
                     aria-label="Draft content"
                     onClick={handleEditorClick}
                     className="w-full min-h-[320px] bg-transparent p-6 text-gray-800 leading-relaxed focus:outline-none resize-none placeholder:text-gray-400 overflow-auto cursor-pointer [&_.evidence-ref]:underline [&_.evidence-ref]:text-secondary [&_.evidence-ref]:cursor-pointer [&_.evidence-ref:hover]:text-accent [&_.evidence-ref]:decoration-dotted"
-                    dangerouslySetInnerHTML={{ __html: draftText }}
+                    dangerouslySetInnerHTML={{ __html: sanitizedDraftText }}
                 />
                 <div className="absolute top-4 right-6 text-xs text-gray-400">자동 저장 준비 중</div>
             </div>
