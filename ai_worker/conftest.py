@@ -72,7 +72,7 @@ def setup_test_environment():
         "AWS_SECRET_ACCESS_KEY": os.environ.get("AWS_SECRET_ACCESS_KEY", "test-secret-key"),
         "AWS_REGION": os.environ.get("AWS_REGION", "us-east-1"),
         "VECTOR_SIZE": os.environ.get("VECTOR_SIZE", "1536"),
-        "DYNAMODB_TABLE": os.environ.get("DYNAMODB_TABLE", "leh_evidence_test"),
+        "DDB_EVIDENCE_TABLE": os.environ.get("DDB_EVIDENCE_TABLE", "leh_evidence_test"),
     }
 
     for key, value in test_env_vars.items():

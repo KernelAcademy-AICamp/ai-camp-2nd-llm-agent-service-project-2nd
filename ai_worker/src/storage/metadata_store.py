@@ -28,7 +28,7 @@ class MetadataStore:
     Lambda 환경에서 영구 저장을 위해 SQLite 대신 DynamoDB 사용.
 
     Table Schema:
-    - Table: leh_evidence (from DYNAMODB_TABLE env)
+    - Table: leh_evidence (from DDB_EVIDENCE_TABLE env)
     - PK: evidence_id (HASH)
     - GSI: case_id-index (case_id as HASH)
     """
@@ -43,7 +43,7 @@ class MetadataStore:
         MetadataStore 초기화
 
         Args:
-            table_name: DynamoDB 테이블명 (기본값: 환경변수 DYNAMODB_TABLE)
+            table_name: DynamoDB 테이블명 (기본값: 환경변수 DDB_EVIDENCE_TABLE)
             region: AWS 리전 (기본값: 환경변수 AWS_REGION)
             db_path: Deprecated - ignored (was used for SQLite)
         """
@@ -55,7 +55,8 @@ class MetadataStore:
             )
         self.db_path = db_path  # Keep for test compatibility
 
-        self.table_name = table_name or os.environ.get('DYNAMODB_TABLE', 'leh_evidence')
+        # Use DDB_EVIDENCE_TABLE (unified with Backend), fallback to legacy DYNAMODB_TABLE
+        self.table_name = table_name or os.environ.get('DDB_EVIDENCE_TABLE') or os.environ.get('DYNAMODB_TABLE', 'leh_evidence')
         self.region = region or os.environ.get('AWS_REGION', 'ap-northeast-2')
         self._client = None
 
