@@ -82,12 +82,14 @@ export default function LandingNav({ isScrolled = false }: LandingNavProps) {
           <Link
             href="/login"
             className="btn-primary text-sm px-4 py-2 focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:outline-none"
+            aria-label="로그인 페이지로 이동"
           >
             로그인
           </Link>
           <Link
             href="/signup"
             className="btn-primary text-sm px-4 py-2 focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:outline-none"
+            aria-label="회원가입 페이지로 이동"
           >
             회원가입
           </Link>
