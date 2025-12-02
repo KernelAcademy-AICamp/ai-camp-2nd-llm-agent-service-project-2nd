@@ -414,10 +414,13 @@ class DraftService:
         draft_response: DraftPreviewResponse
     ) -> Tuple[BytesIO, str, str]:
         """
-        Generate PDF file from draft response
+        Generate PDF file from draft response with Korean font support
 
-        Note: For simplicity, we generate a basic text-based PDF.
-        For production, consider using reportlab or weasyprint.
+        Features:
+        - A4 layout for legal documents
+        - Korean font support (Noto Sans KR or system fallback)
+        - Legal document template structure
+        - Citations section
 
         Args:
             case: Case object
@@ -426,38 +429,167 @@ class DraftService:
         Returns:
             Tuple of (file_bytes, filename, content_type)
         """
-        # For now, create a simple text file as PDF placeholder
-        # In production, use reportlab or weasyprint for proper PDF generation
         try:
             from reportlab.lib.pagesizes import A4
-            from reportlab.lib.styles import getSampleStyleSheet
-            from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
-            from reportlab.lib.units import inch
-            from reportlab.pdfbase.ttfonts import TTFont  # noqa: F401
+            from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+            from reportlab.platypus import (
+                SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+            )
+            from reportlab.lib.units import inch, mm
+            from reportlab.lib import colors
+            from reportlab.pdfbase import pdfmetrics
+            from reportlab.pdfbase.ttfonts import TTFont
+            from reportlab.lib.enums import TA_CENTER, TA_JUSTIFY
+            import os
+
+            # Register Korean font
+            korean_font_registered = self._register_korean_font(pdfmetrics, TTFont)
+            font_name = "NotoSansKR" if korean_font_registered else "Helvetica"
 
             file_buffer = BytesIO()
-            doc = SimpleDocTemplate(file_buffer, pagesize=A4)
+
+            # A4 with proper margins for legal documents
+            doc = SimpleDocTemplate(
+                file_buffer,
+                pagesize=A4,
+                leftMargin=25 * mm,
+                rightMargin=25 * mm,
+                topMargin=25 * mm,
+                bottomMargin=25 * mm
+            )
+
+            # Create custom styles with Korean font
             styles = getSampleStyleSheet()
+
+            # Title style
+            title_style = ParagraphStyle(
+                'KoreanTitle',
+                parent=styles['Title'],
+                fontName=font_name,
+                fontSize=18,
+                alignment=TA_CENTER,
+                spaceAfter=20
+            )
+
+            # Heading style
+            heading_style = ParagraphStyle(
+                'KoreanHeading',
+                parent=styles['Heading2'],
+                fontName=font_name,
+                fontSize=14,
+                spaceBefore=15,
+                spaceAfter=10
+            )
+
+            # Normal text style
+            normal_style = ParagraphStyle(
+                'KoreanNormal',
+                parent=styles['Normal'],
+                fontName=font_name,
+                fontSize=11,
+                leading=16,
+                alignment=TA_JUSTIFY,
+                spaceAfter=8
+            )
+
+            # Citation style
+            citation_style = ParagraphStyle(
+                'Citation',
+                parent=styles['Normal'],
+                fontName=font_name,
+                fontSize=10,
+                leading=14,
+                leftIndent=10,
+                spaceAfter=6
+            )
+
+            # Disclaimer style
+            disclaimer_style = ParagraphStyle(
+                'Disclaimer',
+                parent=styles['Normal'],
+                fontName=font_name,
+                fontSize=9,
+                textColor=colors.grey,
+                alignment=TA_CENTER,
+                spaceBefore=20
+            )
+
             story = []
 
-            # Title
-            story.append(Paragraph("이혼 소송 준비서면 (초안)", styles['Title']))
-            story.append(Spacer(1, 0.5 * inch))
+            # === Document Header ===
+            story.append(Paragraph("이혼 소송 준비서면", title_style))
+            story.append(Paragraph("(초 안)", ParagraphStyle(
+                'Subtitle',
+                parent=normal_style,
+                alignment=TA_CENTER,
+                fontSize=12,
+                spaceAfter=30
+            )))
 
-            # Case info
-            story.append(Paragraph(f"<b>사건명:</b> {case.title}", styles['Normal']))
-            story.append(Paragraph(
-                f"<b>생성일시:</b> {draft_response.generated_at.strftime('%Y-%m-%d %H:%M:%S')}",
-                styles['Normal']
-            ))
-            story.append(Spacer(1, 0.3 * inch))
+            # === Case Information Table ===
+            case_data = [
+                ["사 건 명", case.title],
+                ["생성일시", draft_response.generated_at.strftime('%Y년 %m월 %d일 %H:%M')],
+            ]
+            case_table = Table(case_data, colWidths=[80, 350])
+            case_table.setStyle(TableStyle([
+                ('FONTNAME', (0, 0), (-1, -1), font_name),
+                ('FONTSIZE', (0, 0), (-1, -1), 11),
+                ('ALIGN', (0, 0), (0, -1), 'RIGHT'),
+                ('ALIGN', (1, 0), (1, -1), 'LEFT'),
+                ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+                ('TOPPADDING', (0, 0), (-1, -1), 8),
+            ]))
+            story.append(case_table)
+            story.append(Spacer(1, 0.4 * inch))
 
-            # Draft content
-            story.append(Paragraph("<b>본문</b>", styles['Heading2']))
+            # === Main Content ===
+            story.append(Paragraph("본 문", heading_style))
+
+            # Split content by paragraphs and add to story
             for paragraph_text in draft_response.draft_text.split("\n\n"):
-                if paragraph_text.strip():
-                    story.append(Paragraph(paragraph_text.strip(), styles['Normal']))
+                cleaned_text = paragraph_text.strip()
+                if cleaned_text:
+                    # Escape XML special characters
+                    cleaned_text = (
+                        cleaned_text
+                        .replace("&", "&amp;")
+                        .replace("<", "&lt;")
+                        .replace(">", "&gt;")
+                    )
+                    story.append(Paragraph(cleaned_text, normal_style))
+
+            # === Citations Section ===
+            if draft_response.citations:
+                story.append(Spacer(1, 0.3 * inch))
+                story.append(Paragraph("인용 증거", heading_style))
+
+                for i, citation in enumerate(draft_response.citations, 1):
+                    # Citation header
+                    labels_str = ", ".join(citation.labels) if citation.labels else "N/A"
+                    citation_header = f"<b>[증거 {i}]</b> (ID: {citation.evidence_id})"
+                    story.append(Paragraph(citation_header, citation_style))
+
+                    # Citation details
+                    story.append(Paragraph(f"분류: {labels_str}", citation_style))
+
+                    # Citation snippet (escape special characters)
+                    snippet = (
+                        citation.snippet
+                        .replace("&", "&amp;")
+                        .replace("<", "&lt;")
+                        .replace(">", "&gt;")
+                    )
+                    story.append(Paragraph(f"내용: {snippet}", citation_style))
                     story.append(Spacer(1, 0.1 * inch))
+
+            # === Disclaimer ===
+            story.append(Spacer(1, 0.5 * inch))
+            story.append(Paragraph(
+                "⚠ 본 문서는 AI가 생성한 초안이며, 변호사의 검토 및 수정이 필수입니다.",
+                disclaimer_style
+            ))
 
             # Build PDF
             doc.build(story)
@@ -470,9 +602,54 @@ class DraftService:
             return file_buffer, filename, content_type
 
         except ImportError:
-            # Fallback: Return DOCX instead with a warning
             raise ValidationError(
                 "PDF export is not available. "
                 "Please install reportlab: pip install reportlab. "
                 "Alternatively, use DOCX format."
             )
+
+    def _register_korean_font(self, pdfmetrics, TTFont) -> bool:
+        """
+        Register Korean font for PDF generation
+
+        Tries to find and register a Korean font in this order:
+        1. Noto Sans KR (bundled or system)
+        2. macOS system fonts (AppleGothic, AppleSDGothicNeo)
+        3. Linux system fonts (NanumGothic)
+        4. Windows system fonts (Malgun Gothic)
+
+        Args:
+            pdfmetrics: reportlab pdfmetrics module
+            TTFont: reportlab TTFont class
+
+        Returns:
+            bool: True if Korean font was registered, False otherwise
+        """
+        import os
+
+        # Font search paths
+        font_candidates = [
+            # Bundled font (if exists in project)
+            os.path.join(os.path.dirname(__file__), "..", "fonts", "NotoSansKR-Regular.ttf"),
+            # macOS system fonts
+            "/System/Library/Fonts/AppleSDGothicNeo.ttc",
+            "/System/Library/Fonts/Supplemental/AppleGothic.ttf",
+            "/Library/Fonts/NotoSansKR-Regular.ttf",
+            # Linux system fonts
+            "/usr/share/fonts/truetype/nanum/NanumGothic.ttf",
+            "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
+            # Windows system fonts
+            "C:/Windows/Fonts/malgun.ttf",
+            "C:/Windows/Fonts/NotoSansKR-Regular.ttf",
+        ]
+
+        for font_path in font_candidates:
+            if os.path.exists(font_path):
+                try:
+                    pdfmetrics.registerFont(TTFont("NotoSansKR", font_path))
+                    return True
+                except Exception:
+                    continue
+
+        # No Korean font found - will use default font
+        return False
