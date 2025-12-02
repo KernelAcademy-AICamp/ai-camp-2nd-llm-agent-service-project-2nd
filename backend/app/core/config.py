@@ -5,9 +5,16 @@ Environment variables and application settings using Pydantic Settings
 
 import os
 import warnings
+from pathlib import Path
 from typing import List
+from dotenv import load_dotenv
 from pydantic_settings import BaseSettings
 from pydantic import Field, model_validator
+
+# .env 파일 로드 (Settings 클래스 정의 전에 실행)
+_env_path = Path(__file__).parent.parent.parent / ".env"
+if _env_path.exists():
+    load_dotenv(_env_path)
 
 
 class Settings(BaseSettings):

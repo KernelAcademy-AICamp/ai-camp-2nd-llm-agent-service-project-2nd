@@ -6,6 +6,11 @@ Version: 0.2.0
 Updated: 2025-11-19
 """
 
+# .env 파일 로드 (다른 import 전에 실행)
+from pathlib import Path
+from dotenv import load_dotenv
+load_dotenv(Path(__file__).parent.parent / ".env")
+
 import logging
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
