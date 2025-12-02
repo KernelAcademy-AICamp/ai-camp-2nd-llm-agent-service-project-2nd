@@ -624,9 +624,13 @@ class VectorStore:
             is_fallback_embedding: 폴백 임베딩 여부
 
         Returns:
-            str: 벡터 ID (chunk_id와 동일하게 사용)
+            str: 벡터 ID (UUID)
         """
         collection = self._ensure_collection(collection_name)
+
+        # Generate proper UUID for Qdrant point ID
+        # (chunk_id format "chunk_xxx" is not valid for Qdrant)
+        vector_id = str(uuid.uuid4())
 
         # Build payload with all available metadata
         payload = {
@@ -667,13 +671,13 @@ class VectorStore:
                 collection_name=collection,
                 points=[
                     PointStruct(
-                        id=chunk_id,
+                        id=vector_id,
                         vector=embedding,
                         payload=payload
                     )
                 ]
             )
-            return chunk_id
+            return vector_id
 
         except Exception as e:
             logger.error(f"Failed to add chunk with metadata: {e}")

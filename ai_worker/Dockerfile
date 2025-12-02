@@ -3,15 +3,11 @@
 
 FROM public.ecr.aws/lambda/python:3.12
 
-# System dependencies for OCR and media processing
-RUN dnf install -y \
-    tesseract \
-    tesseract-langpack-kor \
-    ffmpeg \
-    && dnf clean all
-
 # Set working directory
 WORKDIR ${LAMBDA_TASK_ROOT}
+
+# Set Python path
+ENV PYTHONPATH=${LAMBDA_TASK_ROOT}
 
 # Copy and install Python dependencies
 COPY requirements.txt .
