@@ -17,7 +17,7 @@ from app.db.schemas import (
 from app.repositories.case_repository import CaseRepository
 from app.repositories.case_member_repository import CaseMemberRepository
 from app.utils.dynamo import get_evidence_by_case
-from app.utils.qdrant import search_evidence_by_semantic
+from app.utils.qdrant import search_evidence_by_semantic, search_legal_knowledge
 from app.utils.openai_client import generate_chat_completion
 from app.middleware import NotFoundError, PermissionError, ValidationError
 
@@ -90,14 +90,17 @@ class DraftService:
         # Note: Currently filtering for reference, may be used for future enhancements
         _ = [ev for ev in evidence_list if ev.get("status") == "done"]
 
-        # 3. Perform semantic RAG search in Qdrant
+        # 3. Perform semantic RAG search in Qdrant (evidence + legal)
         rag_results = self._perform_rag_search(case_id, request.sections)
+        evidence_results = rag_results.get("evidence", [])
+        legal_results = rag_results.get("legal", [])
 
         # 4. Build GPT-4o prompt with RAG context
         prompt_messages = self._build_draft_prompt(
             case=case,
             sections=request.sections,
-            rag_context=rag_results,
+            evidence_context=evidence_results,
+            legal_context=legal_results,
             language=request.language,
             style=request.style
         )
@@ -110,7 +113,7 @@ class DraftService:
         )
 
         # 6. Extract citations from RAG results
-        citations = self._extract_citations(rag_results)
+        citations = self._extract_citations(evidence_results)
 
         return DraftPreviewResponse(
             case_id=case_id,
@@ -119,7 +122,7 @@ class DraftService:
             generated_at=datetime.now(timezone.utc)
         )
 
-    def _perform_rag_search(self, case_id: str, sections: List[str]) -> List[dict]:
+    def _perform_rag_search(self, case_id: str, sections: List[str]) -> dict:
         """
         Perform semantic search in Qdrant for RAG context
 
@@ -128,43 +131,58 @@ class DraftService:
             sections: Sections being generated
 
         Returns:
-            List of relevant evidence documents
+            Dict with 'evidence' and 'legal' results
         """
         # Build search query based on sections
         if "청구원인" in sections:
             # Search for fault evidence (guilt factors)
             query = "이혼 사유 귀책사유 폭언 불화 부정행위"
-            results = search_evidence_by_semantic(
+            evidence_results = search_evidence_by_semantic(
                 case_id=case_id,
                 query=query,
                 top_k=10
             )
+            # Search legal knowledge for divorce grounds
+            legal_results = search_legal_knowledge(
+                query="재판상 이혼 사유 민법 제840조",
+                top_k=5,
+                doc_type="statute"
+            )
         else:
             # General search for all sections
             query = " ".join(sections)
-            results = search_evidence_by_semantic(
+            evidence_results = search_evidence_by_semantic(
                 case_id=case_id,
                 query=query,
                 top_k=5
             )
+            legal_results = search_legal_knowledge(
+                query="이혼 " + query,
+                top_k=3
+            )
 
-        return results
+        return {
+            "evidence": evidence_results,
+            "legal": legal_results
+        }
 
     def _build_draft_prompt(
         self,
         case: any,
         sections: List[str],
-        rag_context: List[dict],
+        evidence_context: List[dict],
+        legal_context: List[dict],
         language: str,
         style: str
     ) -> List[dict]:
         """
-        Build GPT-4o prompt with RAG context
+        Build GPT-4o prompt with evidence and legal RAG context
 
         Args:
             case: Case object
             sections: Sections to generate
-            rag_context: RAG search results
+            evidence_context: Evidence RAG search results
+            legal_context: Legal knowledge RAG search results
             language: Language (ko/en)
             style: Writing style
 
@@ -175,34 +193,41 @@ class DraftService:
         system_message = {
             "role": "system",
             "content": """당신은 대한민국의 전문 법률가입니다.
-이혼 소송 준비서면 초안을 작성하는 AI 어시스턴트입니다.
+이혼 소송 소장(訴狀) 초안을 작성하는 AI 어시스턴트입니다.
 
 **중요 원칙:**
-1. 제공된 증거만을 기반으로 작성하세요
+1. 제공된 증거와 법률 조문을 기반으로 작성하세요
 2. 추측이나 가정을 하지 마세요
 3. 법률 용어를 정확하게 사용하세요
-4. 민법 제840조 이혼 사유를 정확히 인용하세요
+4. 제공된 법률 조문(민법 제840조 등)을 정확히 인용하세요
 5. 존중하고 전문적인 어조를 유지하세요
 
-**작성 형식:**
-- 법원 제출용 표준 형식
-- 명확한 섹션 구분
-- 증거 기반 서술
-- 법률 근거 명시
+**소장 작성 형식:**
+1. 소장 제목
+2. 당사자 정보 (원고/피고)
+3. 청구 취지
+4. 청구 원인
+   - 당사자들의 관계
+   - 혼인생활 과정
+   - 이혼 사유 발생 (민법 제840조 근거)
+   - 위자료/재산분할/양육권 청구 근거
+5. 입증 방법
+6. 첨부 서류
 
 **주의사항:**
-본 문서는 초안이며, 변호사의 검토가 필수입니다.
+본 문서는 AI가 생성한 초안이며, 변호사의 검토 및 수정이 필수입니다.
 """
         }
 
-        # Build RAG context string
-        rag_context_str = self._format_rag_context(rag_context)
+        # Build context strings
+        evidence_context_str = self._format_evidence_context(evidence_context)
+        legal_context_str = self._format_legal_context(legal_context)
 
-        # User message - include case info and RAG context
+        # User message - include case info, evidence, and legal context
         user_message = {
             "role": "user",
             "content": f"""
-다음 정보를 바탕으로 이혼 소송 준비서면 초안을 작성해 주세요.
+다음 정보를 바탕으로 이혼 소송 소장 초안을 작성해 주세요.
 
 **사건 정보:**
 - 사건명: {case.title}
@@ -211,20 +236,86 @@ class DraftService:
 **생성할 섹션:**
 {", ".join(sections)}
 
-**증거 자료 (RAG 검색 결과):**
-{rag_context_str}
+**관련 법률 조문:**
+{legal_context_str}
+
+**증거 자료:**
+{evidence_context_str}
 
 **요청사항:**
 - 언어: {language}
 - 스타일: {style}
-- 위 증거를 기반으로 법률적 논리를 구성해 주세요
-- 각 주장에 대해 증거 번호를 명시해 주세요 (예: [증거 1], [증거 2])
+- 위 법률 조문과 증거를 기반으로 법률적 논리를 구성해 주세요
+- 이혼 사유는 반드시 민법 제840조를 인용하여 작성하세요
+- 각 주장에 대해 증거 번호를 명시해 주세요 (예: [갑 제1호증], [갑 제2호증])
 
-준비서면 초안을 작성해 주세요.
+소장 초안을 작성해 주세요.
 """
         }
 
         return [system_message, user_message]
+
+    def _format_legal_context(self, legal_results: List[dict]) -> str:
+        """
+        Format legal knowledge search results for GPT-4o prompt
+
+        Args:
+            legal_results: List of legal documents from RAG search
+
+        Returns:
+            Formatted legal context string
+        """
+        if not legal_results:
+            return "(관련 법률 조문 없음)"
+
+        context_parts = []
+        for doc in legal_results:
+            article_number = doc.get("article_number", "")
+            statute_name = doc.get("statute_name", "민법")
+            content = doc.get("text", "")
+
+            if article_number and content:
+                context_parts.append(f"""
+【{statute_name} {article_number}】
+{content}
+""")
+
+        return "\n".join(context_parts) if context_parts else "(관련 법률 조문 없음)"
+
+    def _format_evidence_context(self, evidence_results: List[dict]) -> str:
+        """
+        Format evidence search results for GPT-4o prompt
+
+        Args:
+            evidence_results: List of evidence documents from RAG search
+
+        Returns:
+            Formatted evidence context string
+        """
+        if not evidence_results:
+            return "(증거 자료 없음 - 기본 템플릿으로 작성)"
+
+        context_parts = []
+        for i, doc in enumerate(evidence_results, start=1):
+            evidence_id = doc.get("id", f"evidence_{i}")
+            content = doc.get("content", "")
+            labels = doc.get("labels", [])
+            speaker = doc.get("speaker", "")
+            timestamp = doc.get("timestamp", "")
+
+            # Truncate content if too long
+            if len(content) > 500:
+                content = content[:500] + "..."
+
+            context_parts.append(f"""
+[갑 제{i}호증] (ID: {evidence_id})
+- 분류: {", ".join(labels) if labels else "N/A"}
+- 화자: {speaker or "N/A"}
+- 시점: {timestamp or "N/A"}
+- 내용: {content}
+""")
+
+        return "\n".join(context_parts)
 
     def _format_rag_context(self, rag_results: List[dict]) -> str:
         """

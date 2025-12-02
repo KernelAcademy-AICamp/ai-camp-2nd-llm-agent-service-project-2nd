@@ -281,6 +281,77 @@ def get_all_documents_in_case(case_id: str) -> List[Dict]:
         return []
 
 
+# ==================================================
+# Legal Knowledge Search (법률 조문 검색)
+# ==================================================
+
+LEGAL_KNOWLEDGE_COLLECTION = "leh_legal_knowledge"
+
+
+def search_legal_knowledge(
+    query: str,
+    top_k: int = 3,
+    doc_type: Optional[str] = None
+) -> List[Dict]:
+    """
+    Search legal knowledge (법률 조문, 판례) using semantic similarity
+
+    Args:
+        query: Search query text (e.g., "이혼 사유", "재판상 이혼")
+        top_k: Number of top results to return
+        doc_type: Optional filter by document type ("statute" or "case_law")
+
+    Returns:
+        List of legal documents with similarity scores
+    """
+    client = _get_qdrant_client()
+
+    try:
+        # Check if collection exists
+        collections = client.get_collections().collections
+        if not any(c.name == LEGAL_KNOWLEDGE_COLLECTION for c in collections):
+            logger.warning(f"Legal knowledge collection {LEGAL_KNOWLEDGE_COLLECTION} does not exist")
+            return []
+
+        # Generate query embedding
+        query_embedding = generate_embedding(query)
+
+        # Build filter if doc_type specified
+        qdrant_filter = None
+        if doc_type:
+            qdrant_filter = models.Filter(
+                must=[
+                    models.FieldCondition(
+                        key="doc_type",
+                        match=models.MatchValue(value=doc_type)
+                    )
+                ]
+            )
+
+        # Execute search
+        results = client.query_points(
+            collection_name=LEGAL_KNOWLEDGE_COLLECTION,
+            query=query_embedding,
+            query_filter=qdrant_filter,
+            limit=top_k,
+            with_payload=True
+        ).points
+
+        # Parse results
+        legal_docs = []
+        for hit in results:
+            doc = hit.payload.copy() if hit.payload else {}
+            doc["_score"] = hit.score
+            legal_docs.append(doc)
+
+        logger.info(f"Legal knowledge search returned {len(legal_docs)} results for query: {query[:50]}...")
+        return legal_docs
+
+    except Exception as e:
+        logger.error(f"Legal knowledge search error: {e}")
+        return []
+
+
 # Backward compatibility aliases (for gradual migration)
 def delete_case_index(case_id: str) -> bool:
     """Alias for delete_case_collection (backward compatibility)"""
