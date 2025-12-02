@@ -7,10 +7,27 @@ export interface DraftVersionSnapshot {
   reason: DraftSaveReason;
 }
 
+export interface DraftCommentSnapshot {
+  id: string;
+  quote: string;
+  text: string;
+  createdAt: string;
+  resolved: boolean;
+}
+
+export interface DraftChangeLogEntry {
+  id: string;
+  action: 'insert' | 'delete' | 'edit';
+  snippet: string;
+  createdAt: string;
+}
+
 export interface DraftEditorState {
   content: string;
   lastSavedAt: string | null;
   history: DraftVersionSnapshot[];
+  comments?: DraftCommentSnapshot[];
+  changeLog?: DraftChangeLogEntry[];
 }
 
 const STORAGE_PREFIX = 'leh:draft-editor:v1:';
@@ -33,6 +50,8 @@ export function loadDraftState(caseId: string): DraftEditorState | null {
       content: parsed.content || '',
       lastSavedAt: parsed.lastSavedAt || null,
       history: Array.isArray(parsed.history) ? parsed.history : [],
+      comments: Array.isArray(parsed.comments) ? parsed.comments : [],
+      changeLog: Array.isArray(parsed.changeLog) ? parsed.changeLog : [],
     };
   } catch {
     return null;
@@ -48,6 +67,8 @@ export function persistDraftState(caseId: string, state: DraftEditorState) {
     content: state.content || '',
     lastSavedAt: state.lastSavedAt || null,
     history: state.history || [],
+    comments: state.comments || [],
+    changeLog: state.changeLog || [],
   };
 
   window.localStorage.setItem(getStorageKey(caseId), JSON.stringify(payload));

@@ -14,6 +14,11 @@ import {
     History,
     X,
     Clock3,
+    LayoutTemplate,
+    Quote,
+    MessageSquare,
+    GitBranch,
+    Users,
 } from 'lucide-react';
 import DOMPurify from 'dompurify';
 import { DraftCitation } from '@/types/draft';
@@ -22,6 +27,8 @@ import EvidenceTraceabilityPanel from './EvidenceTraceabilityPanel';
 import {
     DraftVersionSnapshot,
     DraftSaveReason,
+    DraftCommentSnapshot,
+    DraftChangeLogEntry,
     loadDraftState,
     persistDraftState,
 } from '@/services/draftStorageService';
@@ -39,14 +46,53 @@ interface DraftPreviewPanelProps {
 
 const AUTOSAVE_INTERVAL_MS = 5 * 60 * 1000;
 const HISTORY_LIMIT = 10;
+const CHANGELOG_LIMIT = 20;
 const SANITIZE_OPTIONS = {
     ALLOWED_TAGS: ['b', 'i', 'u', 'strong', 'em', 'p', 'br', 'span', 'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'h4'],
-    ALLOWED_ATTR: ['class', 'data-evidence-id'],
+    ALLOWED_ATTR: ['class', 'data-evidence-id', 'data-comment-id'],
 };
 
-const sanitizeDraftHtml = (html: string) => DOMPurify.sanitize(html, SANITIZE_OPTIONS);
+const DOCUMENT_TEMPLATES = [
+    {
+        id: 'answer-basic',
+        name: '답변서 기본 템플릿',
+        description: '사건 개요, 청구원인, 결론을 포함한 기본 양식',
+        content: `
+<h1>답 변 서</h1>
+<p>사건번호: ________</p>
+<p>원고: ________ / 피고: ________</p>
+<h2>1. 사건 개요</h2>
+<p>원고는 ____에 따라 본 소송을 제기하였습니다.</p>
+<h2>2. 청구원인에 대한 답변</h2>
+<p>원고의 주장에 대하여 피고는 다음과 같이 답변합니다.</p>
+<h3>2.1 원고 주장 제1항에 대하여</h3>
+<p>[증거기재]</p>
+<h2>3. 결론</h2>
+<p>따라서 원고의 청구는 기각되어야 합니다.</p>`,
+    },
+    {
+        id: 'petition-basic',
+        name: '준비서면 - 청구취지 강조',
+        description: '청구취지, 청구원인, 증거목록으로 구성된 양식',
+        content: `
+<h1>준 비 서 면</h1>
+<h2>1. 청구취지</h2>
+<p>1. 피고는 원고에게 위자료 금 ________원을 지급하라.</p>
+<h2>2. 청구원인</h2>
+<h3>2.1 혼인 파탄 경위</h3>
+<p>...</p>
+<h3>2.2 유책 사유</h3>
+<p>...</p>
+<h2>3. 증거목록</h2>
+<p>- 갑 제1호증: ________</p>
+<p>- 갑 제2호증: ________</p>`,
+    },
+];
 
-const generateVersionId = () => {
+const sanitizeDraftHtml = (html: string) => DOMPurify.sanitize(html, SANITIZE_OPTIONS);
+const stripHtml = (html: string) => html.replace(/<[^>]+>/g, '').trim();
+
+const generateId = () => {
     if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
         return crypto.randomUUID();
     }
@@ -109,15 +155,27 @@ export default function DraftPreviewPanel({
     const [selectedEvidenceId, setSelectedEvidenceId] = useState<string | null>(null);
     const [isTraceabilityPanelOpen, setIsTraceabilityPanelOpen] = useState(false);
     const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+    const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
+    const [isCitationModalOpen, setIsCitationModalOpen] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [saveMessage, setSaveMessage] = useState<string | null>(null);
+    const [comments, setComments] = useState<DraftCommentSnapshot[]>([]);
+    const [newCommentText, setNewCommentText] = useState('');
+    const [changeLog, setChangeLog] = useState<DraftChangeLogEntry[]>([]);
+    const [isTrackChangesEnabled, setIsTrackChangesEnabled] = useState(false);
+    const [collabStatus, setCollabStatus] = useState<string | null>(null);
     const editorRef = useRef<HTMLDivElement>(null);
     const autosaveTimerRef = useRef<NodeJS.Timeout | null>(null);
     const versionHistoryRef = useRef<DraftVersionSnapshot[]>([]);
     const lastSavedAtRef = useRef<string | null>(null);
     const lastImportedDraftRef = useRef<string | null>(null);
+    const commentsRef = useRef<DraftCommentSnapshot[]>([]);
+    const changeLogRef = useRef<DraftChangeLogEntry[]>([]);
+    const channelRef = useRef<BroadcastChannel | null>(null);
+    const clientIdRef = useRef<string>(generateId());
 
     const sanitizedDraftText = useMemo(() => sanitizeDraftHtml(draftText), [draftText]);
+    const pageCount = useMemo(() => Math.max(1, Math.ceil(stripHtml(editorHtml).length / 1800)), [editorHtml]);
 
     useEffect(() => {
         versionHistoryRef.current = versionHistory;
@@ -127,12 +185,28 @@ export default function DraftPreviewPanel({
         lastSavedAtRef.current = lastSavedAt;
     }, [lastSavedAt]);
 
+    useEffect(() => {
+        commentsRef.current = comments;
+    }, [comments]);
+
+    useEffect(() => {
+        changeLogRef.current = changeLog;
+    }, [changeLog]);
+
     const persistCurrentState = useCallback(
-        (content: string, history?: DraftVersionSnapshot[], savedAt?: string | null) => {
+        (
+            content: string,
+            history?: DraftVersionSnapshot[],
+            savedAt?: string | null,
+            commentsOverride?: DraftCommentSnapshot[],
+            changeLogOverride?: DraftChangeLogEntry[]
+        ) => {
             persistDraftState(caseId, {
                 content,
                 history: history ?? versionHistoryRef.current,
                 lastSavedAt: savedAt ?? lastSavedAtRef.current,
+                comments: commentsOverride ?? commentsRef.current,
+                changeLog: changeLogOverride ?? changeLogRef.current,
             });
         },
         [caseId]
@@ -141,12 +215,12 @@ export default function DraftPreviewPanel({
     const recordVersion = useCallback(
         (reason: DraftSaveReason, overrideContent?: string) => {
             const contentToSave = sanitizeDraftHtml(overrideContent ?? editorHtml);
-            if (!contentToSave || !contentToSave.replace(/<[^>]+>/g, '').trim()) {
+            if (!contentToSave || !stripHtml(contentToSave)) {
                 return;
             }
 
             const version: DraftVersionSnapshot = {
-                id: generateVersionId(),
+                id: generateId(),
                 content: contentToSave,
                 savedAt: new Date().toISOString(),
                 reason,
@@ -174,6 +248,8 @@ export default function DraftPreviewPanel({
             setEditorHtml(storedState.content || sanitizedDraftText);
             setVersionHistory(storedState.history || []);
             setLastSavedAt(storedState.lastSavedAt);
+            setComments(storedState.comments || []);
+            setChangeLog(storedState.changeLog || []);
             lastImportedDraftRef.current = storedState.content || sanitizedDraftText;
         } else {
             setEditorHtml(sanitizedDraftText);
@@ -213,6 +289,40 @@ export default function DraftPreviewPanel({
         };
     }, [recordVersion]);
 
+    useEffect(() => {
+        if (typeof BroadcastChannel === 'undefined') {
+            return;
+        }
+        const channel = new BroadcastChannel(`leh-draft-collab-${caseId}`);
+        channelRef.current = channel;
+
+        const handleMessage = (event: MessageEvent) => {
+            const data = event.data as { type: string; caseId: string; clientId: string; savedAt?: string };
+            if (!data || data.caseId !== caseId || data.clientId === clientIdRef.current) {
+                return;
+            }
+            if (data.type === 'presence') {
+                setCollabStatus('다른 사용자가 편집 중');
+            }
+            if (data.type === 'save') {
+                setCollabStatus('동료가 방금 저장했습니다');
+                setTimeout(() => setCollabStatus(null), 4000);
+            }
+        };
+
+        channel.addEventListener('message', handleMessage);
+        channel.postMessage({ type: 'presence', caseId, clientId: clientIdRef.current });
+        const presenceInterval = window.setInterval(() => {
+            channel.postMessage({ type: 'presence', caseId, clientId: clientIdRef.current });
+        }, 15000);
+
+        return () => {
+            channel.removeEventListener('message', handleMessage);
+            channel.close();
+            window.clearInterval(presenceInterval);
+        };
+    }, [caseId]);
+
     const handleFormat = (command: string) => {
         document.execCommand(command, false, undefined);
     };
@@ -235,7 +345,29 @@ export default function DraftPreviewPanel({
     const handleEditorInput = (event: React.FormEvent<HTMLDivElement>) => {
         const html = sanitizeDraftHtml((event.currentTarget as HTMLDivElement).innerHTML);
         setEditorHtml(html);
-        persistCurrentState(html);
+
+        const inputEvent = event.nativeEvent as InputEvent;
+        if (isTrackChangesEnabled && inputEvent) {
+            const snippet = (inputEvent.data || window.getSelection()?.toString() || '변경됨').trim() || '변경됨';
+            const action: 'insert' | 'delete' | 'edit' = inputEvent.inputType?.startsWith('delete')
+                ? 'delete'
+                : inputEvent.inputType?.includes('format')
+                    ? 'edit'
+                    : 'insert';
+            const entry: DraftChangeLogEntry = {
+                id: generateId(),
+                action,
+                snippet,
+                createdAt: new Date().toISOString(),
+            };
+            setChangeLog((prev) => {
+                const updated = [entry, ...prev].slice(0, CHANGELOG_LIMIT);
+                persistCurrentState(html, undefined, undefined, undefined, updated);
+                return updated;
+            });
+        } else {
+            persistCurrentState(html);
+        }
     };
 
     const handleCloseTraceability = () => {
@@ -250,6 +382,12 @@ export default function DraftPreviewPanel({
             if (onManualSave) {
                 await onManualSave(editorHtml);
             }
+            channelRef.current?.postMessage({
+                type: 'save',
+                caseId,
+                clientId: clientIdRef.current,
+                savedAt: new Date().toISOString(),
+            });
         } finally {
             setIsSaving(false);
         }
@@ -261,6 +399,64 @@ export default function DraftPreviewPanel({
         setEditorHtml(targetVersion.content);
         persistCurrentState(targetVersion.content);
         setIsHistoryOpen(false);
+    };
+
+    const handleApplyTemplate = (templateContent: string) => {
+        const content = sanitizeDraftHtml(templateContent);
+        setEditorHtml(content);
+        persistCurrentState(content);
+        setIsTemplateModalOpen(false);
+    };
+
+    const handleInsertCitation = (citation: DraftCitation) => {
+        const markup = `<span class="evidence-ref" data-evidence-id="${citation.evidenceId}">[증거: ${citation.title}]</span>`;
+        document.execCommand('insertHTML', false, markup);
+        const html = sanitizeDraftHtml(editorRef.current?.innerHTML || editorHtml);
+        setEditorHtml(html);
+        persistCurrentState(html);
+        setIsCitationModalOpen(false);
+    };
+
+    const handleAddComment = () => {
+        const selection = window.getSelection();
+        const quote = selection?.toString().trim();
+        if (!quote) {
+            setSaveMessage('코멘트 추가 전 텍스트를 선택하세요.');
+            setTimeout(() => setSaveMessage(null), 2500);
+            return;
+        }
+        if (!newCommentText.trim()) {
+            setSaveMessage('코멘트 내용을 입력하세요.');
+            setTimeout(() => setSaveMessage(null), 2500);
+            return;
+        }
+        const comment: DraftCommentSnapshot = {
+            id: generateId(),
+            quote,
+            text: newCommentText.trim(),
+            createdAt: new Date().toISOString(),
+            resolved: false,
+        };
+        setComments((prev) => {
+            const updated = [comment, ...prev];
+            persistCurrentState(editorHtml, undefined, undefined, updated);
+            return updated;
+        });
+        setNewCommentText('');
+    };
+
+    const handleToggleCommentResolved = (commentId: string) => {
+        setComments((prev) => {
+            const updated = prev.map((comment) =>
+                comment.id === commentId ? { ...comment, resolved: !comment.resolved } : comment
+            );
+            persistCurrentState(editorHtml, undefined, undefined, updated);
+            return updated;
+        });
+    };
+
+    const handleTrackChangeToggle = () => {
+        setIsTrackChangesEnabled((prev) => !prev);
     };
 
     return (
@@ -282,7 +478,7 @@ export default function DraftPreviewPanel({
 
             <div className="flex flex-col gap-3 rounded-xl border border-gray-100 bg-neutral-50/60 p-4">
                 <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                         <button
                             type="button"
                             onClick={handleManualSave}
@@ -300,11 +496,48 @@ export default function DraftPreviewPanel({
                             <History className="w-4 h-4" />
                             버전 히스토리
                         </button>
+                        <button
+                            type="button"
+                            onClick={() => setIsTemplateModalOpen(true)}
+                            className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-secondary hover:border-accent hover:text-accent transition-colors"
+                        >
+                            <LayoutTemplate className="w-4 h-4" />
+                            템플릿 적용
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setIsCitationModalOpen(true)}
+                            className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-secondary hover:border-accent hover:text-accent transition-colors"
+                        >
+                            <Quote className="w-4 h-4" />
+                            증거 인용 삽입
+                        </button>
+                        <button
+                            type="button"
+                            onClick={handleTrackChangeToggle}
+                            className={`inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium transition-colors ${
+                                isTrackChangesEnabled
+                                    ? 'border-accent bg-accent/10 text-secondary'
+                                    : 'border-gray-200 bg-white text-secondary hover:border-accent hover:text-accent'
+                            }`}
+                        >
+                            <GitBranch className="w-4 h-4" />
+                            변경 추적 {isTrackChangesEnabled ? 'ON' : 'OFF'}
+                        </button>
                         {saveMessage && <span className="text-xs text-accent">{saveMessage}</span>}
                     </div>
-                    <div className="inline-flex items-center text-xs text-gray-500" data-testid="autosave-indicator">
-                        <Clock3 className="w-4 h-4 mr-1" />
-                        {formatAutosaveStatus(lastSavedAt)}
+                    <div className="inline-flex flex-col text-xs text-gray-500 items-end gap-1" data-testid="autosave-indicator">
+                        <div className="inline-flex items-center">
+                            <Clock3 className="w-4 h-4 mr-1" />
+                            {formatAutosaveStatus(lastSavedAt)}
+                        </div>
+                        <span>페이지 {pageCount}</span>
+                        {collabStatus && (
+                            <span className="inline-flex items-center gap-1 text-secondary">
+                                <Users className="w-4 h-4" />
+                                {collabStatus}
+                            </span>
+                        )}
                     </div>
                 </div>
                 <div
@@ -339,7 +572,12 @@ export default function DraftPreviewPanel({
                             <Underline className="w-4 h-4 text-neutral-700" />
                         </button>
                         <div className="h-4 w-px bg-gray-300 mx-2" />
-                        <button type="button" aria-label="List" onClick={() => handleFormat('insertUnorderedList')} className="p-1 hover:bg-gray-200 rounded transition-colors">
+                        <button
+                            type="button"
+                            aria-label="List"
+                            onClick={() => handleFormat('insertUnorderedList')}
+                            className="p-1 hover:bg-gray-200 rounded transition-colors"
+                        >
                             <List className="w-4 h-4 text-neutral-700" />
                         </button>
                     </div>
@@ -377,7 +615,7 @@ export default function DraftPreviewPanel({
                     aria-label="Draft content"
                     onClick={handleEditorClick}
                     onInput={handleEditorInput}
-                    className="w-full min-h-[320px] bg-transparent p-6 text-gray-800 leading-relaxed focus:outline-none resize-none placeholder:text-gray-400 overflow-auto cursor-pointer [&_.evidence-ref]:underline [&_.evidence-ref]:text-secondary [&_.evidence-ref]:cursor-pointer [&_.evidence-ref:hover]:text-accent [&_.evidence-ref]:decoration-dotted"
+                    className="w-full min-h-[320px] bg-transparent p-6 text-gray-800 leading-relaxed focus:outline-none overflow-auto cursor-pointer [&_.evidence-ref]:underline [&_.evidence-ref]:text-secondary [&_.evidence-ref]:cursor-pointer [&_.evidence-ref:hover]:text-accent [&_.evidence-ref]:decoration-dotted"
                     dangerouslySetInnerHTML={{ __html: editorHtml }}
                 />
             </div>
@@ -403,16 +641,78 @@ export default function DraftPreviewPanel({
                 </div>
             </div>
 
-            <div className="border-t border-gray-100 pt-4">
-                <h4 className="text-sm font-semibold text-neutral-700 mb-3">Citations</h4>
-                <div className="space-y-3">
-                    {citations.map((citation) => (
-                        <div key={citation.evidenceId} className="rounded-lg border border-gray-100 bg-neutral-50/60 p-3">
-                            <p className="text-xs text-gray-500 mb-1">{citation.title}</p>
-                            <p className="text-sm text-neutral-700 leading-relaxed">&ldquo;{citation.quote}&rdquo;</p>
+            <div className="border-t border-gray-100 pt-4 space-y-6">
+                <div>
+                    <h4 className="text-sm font-semibold text-neutral-700 mb-3">Citations</h4>
+                    <div className="space-y-3">
+                        {citations.map((citation) => (
+                            <div key={citation.evidenceId} className="rounded-lg border border-gray-100 bg-neutral-50/60 p-3">
+                                <p className="text-xs text-gray-500 mb-1">{citation.title}</p>
+                                <p className="text-sm text-neutral-700 leading-relaxed">&ldquo;{citation.quote}&rdquo;</p>
+                            </div>
+                        ))}
+                        {citations.length === 0 && <p className="text-sm text-gray-400">아직 연결된 증거가 없습니다.</p>}
+                    </div>
+                </div>
+
+                <div className="rounded-2xl border border-gray-100 bg-white p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            <MessageSquare className="w-4 h-4 text-secondary" />
+                            <h4 className="text-sm font-semibold text-neutral-700">코멘트</h4>
                         </div>
-                    ))}
-                    {citations.length === 0 && <p className="text-sm text-gray-400">아직 연결된 증거가 없습니다.</p>}
+                        <span className="text-xs text-gray-400">선택한 텍스트에 코멘트를 남길 수 있습니다.</span>
+                    </div>
+                    <textarea
+                        aria-label="코멘트 작성"
+                        className="w-full rounded-xl border border-gray-200 p-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent"
+                        placeholder="선택한 부분에 대한 코멘트를 입력하세요."
+                        value={newCommentText}
+                        onChange={(event) => setNewCommentText(event.target.value)}
+                    />
+                    <button
+                        type="button"
+                        onClick={handleAddComment}
+                        className="btn-secondary text-sm px-4 py-2"
+                    >
+                        코멘트 추가
+                    </button>
+                    <div className="space-y-3 max-h-48 overflow-y-auto pr-1">
+                        {comments.length === 0 && <p className="text-sm text-gray-400">아직 코멘트가 없습니다.</p>}
+                        {comments.map((comment) => (
+                            <div key={comment.id} className="rounded-xl border border-gray-100 bg-neutral-50/80 p-3 space-y-1">
+                                <p className="text-xs text-gray-400">{formatTimestamp(comment.createdAt)}</p>
+                                <p className="text-xs text-secondary">&ldquo;{comment.quote}&rdquo;</p>
+                                <p className="text-sm text-neutral-700">{comment.text}</p>
+                                <button
+                                    type="button"
+                                    onClick={() => handleToggleCommentResolved(comment.id)}
+                                    className={`text-xs font-medium ${
+                                        comment.resolved ? 'text-accent' : 'text-secondary'
+                                    }`}
+                                >
+                                    {comment.resolved ? '해결됨' : '해결 표시'}
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                <div className="rounded-2xl border border-gray-100 bg-white p-4 space-y-3">
+                    <div className="flex items-center gap-2">
+                        <GitBranch className="w-4 h-4 text-secondary" />
+                        <h4 className="text-sm font-semibold text-neutral-700">변경 추적</h4>
+                    </div>
+                    <div className="space-y-3 max-h-48 overflow-y-auto pr-1">
+                        {changeLog.length === 0 && <p className="text-sm text-gray-400">기록된 변경 사항이 없습니다.</p>}
+                        {changeLog.map((entry) => (
+                            <div key={entry.id} className="rounded-xl border border-gray-100 bg-neutral-50/80 p-3">
+                                <p className="text-xs text-gray-400">{formatTimestamp(entry.createdAt)}</p>
+                                <p className="text-sm font-semibold text-gray-900">{entry.action.toUpperCase()}</p>
+                                <p className="text-sm text-neutral-700 truncate">{entry.snippet}</p>
+                            </div>
+                        ))}
+                    </div>
                 </div>
             </div>
 
@@ -450,6 +750,71 @@ export default function DraftPreviewPanel({
                                 >
                                     <p className="text-sm font-semibold text-gray-900">{formatVersionReason(version.reason)}</p>
                                     <p className="text-xs text-gray-500">{formatTimestamp(version.savedAt)}</p>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {isTemplateModalOpen && (
+                <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/30 px-4" role="dialog" aria-label="템플릿 선택">
+                    <div className="w-full max-w-2xl rounded-2xl bg-white p-6 shadow-2xl space-y-4">
+                        <div className="flex items-center justify-between">
+                            <h3 className="text-lg font-semibold text-gray-900">법률 문서 템플릿</h3>
+                            <button
+                                type="button"
+                                aria-label="템플릿 모달 닫기"
+                                onClick={() => setIsTemplateModalOpen(false)}
+                                className="rounded-full p-2 text-gray-500 hover:bg-gray-100"
+                            >
+                                <X className="w-4 h-4" />
+                            </button>
+                        </div>
+                        <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-1">
+                            {DOCUMENT_TEMPLATES.map((template) => (
+                                <div key={template.id} className="rounded-xl border border-gray-200 p-4 bg-neutral-50/40">
+                                    <p className="text-sm font-semibold text-gray-900">{template.name}</p>
+                                    <p className="text-xs text-gray-500 mb-3">{template.description}</p>
+                                    <button
+                                        type="button"
+                                        onClick={() => handleApplyTemplate(template.content)}
+                                        className="btn-secondary text-xs px-3 py-1.5"
+                                    >
+                                        템플릿 적용
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {isCitationModalOpen && (
+                <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/30 px-4" role="dialog" aria-label="증거 인용 삽입">
+                    <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl space-y-4">
+                        <div className="flex items-center justify-between">
+                            <h3 className="text-lg font-semibold text-gray-900">증거 인용 선택</h3>
+                            <button
+                                type="button"
+                                aria-label="증거 인용 모달 닫기"
+                                onClick={() => setIsCitationModalOpen(false)}
+                                className="rounded-full p-2 text-gray-500 hover:bg-gray-100"
+                            >
+                                <X className="w-4 h-4" />
+                            </button>
+                        </div>
+                        <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-1">
+                            {citations.length === 0 && <p className="text-sm text-gray-500">현재 인용 가능한 증거가 없습니다.</p>}
+                            {citations.map((citation) => (
+                                <button
+                                    key={citation.evidenceId}
+                                    type="button"
+                                    onClick={() => handleInsertCitation(citation)}
+                                    className="w-full rounded-xl border border-gray-200 bg-white p-3 text-left hover:border-accent focus:outline-none focus:ring-2 focus:ring-accent"
+                                >
+                                    <p className="text-sm font-semibold text-gray-900">{citation.title}</p>
+                                    <p className="text-xs text-gray-500 truncate">{citation.quote}</p>
                                 </button>
                             ))}
                         </div>

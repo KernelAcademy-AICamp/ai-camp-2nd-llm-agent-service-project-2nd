@@ -211,6 +211,44 @@ describe('Plan 3.6 - Draft Tab requirements on the case detail page', () => {
         });
     });
 
+    describe('Plan 3.12 - Template & Collaboration Enhancements', () => {
+        test('템플릿 적용 패널에서 기본 템플릿을 적용할 수 있다', async () => {
+            await renderCaseDetail();
+
+            const templateButton = screen.getByRole('button', { name: /템플릿 적용/i });
+            fireEvent.click(templateButton);
+
+            const modal = await screen.findByRole('dialog', { name: /템플릿 선택/i });
+            const applyButtons = within(modal).getAllByRole('button', { name: /템플릿 적용/i });
+            fireEvent.click(applyButtons[0]);
+
+            const editor = screen.getByTestId('draft-editor-content');
+            expect(editor.innerHTML).toContain('답 변 서');
+        });
+
+        test('선택한 텍스트에 코멘트를 추가하면 코멘트 목록에 표시된다', async () => {
+            const selectionMock = {
+                toString: () => '테스트 문장',
+                rangeCount: 0,
+                removeAllRanges: jest.fn(),
+            } as unknown as Selection;
+            const spy = jest.spyOn(window, 'getSelection').mockReturnValue(selectionMock);
+
+            await renderCaseDetail();
+
+            const textarea = screen.getByLabelText('코멘트 작성');
+            await userEvent.type(textarea, '검토 필요');
+
+            const addCommentButton = screen.getByRole('button', { name: /코멘트 추가/i });
+            await userEvent.click(addCommentButton);
+
+            expect(screen.getByText(/검토 필요/)).toBeInTheDocument();
+            expect(screen.getByText(/테스트 문장/)).toBeInTheDocument();
+
+            spy.mockRestore();
+        });
+    });
+
     describe('Calm upload feedback', () => {
         test('증거 업로드 시 인라인 상태 메시지를 표시한다', async () => {
             await renderCaseDetail();
