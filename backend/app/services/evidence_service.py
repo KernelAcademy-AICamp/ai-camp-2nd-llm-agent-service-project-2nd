@@ -6,7 +6,6 @@ Handles presigned URL generation and evidence metadata retrieval
 from sqlalchemy.orm import Session
 from typing import List
 from datetime import datetime
-import uuid
 from app.db.schemas import (
     PresignedUrlRequest,
     PresignedUrlResponse,
@@ -22,6 +21,7 @@ from app.repositories.case_member_repository import CaseMemberRepository
 from app.utils.s3 import generate_presigned_upload_url
 from app.utils.dynamo import get_evidence_by_case, get_evidence_by_id, put_evidence_metadata as save_evidence_metadata
 from app.utils.lambda_client import invoke_ai_worker
+from app.utils.evidence import generate_evidence_id, extract_filename_from_s3_key
 from app.core.config import settings
 from app.middleware import NotFoundError, PermissionError
 from typing import Optional
@@ -105,7 +105,7 @@ class EvidenceService:
             raise PermissionError("You do not have access to this case")
 
         # Generate unique temporary evidence ID
-        evidence_temp_id = f"ev_{uuid.uuid4().hex[:12]}"
+        evidence_temp_id = generate_evidence_id()
 
         # Construct S3 key with proper prefix
         s3_key = f"cases/{request.case_id}/raw/{evidence_temp_id}_{request.filename}"
@@ -159,10 +159,7 @@ class EvidenceService:
             raise PermissionError("You do not have access to this case")
 
         # Extract filename from s3_key
-        filename = request.s3_key.split("/")[-1]
-        # Remove temp_id prefix if present (format: ev_xxxx_filename.ext)
-        if filename.startswith("ev_") and "_" in filename[3:]:
-            filename = filename.split("_", 2)[-1]
+        filename = extract_filename_from_s3_key(request.s3_key)
 
         # Determine file type from extension
         extension = filename.split(".")[-1].lower() if "." in filename else ""
@@ -176,7 +173,7 @@ class EvidenceService:
         evidence_type = type_mapping.get(extension, "document")
 
         # Generate evidence ID
-        evidence_id = f"ev_{uuid.uuid4().hex[:12]}"
+        evidence_id = generate_evidence_id()
         created_at = datetime.utcnow()
 
         # Create evidence metadata for DynamoDB
