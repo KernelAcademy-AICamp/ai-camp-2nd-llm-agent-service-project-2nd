@@ -104,6 +104,7 @@ class ImageVisionParser(BaseParser):
         # Message 객체 생성
         messages = self._create_messages_from_text(
             text,
+            file_path=file_path,
             sender=default_sender,
             timestamp=default_timestamp
         )
@@ -116,10 +117,17 @@ class ImageVisionParser(BaseParser):
                 # Message 객체를 직접 수정할 수 없으므로, content에 추가 정보 포함
                 first_msg = messages[0]
                 enhanced_content = f"{first_msg.content}\n[Vision: {vision_analysis.context}]"
+                # 기존 메타데이터 유지하면서 vision 정보 추가
+                enhanced_metadata = {**first_msg.metadata}
+                enhanced_metadata["vision_emotions"] = vision_analysis.emotions
+                enhanced_metadata["vision_context"] = vision_analysis.context
+                enhanced_metadata["vision_atmosphere"] = vision_analysis.atmosphere
+                enhanced_metadata["vision_confidence"] = vision_analysis.confidence
                 messages[0] = Message(
                     content=enhanced_content,
                     sender=first_msg.sender,
-                    timestamp=first_msg.timestamp
+                    timestamp=first_msg.timestamp,
+                    metadata=enhanced_metadata
                 )
 
         return messages
@@ -245,6 +253,7 @@ class ImageVisionParser(BaseParser):
     def _create_messages_from_text(
         self,
         text: str,
+        file_path: str,
         sender: str = "Unknown",
         timestamp: Optional[datetime] = None
     ) -> List[Message]:
@@ -253,6 +262,7 @@ class ImageVisionParser(BaseParser):
 
         Args:
             text: 추출된 텍스트
+            file_path: 이미지 파일 경로
             sender: 발신자
             timestamp: 타임스탬프
 
@@ -265,12 +275,20 @@ class ImageVisionParser(BaseParser):
         messages = []
         lines = text.split('\n')
 
-        for line in lines:
+        for line_index, line in enumerate(lines):
             if line.strip():
+                # 표준 메타데이터 생성
+                metadata = self._create_standard_metadata(
+                    filepath=file_path,
+                    source_type="image",
+                    line_index=line_index
+                )
+
                 message = Message(
                     content=line.strip(),
                     sender=sender,
-                    timestamp=timestamp
+                    timestamp=timestamp,
+                    metadata=metadata
                 )
                 messages.append(message)
 

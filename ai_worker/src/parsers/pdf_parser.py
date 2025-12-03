@@ -70,10 +70,18 @@ class PDFParser(BaseParser):
                 # 페이지 번호 포함
                 content = f"[Page {page_num}]\n{text.strip()}"
 
+                # 표준 메타데이터 생성
+                metadata = self._create_standard_metadata(
+                    filepath=file_path,
+                    source_type="pdf",
+                    page_number=page_num
+                )
+
                 message = Message(
                     content=content,
                     sender=default_sender,
-                    timestamp=default_timestamp
+                    timestamp=default_timestamp,
+                    metadata=metadata
                 )
                 messages.append(message)
 

@@ -65,10 +65,31 @@ class VideoParser(BaseParser):
 
             # AudioParser로 STT 수행
             audio_parser = AudioParser()
-            messages = audio_parser.parse(
+            audio_messages = audio_parser.parse(
                 temp_audio.name,
                 default_sender=default_sender,
                 base_timestamp=base_timestamp
             )
+
+            # 메타데이터를 비디오 파일 기준으로 수정
+            messages = []
+            for msg in audio_messages:
+                # 원본 비디오 파일에 대한 표준 메타데이터 생성
+                video_metadata = self._create_standard_metadata(
+                    filepath=file_path,
+                    source_type="video",
+                    segment_start=msg.metadata.get("segment_start", 0.0),
+                    segment_index=msg.metadata.get("segment_index", 0)
+                )
+
+                # 새 Message 객체 생성 (metadata 수정)
+                video_message = Message(
+                    content=msg.content,
+                    sender=msg.sender,
+                    timestamp=msg.timestamp,
+                    score=msg.score,
+                    metadata=video_metadata
+                )
+                messages.append(video_message)
 
             return messages

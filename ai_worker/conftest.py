@@ -70,7 +70,7 @@ def setup_test_environment():
         "OPENAI_API_KEY": os.environ.get("OPENAI_API_KEY", "test-openai-key"),
         "AWS_ACCESS_KEY_ID": os.environ.get("AWS_ACCESS_KEY_ID", "test-access-key"),
         "AWS_SECRET_ACCESS_KEY": os.environ.get("AWS_SECRET_ACCESS_KEY", "test-secret-key"),
-        "AWS_REGION": os.environ.get("AWS_REGION", "us-east-1"),
+        "AWS_REGION": os.environ.get("AWS_REGION", "ap-northeast-2"),
         "VECTOR_SIZE": os.environ.get("VECTOR_SIZE", "1536"),
         "DYNAMODB_TABLE": os.environ.get("DYNAMODB_TABLE", "leh_evidence_test"),
     }

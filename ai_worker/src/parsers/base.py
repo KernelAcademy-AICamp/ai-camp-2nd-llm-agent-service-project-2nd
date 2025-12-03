@@ -6,8 +6,28 @@ Provides abstract base class and data models for all parsers
 from abc import ABC, abstractmethod
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
+from typing import Optional, TypedDict
 from pydantic import BaseModel, Field, field_validator
+
+
+class StandardMetadata(TypedDict, total=False):
+    """
+    표준 메타데이터 스키마
+
+    모든 파서가 공통으로 사용하는 메타데이터 필드 정의
+
+    Attributes:
+        source_type: 소스 타입 ("text", "pdf", "audio", "video", "image")
+        filename: 파일명
+        filepath: 파일 전체 경로
+        parser_class: 파서 클래스 이름
+        parsed_at: 파싱 시간 (ISO8601 형식)
+    """
+    source_type: str
+    filename: str
+    filepath: str
+    parser_class: str
+    parsed_at: str
 
 
 class Message(BaseModel):
@@ -93,3 +113,31 @@ class BaseParser(ABC):
             str: 확장자 (예: '.txt', '.pdf')
         """
         return Path(filepath).suffix.lower()
+
+    def _create_standard_metadata(
+        self,
+        filepath: str,
+        source_type: str,
+        **extra_fields
+    ) -> dict:
+        """
+        표준 메타데이터 생성
+
+        Args:
+            filepath: 파일 경로
+            source_type: 소스 타입 ("text", "pdf", "audio", "video", "image")
+            **extra_fields: 추가 메타데이터 필드
+
+        Returns:
+            dict: 표준 메타데이터 딕셔너리
+        """
+        path = Path(filepath)
+        metadata: dict = {
+            "source_type": source_type,
+            "filename": path.name,
+            "filepath": filepath,
+            "parser_class": self.__class__.__name__,
+            "parsed_at": datetime.now().isoformat(),
+        }
+        metadata.update(extra_fields)
+        return metadata
