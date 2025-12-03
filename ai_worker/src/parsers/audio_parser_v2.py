@@ -13,7 +13,7 @@ import hashlib
 from datetime import datetime, timedelta
 from typing import List, Optional, Tuple, Dict, Any
 from pathlib import Path
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 import openai
 
@@ -236,7 +236,7 @@ class AudioParserV2:
         path = Path(filepath)
         file_hash = self._calculate_file_hash(filepath)
         file_size = path.stat().st_size
-        metadata = self._extract_metadata(filepath)
+        # Note: metadata extraction available via _extract_metadata() if needed
 
         return FileMetadata(
             file_hash_sha256=file_hash,

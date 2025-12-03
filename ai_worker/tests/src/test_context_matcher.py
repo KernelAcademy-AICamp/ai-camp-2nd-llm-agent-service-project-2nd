@@ -11,7 +11,6 @@ from src.analysis.context_matcher import (
     ContextAwareKeywordMatcher,
     NegationType,
     MatchResult,
-    AnalysisResult,
     check_negation,
     get_effective_keywords,
     NEGATION_PATTERNS,

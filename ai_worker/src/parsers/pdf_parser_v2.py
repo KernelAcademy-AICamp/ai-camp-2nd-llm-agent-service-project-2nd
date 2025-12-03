@@ -10,9 +10,9 @@ PDF 문서 파서 - 법적 증거용
 
 import hashlib
 from datetime import datetime
-from typing import List, Optional, Tuple
+from typing import List, Tuple
 from pathlib import Path
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 from PyPDF2 import PdfReader
 

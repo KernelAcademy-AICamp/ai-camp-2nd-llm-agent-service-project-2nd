@@ -9,7 +9,7 @@ from datetime import datetime
 from typing import Optional, List, Dict, Any
 from pydantic import BaseModel, Field
 
-from .source_location import SourceLocation, FileType
+from .source_location import SourceLocation
 from .legal_analysis import LegalCategory, ConfidenceLevel
 
 

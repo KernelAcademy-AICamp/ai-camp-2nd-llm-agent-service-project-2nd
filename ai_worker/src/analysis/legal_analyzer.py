@@ -14,8 +14,7 @@ Legal Analyzer - 통합 법적 분석 모듈
 import os
 import json
 import logging
-from typing import List, Optional, Tuple
-from dataclasses import dataclass
+from typing import List
 
 logger = logging.getLogger(__name__)
 

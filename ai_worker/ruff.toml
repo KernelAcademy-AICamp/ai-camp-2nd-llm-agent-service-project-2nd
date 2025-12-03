@@ -1,0 +1,5 @@
+# Ruff configuration for AI Worker
+
+[lint]
+# Ignore E402 (module level import not at top) for scripts that modify sys.path
+per-file-ignores = { "scripts/*.py" = ["E402"], "src/analysis/legal_analyzer.py" = ["E402"] }

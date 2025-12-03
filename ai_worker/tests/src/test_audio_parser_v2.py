@@ -7,7 +7,7 @@ Then: 세그먼트별 텍스트와 시간 정보 반환
 """
 
 import pytest
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import patch, MagicMock
 from datetime import datetime, timedelta
 import tempfile
 import os

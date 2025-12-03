@@ -11,7 +11,6 @@ AI Worker V2 파이프라인 데모/테스트 스크립트
 import sys
 import os
 from pathlib import Path
-from datetime import datetime
 
 # 프로젝트 루트를 path에 추가
 sys.path.insert(0, str(Path(__file__).parent))
@@ -20,7 +19,6 @@ from src.parsers.kakaotalk_v2 import KakaoTalkParserV2
 from src.parsers.pdf_parser_v2 import PDFParserV2
 from src.parsers.image_parser_v2 import ImageParserV2
 from src.analysis.legal_analyzer import LegalAnalyzer
-from src.schemas import FileType
 
 
 def print_header(title: str):
@@ -119,7 +117,7 @@ def demo_kakaotalk(filepath: str = None):
     if 'tempfile' in sys.modules:
         try:
             os.unlink(filepath)
-        except:
+        except OSError:
             pass
 
     return analyzed_chunks

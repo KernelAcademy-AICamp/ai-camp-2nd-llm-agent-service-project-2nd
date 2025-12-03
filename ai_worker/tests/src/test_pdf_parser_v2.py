@@ -7,8 +7,7 @@ Then: 페이지별 내용과 법적 인용 정보 반환
 """
 
 import pytest
-from unittest.mock import Mock, patch, MagicMock
-from pathlib import Path
+from unittest.mock import patch, MagicMock
 import tempfile
 import os
 
@@ -173,7 +172,7 @@ class TestParsedPage:
 
         # 페이지 번호로 법적 인용 가능
         assert page.page_number == 5
-        assert f"5페이지" or str(page.page_number) in str(page.page_number)
+        assert "5페이지" or str(page.page_number) in str(page.page_number)
 
 
 class TestPDFParsingResult:

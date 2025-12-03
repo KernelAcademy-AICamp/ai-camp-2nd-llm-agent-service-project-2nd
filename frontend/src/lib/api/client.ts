@@ -1,7 +1,6 @@
 /**
  * API Client Configuration
  * Base API client for making HTTP requests to the backend
- * Uses HTTP-only cookies for authentication (XSS protection)
  */
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
@@ -14,7 +13,6 @@ export interface ApiResponse<T> {
 
 /**
  * Generic API request function
- * Authentication is handled via HTTP-only cookies (set by backend)
  */
 export async function apiRequest<T>(
   endpoint: string,
@@ -23,11 +21,14 @@ export async function apiRequest<T>(
   try {
     const url = `${API_BASE_URL}${endpoint}`;
 
+    // Get auth token from localStorage
+    const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
+
     const response = await fetch(url, {
       ...options,
-      credentials: 'include', // Include cookies for authentication
       headers: {
         'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
         ...options.headers,
       },
     });
@@ -47,14 +48,11 @@ export async function apiRequest<T>(
       // Handle both error formats: { error: { message: "..." } } and { detail: "..." }
       const errorMessage = data?.error?.message || data?.detail || 'An error occurred';
 
-      // Handle 401 Unauthorized - redirect to login
+      // Handle 401 Unauthorized - clear token and redirect to login
       if (response.status === 401 && typeof window !== 'undefined') {
-        // Don't redirect if already on login/signup/forgot-password pages
-        const currentPath = window.location.pathname;
-        const authPaths = ['/login', '/signup', '/forgot-password', '/reset-password'];
-        if (!authPaths.some(path => currentPath.startsWith(path))) {
-          window.location.href = '/login';
-        }
+        localStorage.removeItem('authToken');
+        // Redirect to login page
+        window.location.href = '/login';
       }
 
       return {

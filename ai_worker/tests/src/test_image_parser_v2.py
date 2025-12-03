@@ -7,11 +7,9 @@ Then: EXIF 메타데이터와 법적 인용 정보 반환
 """
 
 import pytest
-from unittest.mock import Mock, patch, MagicMock
-from datetime import datetime
+from unittest.mock import patch, MagicMock
 import tempfile
 import os
-from io import BytesIO
 
 from src.parsers.image_parser_v2 import (
     ImageParserV2,

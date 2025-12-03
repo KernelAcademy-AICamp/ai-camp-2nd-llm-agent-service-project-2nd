@@ -56,10 +56,12 @@ export default function SignupPage() {
         return;
       }
 
-      // Cache user info for display purposes only (not for auth)
-      // Authentication is handled via HTTP-only cookies set by backend
+      // Store auth token
+      localStorage.setItem('authToken', response.data.access_token);
+
+      // Store user info for display purposes
       if (response.data.user) {
-        localStorage.setItem('userCache', JSON.stringify(response.data.user));
+        localStorage.setItem('user', JSON.stringify(response.data.user));
       }
 
       // Redirect to cases page

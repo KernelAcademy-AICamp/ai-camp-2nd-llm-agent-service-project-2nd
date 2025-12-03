@@ -278,6 +278,12 @@ class EvidenceSummary(BaseModel):
     article_840_tags: Optional[Article840Tags] = None  # Article 840 tagging
 
 
+class EvidenceListResponse(BaseModel):
+    """Evidence list response wrapper (matches frontend expectation)"""
+    evidence: list[EvidenceSummary]
+    total: int
+
+
 class EvidenceDetail(BaseModel):
     """Evidence detail schema (for detail view with AI analysis)"""
     id: str

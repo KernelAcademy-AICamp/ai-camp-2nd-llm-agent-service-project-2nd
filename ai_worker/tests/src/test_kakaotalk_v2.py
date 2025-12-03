@@ -7,7 +7,6 @@ Then: 라인 번호가 포함된 EvidenceChunk 리스트 반환
 """
 
 import unittest
-from datetime import datetime
 import tempfile
 import os
 
@@ -29,7 +28,6 @@ class TestKakaoTalkParserV2Initialization(unittest.TestCase):
         """Given: 초기화된 KakaoTalkParserV2
         When: 패턴 확인
         Then: 메시지/날짜 패턴 존재"""
-        parser = KakaoTalkParserV2()
         # 클래스 변수로 정의된 패턴들
         self.assertIsNotNone(KakaoTalkParserV2.MESSAGE_PATTERN)
         self.assertIsNotNone(KakaoTalkParserV2.DATE_LINE_PATTERN)

@@ -22,7 +22,6 @@ from src.schemas import (
 )
 from src.schemas.ai_classification import (
     DIVORCE_GROUND_TO_LEGAL_CATEGORY,
-    LEGAL_CATEGORY_TO_DIVORCE_GROUND,
     DIVORCE_GROUND_DESCRIPTIONS,
 )
 

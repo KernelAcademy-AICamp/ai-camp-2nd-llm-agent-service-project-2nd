@@ -25,14 +25,19 @@ _dynamodb_client = None
 
 
 def _get_dynamodb_client():
-    """Get or create DynamoDB client (singleton pattern)"""
+    """Get or create DynamoDB client (singleton pattern)
+
+    In Lambda, uses IAM role credentials automatically.
+    Locally, uses AWS_ACCESS_KEY_ID/AWS_SECRET_ACCESS_KEY from env if set.
+    """
     global _dynamodb_client
     if _dynamodb_client is None:
+        # Let boto3 handle credentials automatically
+        # - In Lambda: uses IAM role
+        # - Locally: uses env vars or ~/.aws/credentials
         _dynamodb_client = boto3.client(
             'dynamodb',
-            region_name=settings.AWS_REGION,
-            aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
-            aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY
+            region_name=settings.AWS_REGION
         )
     return _dynamodb_client
 

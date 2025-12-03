@@ -12,7 +12,6 @@ Usage:
         print(f"[{event.timestamp}] {event.description}")
 """
 
-from dataclasses import dataclass, field
 from datetime import datetime
 from typing import List, Optional, Dict, Any
 from enum import Enum
@@ -532,7 +531,7 @@ class TimelineGenerator:
         label_set = set(labels)
         filtered_events = [
             e for e in result.events
-            if any(l in label_set for l in e.labels)
+            if any(label in label_set for label in e.labels)
         ]
 
         return self._build_result(filtered_events, result.case_id)

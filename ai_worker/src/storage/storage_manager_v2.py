@@ -26,7 +26,6 @@ from src.schemas import (
     EvidenceFile,
     FileMetadata,
     ParsingStatus,
-    LegalAnalysis,
     SearchResult,
     SearchResultItem,
 )
@@ -281,12 +280,6 @@ class StorageManagerV2:
         Returns:
             EvidenceChunk 또는 None
         """
-        # Qdrant에서 필터링 검색
-        filter_conditions = {
-            "case_id": case_id,
-            "file_name": file_name
-        }
-
         # scroll을 사용하여 모든 관련 청크 가져오기
         chunks = self.vector_store.get_chunks_by_case(case_id)
 

@@ -21,6 +21,7 @@ from app.db.schemas import (
     CaseUpdate,
     CaseOut,
     EvidenceSummary,
+    EvidenceListResponse,
     DraftPreviewRequest,
     DraftPreviewResponse,
     DraftExportFormat,
@@ -136,7 +137,7 @@ def update_case(
     return case_service.update_case(case_id, update_data, user_id)
 
 
-@router.get("/{case_id}/evidence", response_model=List[EvidenceSummary])
+@router.get("/{case_id}/evidence", response_model=EvidenceListResponse)
 def list_case_evidence(
     case_id: str,
     categories: Optional[List[Article840Category]] = Query(None, description="Filter by Article 840 categories"),
@@ -160,8 +161,9 @@ def list_case_evidence(
       - general: 일반 증거
 
     **Response:**
-    - 200: List of evidence summary (may be empty)
-    - Each item contains: id, type, filename, status, created_at, article_840_tags
+    - 200: Evidence list with total count
+    - evidence: List of evidence summary
+    - total: Total number of evidence items
 
     **Errors:**
     - 401: Not authenticated
@@ -179,7 +181,8 @@ def list_case_evidence(
     - Filtering by categories returns only evidence tagged with at least one of the specified categories
     """
     evidence_service = EvidenceService(db)
-    return evidence_service.get_evidence_list(case_id, user_id, categories=categories)
+    evidence_list = evidence_service.get_evidence_list(case_id, user_id, categories=categories)
+    return EvidenceListResponse(evidence=evidence_list, total=len(evidence_list))
 
 
 @router.post("/{case_id}/draft-preview", response_model=DraftPreviewResponse)

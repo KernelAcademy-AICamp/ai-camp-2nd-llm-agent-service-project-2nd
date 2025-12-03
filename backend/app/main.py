@@ -111,13 +111,15 @@ app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(AuditLogMiddleware)
 
 # 4. CORS (Must be after security headers and audit log)
+# Note: For cross-origin cookie authentication, allow_credentials=True is required
+# API Gateway also has CORS config - they should match
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins_list,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
-    expose_headers=["X-Request-ID"]
+    expose_headers=["X-Request-ID", "Set-Cookie"]
 )
 
 # Note: JWT authentication is handled per-endpoint via get_current_user_id() dependency

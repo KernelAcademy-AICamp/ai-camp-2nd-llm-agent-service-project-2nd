@@ -23,8 +23,6 @@ from src.schemas import (
     FileType,
     LegalAnalysis,
     LegalCategory,
-    ConfidenceLevel,
-    DivorceGround,
 )
 from src.exceptions import AnalysisError
 

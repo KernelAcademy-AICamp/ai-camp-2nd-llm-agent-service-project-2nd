@@ -18,7 +18,7 @@ def generate_presigned_upload_url(
     expires_in: int = 300
 ) -> Dict[str, any]:
     """
-    Generate S3 presigned POST URL for file upload
+    Generate S3 presigned PUT URL for file upload
 
     Args:
         bucket: S3 bucket name
@@ -27,12 +27,11 @@ def generate_presigned_upload_url(
         expires_in: URL expiration in seconds (max 300 = 5 minutes)
 
     Returns:
-        Dict with 'upload_url' and 'fields' for multipart POST upload
+        Dict with 'upload_url' for direct PUT upload
 
     Security:
         - Max expiration is 300 seconds (5 minutes) per SECURITY_COMPLIANCE.md
         - Validates expires_in parameter
-        - Max file size: 100MB
     """
     # Security: Enforce max expiration
     if expires_in > 300:
@@ -42,27 +41,26 @@ def generate_presigned_upload_url(
         # Real AWS S3 client
         s3_client = boto3.client('s3', region_name=settings.AWS_REGION)
 
-        response = s3_client.generate_presigned_post(
-            Bucket=bucket,
-            Key=key,
-            Fields={"Content-Type": content_type},
-            Conditions=[
-                {"Content-Type": content_type},
-                ["content-length-range", 0, 104857600]  # 100MB max
-            ],
+        # Generate presigned PUT URL for direct upload
+        url = s3_client.generate_presigned_url(
+            'put_object',
+            Params={
+                'Bucket': bucket,
+                'Key': key,
+                'ContentType': content_type
+            },
             ExpiresIn=expires_in
         )
 
-        logger.info(f"Generated presigned POST URL for bucket={bucket}, key={key}")
+        logger.info(f"Generated presigned PUT URL for bucket={bucket}, key={key}")
 
-        # boto3 returns 'url' and 'fields', but we need 'upload_url' and 'fields'
         return {
-            "upload_url": response["url"],
-            "fields": response["fields"]
+            "upload_url": url,
+            "fields": {}  # No fields needed for PUT upload
         }
 
     except Exception as e:
-        logger.error(f"Failed to generate presigned POST URL: {e}")
+        logger.error(f"Failed to generate presigned PUT URL: {e}")
         raise
 
 

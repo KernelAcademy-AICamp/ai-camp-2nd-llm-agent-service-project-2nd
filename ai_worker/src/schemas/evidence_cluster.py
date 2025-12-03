@@ -219,13 +219,13 @@ class EvidenceCluster(BaseModel):
         """
         lines = [
             f"## {self.event_summary}",
-            f"",
+            "",
             f"**신뢰도**: Level {self.confidence_level} ({self.confidence_score:.0%})",
             f"**법적 카테고리**: {self.legal_category}",
             f"**연결 유형**: {', '.join([ct.value for ct in self.connection_types])}",
-            f"",
+            "",
             f"### 증거 목록 ({self.evidence_count}건)",
-            f""
+            ""
         ]
 
         for i, evidence in enumerate(self.evidences, 1):
@@ -234,10 +234,10 @@ class EvidenceCluster(BaseModel):
             lines.append(f"   - 시간: {time_str}")
             lines.append(f"   - 역할: {evidence.relevance}")
             lines.append(f"   - 내용: \"{evidence.content_preview}\"")
-            lines.append(f"")
+            lines.append("")
 
         if self.connection_reasoning:
-            lines.append(f"### 연결 근거")
+            lines.append("### 연결 근거")
             lines.append(self.connection_reasoning)
 
         return "\n".join(lines)

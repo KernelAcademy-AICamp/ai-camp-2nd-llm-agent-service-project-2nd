@@ -778,7 +778,6 @@ class VectorStore:
 
         # 필터 조건 구성
         must_conditions = []
-        should_conditions = []
 
         # case_id 필터 (필수)
         if case_id:

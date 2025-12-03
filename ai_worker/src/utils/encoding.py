@@ -20,7 +20,7 @@ from pathlib import Path
 from typing import Tuple, Optional, List
 from dataclasses import dataclass
 
-from src.exceptions import EncodingError, create_encoding_error
+from src.exceptions import create_encoding_error
 
 
 # 한국어 인코딩 폴백 체인 (우선순위 순)

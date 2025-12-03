@@ -8,7 +8,6 @@ Then: 올바른 인코딩 감지 및 내용 반환
 
 import unittest
 import tempfile
-import os
 from pathlib import Path
 
 from src.utils.encoding import (
@@ -20,7 +19,6 @@ from src.utils.encoding import (
     remove_bom,
     clean_text,
 )
-from src.exceptions import EncodingError
 
 
 class TestEncodingResult(unittest.TestCase):

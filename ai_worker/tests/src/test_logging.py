@@ -10,8 +10,6 @@ import unittest
 import logging
 import json
 import io
-import sys
-from unittest.mock import patch
 
 from src.utils.logging import (
     JSONFormatter,
@@ -23,7 +21,6 @@ from src.utils.logging import (
     log_parser_start,
     log_parser_complete,
     log_parser_error,
-    log_analysis_complete,
     log_with_timing,
     LOGGING_CONFIG,
 )
@@ -256,7 +253,7 @@ class TestGetLogger(unittest.TestCase):
         """Given: 계층적 로거 이름
         When: 로거 가져오기
         Then: 부모-자식 관계 유지"""
-        parent = get_logger("parser")
+        get_logger("parser")  # ensure parent exists
         child = get_logger("parser.kakaotalk")
 
         self.assertEqual(child.parent.name, "parser")

@@ -7,8 +7,7 @@ Then: SearchResult 반환 (법적 인용 형식 포함)
 """
 
 import unittest
-from unittest.mock import Mock, MagicMock, patch
-from datetime import datetime
+from unittest.mock import Mock, patch
 
 from src.storage.search_engine_v2 import SearchEngineV2
 from src.schemas import (

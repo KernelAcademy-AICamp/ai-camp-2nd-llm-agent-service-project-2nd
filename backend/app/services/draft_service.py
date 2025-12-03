@@ -707,7 +707,6 @@ class DraftService:
             from reportlab.pdfbase import pdfmetrics
             from reportlab.pdfbase.ttfonts import TTFont
             from reportlab.lib.enums import TA_CENTER, TA_JUSTIFY
-            import os
 
             # Register Korean font
             korean_font_registered = self._register_korean_font(pdfmetrics, TTFont)

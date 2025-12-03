@@ -12,7 +12,6 @@ import requests
 import xml.etree.ElementTree as ET
 from typing import List, Optional, Dict, Any
 from dataclasses import dataclass
-from datetime import date
 import logging
 
 logger = logging.getLogger(__name__)
