@@ -30,6 +30,7 @@ from src.storage.metadata_store import MetadataStore
 from src.storage.vector_store import VectorStore
 from src.storage.schemas import EvidenceFile
 from src.analysis.article_840_tagger import Article840Tagger
+from src.analysis.summarizer import EvidenceSummarizer
 from src.utils.logging_filter import SensitiveDataFilter
 from src.utils.embeddings import get_embedding_with_fallback  # Embedding utility with fallback
 
@@ -143,6 +144,7 @@ def route_and_process(bucket_name: str, object_key: str) -> Dict[str, Any]:
 
         # 분석 엔진 초기화
         tagger = Article840Tagger()
+        summarizer = EvidenceSummarizer()
         vector_store = VectorStore()
 
         # 벡터 임베딩, 분석, 저장을 통합 처리
@@ -206,8 +208,15 @@ def route_and_process(bucket_name: str, object_key: str) -> Dict[str, Any]:
 
         logger.info(f"Indexed {len(chunk_ids)} chunks to Qdrant with full metadata")
 
-        # AI 요약 생성 (간단한 통계 기반)
-        ai_summary = f"총 {len(parsed_result)}개 메시지 분석 완료. 감지된 태그: {', '.join(all_categories) if all_categories else '없음'}"
+        # AI 요약 생성 (GPT-4 기반)
+        try:
+            summary_result = summarizer.summarize_evidence(parsed_result, max_words=100)
+            ai_summary = summary_result.summary
+            logger.info(f"AI Summary generated: {ai_summary[:100]}...")
+        except Exception as e:
+            # 요약 실패 시 fallback
+            logger.warning(f"AI summarization failed, using fallback: {e}")
+            ai_summary = f"총 {len(parsed_result)}개 메시지 분석 완료. 감지된 태그: {', '.join(all_categories) if all_categories else '없음'}"
 
         # Article 840 태그 집계
         article_840_tags = {
