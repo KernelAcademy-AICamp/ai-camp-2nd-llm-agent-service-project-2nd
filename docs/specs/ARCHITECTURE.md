@@ -379,7 +379,7 @@ repo/
 
 * Backend: `pytest`
 * AI Worker: 샘플 S3 이벤트/파일 기반 테스트
-* Frontend: `jest` / `vitest` + React Testing Library
+* Frontend: `jest` + React Testing Library
 
 ### 7.2 통합 테스트
 

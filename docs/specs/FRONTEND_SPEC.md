@@ -34,11 +34,11 @@
 
 | 구분          | 기술                                            |
 | ----------- | --------------------------------------------- |
-| Framework   | **React + Next.js(권장)** 또는 Vite               |
+| Framework   | **React + Next.js**                           |
 | 언어          | **TypeScript**                                |
 | 스타일         | **Tailwind CSS**                              |
 | 상태 관리       | **React Query(Server State)** + Context/Hooks |
-| 라우팅         | Next.js File Routing / Vite+react-router      |
+| 라우팅         | Next.js File Routing                          |
 | HTTP Client | axios 또는 fetch wrapper                        |
 | 빌드·배포       | S3 + CloudFront                               |
 

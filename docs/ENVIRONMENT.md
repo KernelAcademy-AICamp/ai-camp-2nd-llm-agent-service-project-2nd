@@ -9,7 +9,7 @@ This document outlines the technical environment, dependencies, and infrastructu
 ## 1. Core Technology Stack
 
 ### Backend (`/backend`)
-- **Language:** Python 3.11+
+- **Language:** Python 3.12+
 - **Framework:** FastAPI (>=0.110)
 - **Server:** Uvicorn (ASGI)
 - **Database ORM:** SQLAlchemy 2.0+
@@ -26,7 +26,7 @@ This document outlines the technical environment, dependencies, and infrastructu
 - **Testing:** Jest, React Testing Library
 
 ### AI Worker (`/ai_worker`)
-- **Language:** Python 3.11+
+- **Language:** Python 3.12+
 - **Key Libraries:**
     - `openai`: LLM integration
     - `qdrant-client`: Vector search
@@ -124,7 +124,7 @@ Some variables have different names between services for historical reasons. The
 ## 4. Development Environment Setup
 
 ### Prerequisites
-- Python 3.11+
+- Python 3.12+
 - Node.js 18+
 - Git
 

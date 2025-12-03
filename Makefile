@@ -17,14 +17,14 @@ setup: setup-backend setup-ai-worker setup-frontend
 ## Setup Backend (FastAPI)
 setup-backend:
 	@echo "Setting up Backend..."
-	cd backend && python -m venv .venv
+	cd backend && python3 -m venv .venv
 	cd backend && . .venv/bin/activate && pip install -r requirements.txt
 	@echo "Backend setup complete!"
 
 ## Setup AI Worker (Lambda)
 setup-ai-worker:
 	@echo "Setting up AI Worker..."
-	cd ai_worker && python -m venv .venv
+	cd ai_worker && python3 -m venv .venv
 	cd ai_worker && . .venv/bin/activate && pip install -r requirements.txt
 	@echo "AI Worker setup complete!"
 

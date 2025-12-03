@@ -156,7 +156,7 @@ ai_worker/
 
 ---
 
-## 4.3 Frontend (Next.js or Vite + React)
+## 4.3 Frontend (Next.js + React)
 
 frontend/src/
   pages/
