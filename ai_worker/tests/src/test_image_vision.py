@@ -13,7 +13,7 @@ from unittest.mock import MagicMock, patch, mock_open
 # Skip entire module if pytesseract is not installed
 pytesseract = pytest.importorskip("pytesseract", reason="pytesseract not installed")
 
-from src.parsers.image_vision import ImageVisionParser, VisionAnalysis
+from src.parsers.image_vision import ImageVisionParser, VisionAnalysis  # noqa: E402
 
 
 class TestImageVisionParserInitialization(unittest.TestCase):

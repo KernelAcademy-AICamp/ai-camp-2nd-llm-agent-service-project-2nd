@@ -14,8 +14,8 @@ from datetime import datetime
 # Skip entire module if ffmpeg-python is not installed
 ffmpeg = pytest.importorskip("ffmpeg", reason="ffmpeg-python not installed")
 
-from src.parsers.video_parser import VideoParser
-from src.parsers.base import BaseParser, Message
+from src.parsers.video_parser import VideoParser  # noqa: E402
+from src.parsers.base import BaseParser, Message  # noqa: E402
 
 
 class TestVideoParserInitialization(unittest.TestCase):

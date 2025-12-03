@@ -10,8 +10,8 @@ from datetime import datetime
 # Skip entire module if pytesseract is not installed
 pytesseract = pytest.importorskip("pytesseract", reason="pytesseract not installed")
 
-from src.parsers.image_ocr import ImageOCRParser
-from src.parsers.base import Message
+from src.parsers.image_ocr import ImageOCRParser  # noqa: E402
+from src.parsers.base import Message  # noqa: E402
 
 
 class TestImageOCRParserInitialization:
