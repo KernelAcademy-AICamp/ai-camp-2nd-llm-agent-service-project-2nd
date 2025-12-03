@@ -21,6 +21,9 @@ export interface ApiCase {
   updated_at: string;
 }
 
+/** Alias for ApiCase - use when frontend component needs Case type */
+export type Case = ApiCase;
+
 export interface CreateCaseRequest {
   title: string;
   client_name: string;
