@@ -366,6 +366,8 @@ class AuditAction(str, Enum):
 
     # Draft actions
     GENERATE_DRAFT = "GENERATE_DRAFT"
+    EXPORT_DRAFT = "EXPORT_DRAFT"
+    UPDATE_DRAFT = "UPDATE_DRAFT"
 
 
 class AuditLogOut(BaseModel):

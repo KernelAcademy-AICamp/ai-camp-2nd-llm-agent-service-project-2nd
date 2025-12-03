@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ document_title }}</title>
+    <link rel="stylesheet" href="styles/legal_document.css">
+</head>
+<body>
+    <!-- Running header (appears on pages after first) -->
+    <div class="page-header">
+        {{ header.court_name }} | {{ header.case_number }}
+    </div>
+
+    <!-- Case header -->
+    <div class="case-header">
+        <div class="court-name">{{ header.court_name }}</div>
+        <div class="case-number">사건번호: {{ header.case_number }}</div>
+        <div class="parties">
+            <div class="party">원 고: {{ header.parties.plaintiff }}</div>
+            <div class="party">피 고: {{ header.parties.defendant }}</div>
+        </div>
+    </div>
+
+    <!-- Document type title -->
+    <div class="document-type">{{ document_type_korean }}</div>
+
+    <!-- Main content sections -->
+    {% for section in sections %}
+    <section class="{% if section.title == '청구취지' %}claim-section{% endif %}">
+        <h2>{{ section.title }}</h2>
+        <div class="section-content">
+            {{ section.content | safe }}
+        </div>
+    </section>
+    {% endfor %}
+
+    <!-- Evidence citations -->
+    {% if citations %}
+    <section class="evidence-list">
+        <h2>증거목록</h2>
+        {% for citation in citations %}
+        <div class="evidence-item">
+            {{ citation.reference }}: {{ citation.description }}
+        </div>
+        {% endfor %}
+    </section>
+    {% endif %}
+
+    <!-- Signature section -->
+    <div class="signature-section">
+        <div class="date">{{ footer.date }}</div>
+        <div class="attorney">{{ footer.attorney }}</div>
+        <div class="seal">(인)</div>
+    </div>
+
+    <!-- Court submission line -->
+    <div class="text-center" style="margin-top: 20mm;">
+        <strong>{{ header.court_name }} 귀중</strong>
+    </div>
+</body>
+</html>

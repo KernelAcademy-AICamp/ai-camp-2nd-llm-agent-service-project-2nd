@@ -1,0 +1,279 @@
+/**
+ * Legal Document CSS Template for Korean Court Filings
+ * Used with WeasyPrint for PDF generation
+ *
+ * Standards:
+ * - A4 paper size (210mm x 297mm)
+ * - Korean court margins: 25mm top/bottom, 20mm left/right
+ * - Font: Noto Serif CJK KR (fallback: Batang) at 12pt
+ * - Line spacing: 1.6
+ */
+
+/* Font face declarations */
+@font-face {
+    font-family: 'Noto Serif CJK KR';
+    src: local('Noto Serif CJK KR'),
+         url('/fonts/NotoSerifCJKkr-Regular.otf') format('opentype');
+    font-weight: normal;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Batang';
+    src: local('Batang'),
+         url('/fonts/Batang.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+}
+
+/* Page setup with margins and headers/footers */
+@page {
+    size: A4 portrait;
+    margin: 25mm 20mm 25mm 20mm;
+
+    @top-center {
+        content: element(header);
+        margin-bottom: 10mm;
+    }
+
+    @bottom-center {
+        content: counter(page) " / " counter(pages);
+        font-family: 'Noto Serif CJK KR', 'Batang', serif;
+        font-size: 9pt;
+        color: #333;
+    }
+}
+
+/* First page without header */
+@page :first {
+    @top-center {
+        content: none;
+    }
+}
+
+/* Running header element */
+.page-header {
+    position: running(header);
+    font-family: 'Noto Serif CJK KR', 'Batang', serif;
+    font-size: 9pt;
+    color: #666;
+    text-align: center;
+    border-bottom: 0.5pt solid #ccc;
+    padding-bottom: 3mm;
+}
+
+/* Base document styles */
+body {
+    font-family: 'Noto Serif CJK KR', 'Batang', '바탕', serif;
+    font-size: 12pt;
+    line-height: 1.6;
+    color: #000;
+    text-align: justify;
+    word-break: keep-all;
+}
+
+/* Document title */
+h1 {
+    font-size: 18pt;
+    font-weight: bold;
+    text-align: center;
+    margin: 0 0 20mm 0;
+    letter-spacing: 0.5em;
+}
+
+/* Section headings */
+h2 {
+    font-size: 14pt;
+    font-weight: bold;
+    margin: 15mm 0 8mm 0;
+    text-align: left;
+}
+
+h3 {
+    font-size: 12pt;
+    font-weight: bold;
+    margin: 10mm 0 5mm 0;
+    text-align: left;
+}
+
+h4 {
+    font-size: 12pt;
+    font-weight: normal;
+    margin: 8mm 0 4mm 0;
+    text-decoration: underline;
+}
+
+/* Paragraph styles */
+p {
+    margin: 0 0 4mm 0;
+    text-indent: 1em;
+}
+
+p:first-child {
+    text-indent: 0;
+}
+
+/* Case header section */
+.case-header {
+    text-align: center;
+    margin-bottom: 15mm;
+}
+
+.case-header .court-name {
+    font-size: 14pt;
+    font-weight: bold;
+    margin-bottom: 5mm;
+}
+
+.case-header .case-number {
+    font-size: 12pt;
+    margin-bottom: 10mm;
+}
+
+.case-header .parties {
+    font-size: 12pt;
+    margin: 8mm 0;
+}
+
+.case-header .party {
+    margin: 2mm 0;
+}
+
+/* Document type title (소장, 준비서면, 답변서) */
+.document-type {
+    font-size: 20pt;
+    font-weight: bold;
+    text-align: center;
+    letter-spacing: 1em;
+    margin: 20mm 0;
+}
+
+/* Claim section (청구취지) */
+.claim-section {
+    margin: 15mm 0;
+}
+
+.claim-section h2 {
+    border-bottom: 1pt solid #000;
+    padding-bottom: 3mm;
+}
+
+/* Evidence citations */
+.evidence-citation {
+    font-size: 10pt;
+    color: #333;
+    background-color: #f5f5f5;
+    padding: 2mm 4mm;
+    margin: 2mm 0;
+    border-left: 2pt solid #666;
+}
+
+/* Evidence list */
+.evidence-list {
+    margin: 10mm 0;
+}
+
+.evidence-list .evidence-item {
+    margin: 2mm 0;
+    padding-left: 8mm;
+    text-indent: -8mm;
+}
+
+/* Signature section */
+.signature-section {
+    margin-top: 30mm;
+    text-align: right;
+}
+
+.signature-section .date {
+    margin-bottom: 10mm;
+}
+
+.signature-section .attorney {
+    font-weight: bold;
+}
+
+.signature-section .seal {
+    margin-top: 5mm;
+    font-size: 10pt;
+    color: #666;
+}
+
+/* Lists */
+ul, ol {
+    margin: 5mm 0 5mm 10mm;
+    padding: 0;
+}
+
+li {
+    margin: 2mm 0;
+}
+
+/* Numbered paragraphs (Korean legal style) */
+.numbered-paragraph {
+    margin: 4mm 0;
+    padding-left: 8mm;
+    text-indent: -8mm;
+}
+
+/* Blockquotes for cited text */
+blockquote {
+    margin: 5mm 10mm;
+    padding: 3mm 8mm;
+    border-left: 2pt solid #999;
+    font-style: italic;
+    background-color: #fafafa;
+}
+
+/* Tables */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 8mm 0;
+}
+
+th, td {
+    border: 0.5pt solid #333;
+    padding: 3mm 5mm;
+    text-align: left;
+    vertical-align: top;
+}
+
+th {
+    background-color: #f0f0f0;
+    font-weight: bold;
+}
+
+/* Page breaks */
+.page-break {
+    page-break-before: always;
+}
+
+.no-break {
+    page-break-inside: avoid;
+}
+
+/* Utility classes */
+.text-center {
+    text-align: center;
+}
+
+.text-right {
+    text-align: right;
+}
+
+.bold {
+    font-weight: bold;
+}
+
+.underline {
+    text-decoration: underline;
+}
+
+.small {
+    font-size: 10pt;
+}
+
+.muted {
+    color: #666;
+}
