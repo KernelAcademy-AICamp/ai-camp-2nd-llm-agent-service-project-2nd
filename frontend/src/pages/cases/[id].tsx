@@ -19,6 +19,7 @@ import {
   Evidence as ApiEvidence
 } from '@/lib/api/evidence';
 import { getCase, Case } from '@/lib/api/cases';
+import { generateDraftPreview, DraftCitation as ApiDraftCitation } from '@/lib/api/draft';
 
 /**
  * Convert API evidence response to component Evidence type
@@ -53,35 +54,18 @@ function mapApiEvidenceToEvidence(apiEvidence: ApiEvidence, caseId: string): Evi
   };
 }
 
-const INITIAL_DRAFT_CONTENT = `Ⅰ. 핵심 주장 요약
-- 피고의 반복적인 언어적 폭력과 경제적 통제 사실이 다수의 증거에서 확인됩니다.
-- 원고는 자녀 양육과 생활비 부담을 대부분 담당해왔습니다.
-
-Ⅱ. 사실관계
-1. 폭언 및 협박 (녹취록_20240501.mp3)
-  - 피고의 '너를 사회적으로 매장하겠다'는 발언 기록
-2. 자녀 돌봄 소홀 (카카오톡_대화내역.txt)
-  - 자녀 학업 행사 불참을 인정하는 메시지
-
-Ⅲ. 청구 취지
-- 위자료 7천만 원
-- 자녀 친권 및 양육권 원고 단독
-`;
-
-const INITIAL_CITATIONS: DraftCitation[] = [
-    {
-        evidenceId: '1',
-        title: '녹취록_20240501.mp3',
-        quote: '피고가 반복적으로 위협적인 발언을 한 사실이 확인됩니다.',
-    },
-    {
-        evidenceId: '2',
-        title: '카카오톡_대화내역.txt',
-        quote: '자녀 돌봄을 회피한 메시지가 명시되어 있습니다.',
-    },
-];
-
-const GENERATION_DELAY_MS = 1200;
+/**
+ * Convert API draft citation to component DraftCitation type
+ */
+function mapApiCitationToCitation(apiCitation: ApiDraftCitation, evidenceList: Evidence[]): DraftCitation {
+  // Try to find evidence by ID to get the filename as title
+  const evidence = evidenceList.find(e => e.id === apiCitation.evidence_id);
+  return {
+    evidenceId: apiCitation.evidence_id,
+    title: evidence?.filename || `증거 ${apiCitation.evidence_id}`,
+    quote: apiCitation.snippet,
+  };
+}
 type CaseDetailTab = 'evidence' | 'opponent' | 'timeline' | 'draft';
 type UploadFeedback = { message: string; tone: 'info' | 'success' | 'error' };
 type UploadStatus = {
@@ -99,10 +83,11 @@ export default function CaseDetailPage() {
     const [isLoadingCase, setIsLoadingCase] = useState(true);
     const [evidenceList, setEvidenceList] = useState<Evidence[]>([]);
     const [isLoadingEvidence, setIsLoadingEvidence] = useState(false);
-    const [draftContent, setDraftContent] = useState(INITIAL_DRAFT_CONTENT);
-    const [draftCitations, setDraftCitations] = useState<DraftCitation[]>(INITIAL_CITATIONS);
+    const [draftContent, setDraftContent] = useState('');
+    const [draftCitations, setDraftCitations] = useState<DraftCitation[]>([]);
     const [isGeneratingDraft, setIsGeneratingDraft] = useState(false);
-    const [hasGeneratedDraft, setHasGeneratedDraft] = useState(true);
+    const [hasGeneratedDraft, setHasGeneratedDraft] = useState(false);
+    const [draftError, setDraftError] = useState<string | null>(null);
     const [isDraftModalOpen, setIsDraftModalOpen] = useState(false);
     const [activeTab, setActiveTab] = useState<CaseDetailTab>('draft');
     const [uploadFeedback, setUploadFeedback] = useState<UploadFeedback | null>(null);
@@ -266,33 +251,36 @@ export default function CaseDetailPage() {
         setIsDraftModalOpen(true);
     };
 
-    const handleGenerateDraft = (selectedEvidenceIds: string[]) => {
+    const handleGenerateDraft = useCallback(async (selectedEvidenceIds: string[]) => {
         setIsDraftModalOpen(false);
-        if (isGeneratingDraft) return;
+        if (isGeneratingDraft || !caseId) return;
 
         setIsGeneratingDraft(true);
-        setTimeout(() => {
-            setDraftContent((prev) =>
-                prev.includes('업데이트')
-                    ? INITIAL_DRAFT_CONTENT
-                    : `${prev}\n\n※ ${new Date().toLocaleString('ko-KR')} 업데이트: 선택된 ${selectedEvidenceIds.length}건의 증거를 기반으로 핵심 주장이 재정리되었습니다.`,
-            );
-            setDraftCitations((prev) =>
-                prev.length > 2
-                    ? INITIAL_CITATIONS
-                    : [
-                        ...prev,
-                        {
-                            evidenceId: '3',
-                            title: '폭행_상해_진단서.pdf',
-                            quote: '의료 기록상 상해 사실이 확인됩니다.',
-                        },
-                    ],
-            );
-            setHasGeneratedDraft(true);
+        setDraftError(null);
+
+        try {
+            const response = await generateDraftPreview(caseId, {
+                sections: ['청구취지', '청구원인'],
+            });
+
+            if (response.error) {
+                setDraftError(response.error);
+            } else if (response.data) {
+                setDraftContent(response.data.draft_text);
+                // Convert API citations to component format
+                const mappedCitations = response.data.citations.map(c =>
+                    mapApiCitationToCitation(c, evidenceList)
+                );
+                setDraftCitations(mappedCitations);
+                setHasGeneratedDraft(true);
+            }
+        } catch (err) {
+            console.error('Failed to generate draft:', err);
+            setDraftError('초안 생성에 실패했습니다. 다시 시도해주세요.');
+        } finally {
             setIsGeneratingDraft(false);
-        }, GENERATION_DELAY_MS);
-    };
+        }
+    }, [caseId, isGeneratingDraft, evidenceList]);
 
     const handleDownload = async (format: DraftDownloadFormat = 'docx') => {
         if (!id || typeof id !== 'string') return;
@@ -521,6 +509,11 @@ export default function CaseDetailPage() {
                                 </div>
                             </div>
                         </div>
+                        {draftError && (
+                            <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 text-sm text-red-700">
+                                <p>{draftError}</p>
+                            </div>
+                        )}
                         <DraftPreviewPanel
                             draftText={draftContent}
                             citations={draftCitations}
