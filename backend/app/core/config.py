@@ -4,9 +4,21 @@ Environment variables and application settings using Pydantic Settings
 """
 
 import os
+from pathlib import Path
 from typing import List
 from pydantic_settings import BaseSettings
 from pydantic import Field
+
+# Load .env file early so environment variables are available to boto3 and other libraries
+# This must be done before Settings class is instantiated
+try:
+    from dotenv import load_dotenv
+    # Look for .env in backend directory or project root
+    env_path = Path(__file__).resolve().parent.parent.parent / ".env"
+    if env_path.exists():
+        load_dotenv(env_path)
+except ImportError:
+    pass  # python-dotenv not installed, rely on system env vars
 
 
 class Settings(BaseSettings):
