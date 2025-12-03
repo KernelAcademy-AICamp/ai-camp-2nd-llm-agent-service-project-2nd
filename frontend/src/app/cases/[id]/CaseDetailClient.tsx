@@ -53,8 +53,8 @@ export default function CaseDetailClient({ id }: CaseDetailClientProps) {
     const [evidenceList, setEvidenceList] = useState<Evidence[]>([]);
     const [isLoadingEvidence, setIsLoadingEvidence] = useState(true);
     const [evidenceError, setEvidenceError] = useState<string | null>(null);
-    const [draftContent, setDraftContent] = useState(INITIAL_DRAFT_CONTENT);
-    const [draftCitations, setDraftCitations] = useState<DraftCitation[]>(INITIAL_CITATIONS);
+    const [draftContent, setDraftContent] = useState('');
+    const [draftCitations, setDraftCitations] = useState<DraftCitation[]>([]);
     const [isGeneratingDraft, setIsGeneratingDraft] = useState(false);
     const [hasGeneratedDraft, setHasGeneratedDraft] = useState(false);
     const [draftError, setDraftError] = useState<string | null>(null);
