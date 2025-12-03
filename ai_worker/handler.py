@@ -19,13 +19,28 @@ from pathlib import Path
 from typing import Dict, Any, Optional
 
 # Import AI Pipeline modules
-from src.parsers import (
-    ImageVisionParser,
-    PDFParser,
-    AudioParser,
-    VideoParser
-)
 from src.parsers.text import TextParser
+
+# Optional parsers - may not be available if dependencies are missing
+try:
+    from src.parsers import ImageVisionParser
+except ImportError:
+    ImageVisionParser = None  # type: ignore
+
+try:
+    from src.parsers import PDFParser
+except ImportError:
+    PDFParser = None  # type: ignore
+
+try:
+    from src.parsers import AudioParser
+except ImportError:
+    AudioParser = None  # type: ignore
+
+try:
+    from src.parsers import VideoParser
+except ImportError:
+    VideoParser = None  # type: ignore
 from src.storage.metadata_store import MetadataStore
 from src.storage.vector_store import VectorStore
 from src.storage.schemas import EvidenceFile
@@ -54,19 +69,30 @@ def route_parser(file_extension: str) -> Optional[Any]:
 
     # 이미지 파일 (image)
     if ext in ['.jpg', '.jpeg', '.png', '.gif', '.bmp']:
-        # Vision API 우선 사용 (감정/맥락 분석)
+        if ImageVisionParser is None:
+            logger.warning("ImageVisionParser not available (missing dependencies)")
+            return None
         return ImageVisionParser()
 
     # PDF 파일 (pdf)
     elif ext == '.pdf':
+        if PDFParser is None:
+            logger.warning("PDFParser not available (missing dependencies)")
+            return None
         return PDFParser()
 
     # 오디오 파일 (audio)
     elif ext in ['.mp3', '.wav', '.m4a', '.aac']:
+        if AudioParser is None:
+            logger.warning("AudioParser not available (missing dependencies)")
+            return None
         return AudioParser()
 
     # 비디오 파일 (video)
     elif ext in ['.mp4', '.avi', '.mov', '.mkv']:
+        if VideoParser is None:
+            logger.warning("VideoParser not available (missing dependencies)")
+            return None
         return VideoParser()
 
     # 텍스트 파일 (text) - 카톡 포함

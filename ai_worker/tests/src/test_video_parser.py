@@ -6,9 +6,13 @@ When: VideoParser.parse() 호출
 Then: ffmpeg로 오디오 추출 → Whisper STT → Message 리스트 반환
 """
 
+import pytest
 import unittest
 from unittest.mock import MagicMock, patch
 from datetime import datetime
+
+# Skip entire module if ffmpeg-python is not installed
+ffmpeg = pytest.importorskip("ffmpeg", reason="ffmpeg-python not installed")
 
 from src.parsers.video_parser import VideoParser
 from src.parsers.base import BaseParser, Message

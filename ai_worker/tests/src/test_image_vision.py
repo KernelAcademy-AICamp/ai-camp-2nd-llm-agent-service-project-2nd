@@ -6,8 +6,12 @@ When: GPT-4o Vision API로 분석
 Then: 감정, 맥락, 분위기 정보 추출
 """
 
+import pytest
 import unittest
 from unittest.mock import MagicMock, patch, mock_open
+
+# Skip entire module if pytesseract is not installed
+pytesseract = pytest.importorskip("pytesseract", reason="pytesseract not installed")
 
 from src.parsers.image_vision import ImageVisionParser, VisionAnalysis
 
