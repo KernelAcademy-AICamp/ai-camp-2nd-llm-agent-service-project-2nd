@@ -56,7 +56,8 @@ describe('Plan 3.4 - Evidence Upload & List Requirements', () => {
         test('AI 요약 컬럼이 있어야 한다', () => {
             render(<EvidenceTable items={mockEvidence} />);
             expect(screen.getByText('AI 요약')).toBeInTheDocument();
-            expect(screen.getByText('AI generated summary of the document')).toBeInTheDocument();
+            // Completed evidence shows "요약 보기" button instead of raw summary text
+            expect(screen.getByText('요약 보기')).toBeInTheDocument();
         });
 
         test('상태 컬럼이 있어야 한다', () => {
@@ -116,7 +117,9 @@ describe('Plan 3.4 - Evidence Upload & List Requirements', () => {
             }];
 
             render(<EvidenceTable items={mockEvidence} />);
-            expect(screen.getByText(/분석.*중/i)).toBeInTheDocument();
+            // Multiple elements show "분석 중" (AI Summary column + Status Badge)
+            const processingElements = screen.getAllByText(/분석.*중/i);
+            expect(processingElements.length).toBeGreaterThan(0);
         });
 
         test('검토 필요 상태를 표시할 수 있어야 한다', () => {
