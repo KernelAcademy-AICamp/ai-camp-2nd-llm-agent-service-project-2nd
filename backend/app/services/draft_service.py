@@ -17,7 +17,12 @@ from app.db.schemas import (
 from app.repositories.case_repository import CaseRepository
 from app.repositories.case_member_repository import CaseMemberRepository
 from app.utils.dynamo import get_evidence_by_case
-from app.utils.qdrant import search_evidence_by_semantic, search_legal_knowledge
+from app.utils.qdrant import (
+    search_evidence_by_semantic,
+    search_legal_knowledge,
+    get_template_schema_for_prompt,
+    get_template_example_for_prompt
+)
 from app.utils.openai_client import generate_chat_completion
 from app.middleware import NotFoundError, PermissionError, ValidationError
 
@@ -189,10 +194,50 @@ class DraftService:
         Returns:
             List of messages for GPT-4o
         """
+        # Try to get template schema from Qdrant
+        template_schema = get_template_schema_for_prompt("이혼소장")
+        use_json_output = template_schema is not None
+
         # System message - define role and constraints
-        system_message = {
-            "role": "system",
-            "content": """당신은 대한민국 가정법원에 제출하는 정식 소장(訴狀)을 작성하는 전문 법률가입니다.
+        if use_json_output:
+            # JSON 스키마 기반 출력 모드
+            system_message = {
+                "role": "system",
+                "content": f"""당신은 대한민국 가정법원에 제출하는 정식 소장(訴狀)을 작성하는 전문 법률가입니다.
+
+[핵심 원칙 - 반드시 준수]
+1. 모든 사실관계, 날짜, 발언 내용은 오직 제공된 "증거 자료"에서만 추출하세요
+2. 증거에 없는 내용을 임의로 생성하거나 추측하지 마세요
+3. 확인되지 않은 정보는 "확인 필요" 또는 "[미확인]"으로 표시하세요
+
+[출력 형식 - 중요!]
+- 반드시 아래 JSON 스키마에 맞춰 출력하세요
+- 유효한 JSON 형식으로만 응답하세요 (추가 설명 없이 JSON만)
+- 각 섹션의 format 객체는 문서 형식 정보입니다 (들여쓰기, 정렬, 줄간격 등)
+
+[JSON 스키마]
+{template_schema}
+
+[증거 인용 방식]
+- grounds 섹션의 각 paragraph에 evidence_refs 배열로 증거 번호 포함
+- 예: "evidence_refs": ["갑 제1호증", "갑 제2호증"]
+- 날짜, 시간, 발언 내용은 증거에서 그대로 가져올 것
+
+[금액 산정]
+- 위자료: 증거에서 확인된 유책행위 정도 기반
+- 지연손해금: 연 12% (소송촉진법 제3조)
+
+[법적 근거]
+- grounds 섹션의 "이혼 사유" 부분에 legal_basis 객체로 민법 제840조 인용
+
+※ AI 생성 초안이며 변호사 검토 필수
+"""
+            }
+        else:
+            # 기존 텍스트 출력 모드 (템플릿 없을 경우 fallback)
+            system_message = {
+                "role": "system",
+                "content": """당신은 대한민국 가정법원에 제출하는 정식 소장(訴狀)을 작성하는 전문 법률가입니다.
 
 [핵심 원칙 - 반드시 준수]
 1. 모든 사실관계, 날짜, 발언 내용은 오직 제공된 "증거 자료"에서만 추출하세요
@@ -228,17 +273,45 @@ class DraftService:
 
 ※ AI 생성 초안이며 변호사 검토 필수
 """
-        }
+            }
 
         # Build context strings
         evidence_context_str = self._format_evidence_context(evidence_context)
         legal_context_str = self._format_legal_context(legal_context)
 
         # User message - include case info, evidence, and legal context
-        user_message = {
-            "role": "user",
-            "content": f"""
-다음 정보를 바탕으로 이혼 소송 소장 초안을 작성해 주세요.
+        if use_json_output:
+            user_message = {
+                "role": "user",
+                "content": f"""다음 정보를 바탕으로 이혼 소송 소장 초안을 JSON 형식으로 작성해 주세요.
+
+**사건 정보:**
+- 사건명: {case.title}
+- 사건 설명: {case.description or "N/A"}
+
+**생성할 섹션:**
+{", ".join(sections)}
+
+**관련 법률 조문:**
+{legal_context_str}
+
+**증거 자료:**
+{evidence_context_str}
+
+**요청사항:**
+- 언어: {language}
+- 스타일: {style}
+- 위 법률 조문과 증거를 기반으로 법률적 논리를 구성해 주세요
+- 이혼 사유는 반드시 민법 제840조를 인용하여 작성하세요
+- 각 주장에 대해 evidence_refs 배열에 증거 번호를 포함해 주세요
+
+위 스키마에 맞는 JSON을 출력하세요. JSON 외의 텍스트는 출력하지 마세요.
+"""
+            }
+        else:
+            user_message = {
+                "role": "user",
+                "content": f"""다음 정보를 바탕으로 이혼 소송 소장 초안을 작성해 주세요.
 
 **사건 정보:**
 - 사건명: {case.title}
@@ -262,7 +335,7 @@ class DraftService:
 
 소장 초안을 작성해 주세요.
 """
-        }
+            }
 
         return [system_message, user_message]
 

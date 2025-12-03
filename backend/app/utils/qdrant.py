@@ -361,6 +361,105 @@ def search_legal_knowledge(
         return []
 
 
+# ==================================================
+# Legal Document Templates (법률 문서 템플릿)
+# ==================================================
+
+TEMPLATE_COLLECTION = "legal_templates"
+
+
+def get_template_by_type(template_type: str) -> Optional[Dict]:
+    """
+    Get legal document template by type
+
+    Args:
+        template_type: Template type (e.g., "이혼소장", "답변서")
+
+    Returns:
+        Template dict with schema and example, or None if not found
+    """
+    client = _get_qdrant_client()
+
+    try:
+        # Check if collection exists
+        collections = client.get_collections().collections
+        if not any(c.name == TEMPLATE_COLLECTION for c in collections):
+            logger.warning(f"Template collection {TEMPLATE_COLLECTION} does not exist")
+            return None
+
+        # Search by template_type filter
+        results = client.scroll(
+            collection_name=TEMPLATE_COLLECTION,
+            scroll_filter=models.Filter(
+                must=[
+                    models.FieldCondition(
+                        key="template_type",
+                        match=models.MatchValue(value=template_type)
+                    )
+                ]
+            ),
+            limit=1,
+            with_payload=True,
+            with_vectors=False
+        )
+
+        points, _ = results
+        if points:
+            payload = points[0].payload
+            return {
+                "id": str(points[0].id),
+                "template_type": payload.get("template_type"),
+                "version": payload.get("version"),
+                "description": payload.get("description"),
+                "schema": payload.get("schema"),
+                "example": payload.get("example"),
+                "applicable_cases": payload.get("applicable_cases", [])
+            }
+
+        logger.info(f"Template '{template_type}' not found")
+        return None
+
+    except Exception as e:
+        logger.error(f"Get template error: {e}")
+        return None
+
+
+def get_template_schema_for_prompt(template_type: str) -> Optional[str]:
+    """
+    Get template schema as formatted JSON string for GPT prompt
+
+    Args:
+        template_type: Template type
+
+    Returns:
+        JSON schema string, or None if not found
+    """
+    import json
+
+    template = get_template_by_type(template_type)
+    if template and template.get("schema"):
+        return json.dumps(template["schema"], ensure_ascii=False, indent=2)
+    return None
+
+
+def get_template_example_for_prompt(template_type: str) -> Optional[str]:
+    """
+    Get template example as formatted JSON string for GPT prompt
+
+    Args:
+        template_type: Template type
+
+    Returns:
+        JSON example string, or None if not found
+    """
+    import json
+
+    template = get_template_by_type(template_type)
+    if template and template.get("example"):
+        return json.dumps(template["example"], ensure_ascii=False, indent=2)
+    return None
+
+
 # Backward compatibility aliases (for gradual migration)
 def delete_case_index(case_id: str) -> bool:
     """Alias for delete_case_collection (backward compatibility)"""
