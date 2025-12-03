@@ -1877,3 +1877,107 @@ PASS src/tests/pages/CasesPage.test.tsx
 Test Suites: 1 passed, 1 total
 Tests:       9 passed, 9 total
 ```
+
+---
+
+## 14. AI Worker Parser 메타데이터 표준화 (2025-12-03)
+
+> **목적:** 모든 파서에서 일관된 메타데이터 구조 사용
+> **담당:** P (AI Worker)
+> **개발 방식:** TDD (Red → Green → Refactor)
+> **관련 이슈:** GitHub Issue #12
+
+### 14.1 요구사항
+
+| # | 기능 | 설명 | 상태 |
+|---|------|------|------|
+| 1 | StandardMetadata 스키마 | 공통 메타데이터 필드 정의 | ✅ 완료 |
+| 2 | PDFParser 메타데이터 | page_number 포함 | ✅ 완료 |
+| 3 | AudioParser 메타데이터 | segment_start, segment_index 포함 | ✅ 완료 |
+| 4 | VideoParser 메타데이터 | source_type='video' 오버라이드 | ✅ 완료 |
+| 5 | ImageVisionParser 메타데이터 | line_index 포함 | ✅ 완료 |
+
+### 14.2 TDD 개발 로그
+
+#### RED Phase - 테스트 작성 ✅
+- [x] `test_standard_metadata.py` 생성 (9개 테스트 케이스)
+- [x] StandardMetadata TypedDict 존재 확인 테스트
+- [x] 각 파서별 메타데이터 포함 테스트
+
+#### GREEN Phase - 구현 ✅
+- [x] `base.py`에 `StandardMetadata` TypedDict 추가
+  ```python
+  class StandardMetadata(TypedDict, total=False):
+      source_type: str    # "text", "pdf", "audio", "video", "image"
+      filename: str
+      filepath: str
+      parser_class: str
+      parsed_at: str      # ISO8601 timestamp
+  ```
+- [x] `BaseParser._create_standard_metadata()` 헬퍼 메서드 추가
+- [x] PDFParser: `metadata` 필드 추가 (page_number 포함)
+- [x] AudioParser: `metadata` 필드 추가 (segment_start, segment_index)
+- [x] VideoParser: AudioParser 결과의 메타데이터를 video 기준으로 오버라이드
+- [x] ImageVisionParser: `metadata` 필드 추가 (line_index)
+- [x] `__init__.py`: optional imports로 변경 (의존성 없어도 import 오류 방지)
+
+#### REFACTOR Phase ✅
+- [x] 코드 정리 완료
+
+### 14.3 관련 파일
+
+- `ai_worker/src/parsers/base.py` - StandardMetadata TypedDict + 헬퍼 추가
+- `ai_worker/src/parsers/pdf_parser.py` - 메타데이터 추가
+- `ai_worker/src/parsers/audio_parser.py` - 메타데이터 추가
+- `ai_worker/src/parsers/video_parser.py` - 메타데이터 오버라이드
+- `ai_worker/src/parsers/image_vision.py` - 메타데이터 추가
+- `ai_worker/src/parsers/__init__.py` - optional imports
+- `ai_worker/tests/src/test_standard_metadata.py` - 테스트 파일 (신규)
+
+### 14.4 테스트 결과
+
+```
+PASSED test_standard_metadata.py::TestStandardMetadataSchema::test_standard_metadata_exists
+PASSED test_standard_metadata.py::TestStandardMetadataSchema::test_standard_metadata_has_required_fields
+PASSED test_standard_metadata.py::TestPDFParserMetadata::test_pdf_parser_includes_standard_metadata
+PASSED test_standard_metadata.py::TestPDFParserMetadata::test_pdf_parser_includes_page_number
+PASSED test_standard_metadata.py::TestAudioParserMetadata::test_audio_parser_includes_standard_metadata
+PASSED test_standard_metadata.py::TestAudioParserMetadata::test_audio_parser_includes_segment_info
+SKIPPED test_standard_metadata.py::TestVideoParserMetadata (ffmpeg not installed)
+SKIPPED test_standard_metadata.py::TestImageVisionParserMetadata (pytesseract not installed)
+PASSED test_standard_metadata.py::TestMetadataValidation::test_create_standard_metadata_helper
+
+Test Suites: 1 passed, 1 total
+Tests: 7 passed, 2 skipped, 9 total
+```
+
+---
+
+## 15. Backend 환경변수 로딩 수정 (2025-12-03)
+
+> **목적:** boto3가 AWS 자격증명을 .env에서 로드할 수 있도록 수정
+> **담당:** P (Backend)
+> **관련 이슈:** GitHub Issue #74
+
+### 15.1 문제점
+
+- pydantic-settings의 `Settings` 클래스가 인스턴스화될 때 .env를 로드하지만
+- boto3는 모듈 임포트 시점에 환경변수를 읽음
+- 결과적으로 boto3가 AWS 자격증명을 찾지 못함
+
+### 15.2 해결책 ✅
+
+- [x] `python-dotenv>=1.0.0` 의존성 추가
+- [x] `config.py`에서 Settings 클래스 정의 전에 `load_dotenv()` 호출
+- [x] .env 파일 경로를 backend/ 또는 project root에서 찾도록 설정
+
+### 15.3 관련 파일
+
+- `backend/requirements.txt` - python-dotenv 추가
+- `backend/app/core/config.py` - load_dotenv() 조기 호출
+
+### 15.4 커밋 내역
+
+```
+824c5e2 fix(backend): load .env early for boto3 credentials (Issue #74)
+```
