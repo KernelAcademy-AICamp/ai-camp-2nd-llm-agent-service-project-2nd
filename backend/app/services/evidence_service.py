@@ -273,6 +273,7 @@ class EvidenceService:
                 size=evidence.get("size", 0),
                 created_at=datetime.fromisoformat(evidence["created_at"]),
                 status=evidence.get("status", "pending"),
+                ai_summary=evidence.get("ai_summary"),
                 article_840_tags=self._parse_article_840_tags(evidence)
             )
             for evidence in evidence_list
