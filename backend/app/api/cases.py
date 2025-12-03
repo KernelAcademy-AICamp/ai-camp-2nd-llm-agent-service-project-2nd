@@ -20,7 +20,7 @@ from app.db.schemas import (
     CaseCreate,
     CaseUpdate,
     CaseOut,
-    EvidenceSummary,
+    EvidenceSummary,  # noqa: F401 - used in response_model on line 139
     DraftPreviewRequest,
     DraftPreviewResponse,
     DraftExportFormat,
