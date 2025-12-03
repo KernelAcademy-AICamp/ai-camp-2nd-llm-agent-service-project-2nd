@@ -10,17 +10,16 @@ Issue #12: Parser 메타데이터 구조 표준화
 import pytest
 from unittest.mock import patch, MagicMock, mock_open
 from datetime import datetime
-from pathlib import Path
 
 # Check for optional dependencies
 try:
-    import ffmpeg
+    import ffmpeg  # noqa: F401
     HAS_FFMPEG = True
 except ImportError:
     HAS_FFMPEG = False
 
 try:
-    import pytesseract
+    import pytesseract  # noqa: F401
     HAS_PYTESSERACT = True
 except ImportError:
     HAS_PYTESSERACT = False
