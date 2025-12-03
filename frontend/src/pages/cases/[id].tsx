@@ -317,14 +317,6 @@ export default function CaseDetailPage() {
                             <p className="text-xs text-gray-500">Case ID: {id}</p>
                         </div>
                     </div>
-                    <div className="flex space-x-3">
-                        <button
-                            onClick={openDraftModal}
-                            className="btn-primary bg-deep-trust-blue hover:bg-slate-700"
-                        >
-                            Draft 작성
-                        </button>
-                    </div>
                 </div>
             </header>
 
