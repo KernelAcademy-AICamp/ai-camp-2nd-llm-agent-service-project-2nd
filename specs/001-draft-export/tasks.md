@@ -152,11 +152,11 @@
 - [x] T036 [US3] Create draft API client in frontend/src/lib/api/draft.ts with getDraft(), updateDraft() functions
   - NOTE: Exists with generateDraftPreview(); updateDraft via localStorage for now
 - [x] T037 [US3] Implement GET /cases/{case_id}/drafts/{draft_id} endpoint in backend/app/api/drafts.py
-  - NOTE: Exists as POST /cases/{id}/draft-preview (generation endpoint)
-- [ ] T038 [US3] Implement PATCH /cases/{case_id}/drafts/{draft_id} endpoint in backend/app/api/drafts.py
-  - NOTE: Needed for server-side draft persistence
-- [ ] T039 [US3] Implement DraftService.get_draft() and update_draft() in backend/app/services/draft_service.py
-  - NOTE: generate_draft_preview exists; get_draft/update_draft need database models first
+  - NOTE: Created in backend/app/api/drafts.py with full draft retrieval
+- [x] T038 [US3] Implement PATCH /cases/{case_id}/drafts/{draft_id} endpoint in backend/app/api/drafts.py
+  - NOTE: Created backend/app/api/drafts.py with GET, POST, PATCH endpoints
+- [x] T039 [US3] Implement DraftService.get_draft() and update_draft() in backend/app/services/draft_service.py
+  - NOTE: Added list_drafts(), get_draft(), create_draft(), update_draft(), save_generated_draft() methods
 - [x] T040 [US3] Build draft preview page layout in frontend/src/app/cases/[id]/draft/page.tsx
   - NOTE: Draft tab exists with DraftPreviewPanel integration
 - [x] T041 [US3] Add unsaved changes confirmation dialog to DraftEditor in frontend/src/components/draft/DraftEditor.tsx
