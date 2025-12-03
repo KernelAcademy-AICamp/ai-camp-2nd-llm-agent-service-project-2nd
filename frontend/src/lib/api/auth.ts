@@ -110,3 +110,22 @@ export async function resetPassword(
     body: JSON.stringify({ token, new_password: newPassword }),
   });
 }
+
+export interface UserInfo {
+  id: string;
+  email: string;
+  name: string;
+  role: string;
+  status: string;
+  created_at: string;
+}
+
+/**
+ * Get current authenticated user info
+ * Uses HTTP-only cookie for authentication
+ */
+export async function getCurrentUser(): Promise<ApiResponse<UserInfo>> {
+  return apiRequest<UserInfo>('/auth/me', {
+    method: 'GET',
+  });
+}

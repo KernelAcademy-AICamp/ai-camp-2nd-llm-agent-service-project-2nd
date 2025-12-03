@@ -67,15 +67,17 @@ jobs:
 
       # 1. Backend 배포 (ECR Push + Lambda Update)
       - name: Build & Push Backend
-        if: github.ref == 'refs/heads/main'
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           ECR_REPOSITORY: leh-backend
           IMAGE_TAG: ${{ github.sha }}
         run: |
-          # Lambda용 Dockerfile로 ARM64 이미지 빌드 (Lambda가 arm64로 설정됨)
+          # Lambda용 Dockerfile로 x86_64 이미지 빌드 (Lambda가 x86_64로 설정됨)
+          # --provenance=false --sbom=false: Lambda에서 지원하지 않는 OCI manifest 비활성화
           docker buildx build \
-            --platform linux/arm64 \
+            --platform linux/amd64 \
+            --provenance=false \
+            --sbom=false \
             -f ./backend/Dockerfile.lambda \
             -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG \
             -t $ECR_REGISTRY/$ECR_REPOSITORY:latest \

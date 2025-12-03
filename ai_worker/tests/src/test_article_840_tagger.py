@@ -266,5 +266,85 @@ class TestBatchTagging(unittest.TestCase):
         self.assertEqual(len(results), 0)
 
 
+class TestContextAwareTagging(unittest.TestCase):
+    """문맥 인식 태깅 테스트 (부정문 감지)"""
+
+    def setUp(self):
+        """context_matching 활성화된 tagger 초기화"""
+        self.tagger = Article840Tagger(use_context_matching=True, use_kiwi=False)
+
+    def test_tagger_with_context_matching(self):
+        """Given: context_matching 옵션 활성화
+        When: Article840Tagger 생성
+        Then: _context_matcher 인스턴스 존재"""
+        self.assertTrue(self.tagger.use_context_matching)
+        self.assertIsNotNone(self.tagger._context_matcher)
+
+    def test_positive_statement_detected(self):
+        """Given: 긍정문 (외도 인정)
+        When: tag() 호출
+        Then: ADULTERY 카테고리로 분류"""
+        message = Message(
+            content="외도했어. 불륜 맞아.",
+            sender="Client",
+            timestamp=datetime.now()
+        )
+        result = self.tagger.tag(message)
+        self.assertIn(Article840Category.ADULTERY, result.categories)
+        self.assertIn("외도", result.matched_keywords)
+
+    def test_negated_statement_filtered(self):
+        """Given: 부정문 (외도 부인)
+        When: tag() 호출
+        Then: 외도 키워드 매칭에서 제외됨"""
+        message = Message(
+            content="외도하지 않았어",
+            sender="Client",
+            timestamp=datetime.now()
+        )
+        result = self.tagger.tag(message)
+        # 외도 키워드가 부정되었으므로 matched_keywords에 없어야 함
+        self.assertNotIn("외도", result.matched_keywords)
+
+    def test_negated_keyword_in_reasoning(self):
+        """Given: 부정문
+        When: tag() 호출
+        Then: reasoning에 부정된 키워드 정보 포함"""
+        message = Message(
+            content="외도한 적 없어",
+            sender="Client",
+            timestamp=datetime.now()
+        )
+        result = self.tagger.tag(message)
+        self.assertIn("부정된 키워드", result.reasoning)
+
+    def test_mixed_positive_and_negated(self):
+        """Given: 긍정+부정 혼합 문장
+        When: tag() 호출
+        Then: 긍정 키워드만 매칭"""
+        message = Message(
+            content="외도는 없었지만 폭력은 있었어",
+            sender="Client",
+            timestamp=datetime.now()
+        )
+        result = self.tagger.tag(message)
+        # 폭력은 매칭되어야 함
+        self.assertIn("폭력", result.matched_keywords)
+
+    def test_default_tagger_no_context_matching(self):
+        """Given: 기본 tagger (context_matching=False)
+        When: 부정문 태깅
+        Then: 키워드 매칭됨 (부정문 무시)"""
+        default_tagger = Article840Tagger()  # 기본값 use_context_matching=False
+        message = Message(
+            content="외도하지 않았어",
+            sender="Client",
+            timestamp=datetime.now()
+        )
+        result = default_tagger.tag(message)
+        # 기본 tagger는 부정문을 감지하지 않으므로 외도 키워드가 매칭됨
+        self.assertIn("외도", result.matched_keywords)
+
+
 if __name__ == '__main__':
     unittest.main()

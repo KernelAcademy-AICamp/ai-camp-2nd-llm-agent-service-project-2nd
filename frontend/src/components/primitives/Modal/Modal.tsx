@@ -199,14 +199,21 @@ export function Modal({
 
   const modalContent = (
     <div
-      className="fixed inset-0 z-modal flex items-center justify-center p-4"
+      className="fixed inset-0 flex items-center justify-center p-4"
       role="presentation"
+      style={{ zIndex: 9999, isolation: 'isolate' }}
     >
-      {/* Backdrop/Overlay */}
+      {/* Backdrop/Overlay - blocks all clicks to content behind */}
       <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-fade-in"
-        onClick={closeOnOverlayClick ? onClose : undefined}
+        className="fixed inset-0 bg-black/80"
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          if (closeOnOverlayClick) onClose();
+        }}
+        onMouseDown={(e) => e.stopPropagation()}
         aria-hidden="true"
+        style={{ zIndex: 9999 }}
       />
 
       {/* Modal Panel */}
@@ -217,9 +224,10 @@ export function Modal({
         aria-labelledby={titleId}
         aria-describedby={description ? descriptionId : undefined}
         tabIndex={-1}
+        style={{ zIndex: 10000, position: 'relative' }}
         className={twMerge(
           clsx(
-            'relative bg-white rounded-xl shadow-xl',
+            'bg-white rounded-xl shadow-xl',
             'w-full max-h-[85vh] flex flex-col',
             'animate-scale-in',
             'focus:outline-none',
@@ -258,7 +266,7 @@ export function Modal({
         </div>
 
         {/* Body */}
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="flex-1 overflow-y-auto p-6 bg-white">
           {children}
         </div>
 

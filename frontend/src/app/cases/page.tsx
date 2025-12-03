@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { Plus, LogOut, RefreshCw, FileText } from 'lucide-react';
 import CaseCard from '@/components/cases/CaseCard';
 import AddCaseModal from '@/components/cases/AddCaseModal';
@@ -101,7 +102,9 @@ export default function CasesPage() {
             {/* Header / Navigation (To be separated later) */}
             <nav className="bg-white border-b border-gray-200 px-6 py-4">
                 <div className="max-w-7xl mx-auto flex justify-between items-center">
-                    <h1 className="text-2xl font-bold text-secondary">LEH</h1>
+                    <Link href="/" className="text-2xl font-bold text-secondary hover:text-primary transition-colors">
+                        LEH
+                    </Link>
                     <div className="flex items-center space-x-4">
                         <span className="text-sm text-neutral-600">
                             {user?.name ? `${user.name}님, 환영합니다.` : '환영합니다.'}
@@ -125,7 +128,7 @@ export default function CasesPage() {
                     </div>
                     <button
                         onClick={() => setIsModalOpen(true)}
-                        className="btn-primary flex items-center shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all"
+                        className="flex items-center px-4 py-2 bg-blue-500 text-white font-medium rounded-lg shadow-lg hover:bg-blue-600 hover:shadow-xl transform hover:-translate-y-0.5 transition-all"
                     >
                         <Plus className="w-5 h-5 mr-2" />
                         새 사건 등록
@@ -135,7 +138,7 @@ export default function CasesPage() {
                 {/* Case Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {cases.map((caseItem) => (
-                        <CaseCard key={caseItem.id} caseData={caseItem} />
+                        <CaseCard key={caseItem.id} caseData={caseItem} onDelete={fetchCases} />
                     ))}
                 </div>
 

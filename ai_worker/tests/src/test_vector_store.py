@@ -308,3 +308,130 @@ class TestVectorStoreIntegration:
 
         # Cleanup
         real_vector_store.delete_by_case(test_case_id)
+
+
+# =============================================================================
+# Hybrid Search Tests
+# =============================================================================
+
+class TestVectorStoreHybridSearch:
+    """VectorStore 하이브리드 검색 테스트"""
+
+    def test_hybrid_search_basic(self, vector_store, mock_qdrant_client):
+        """Given: 검색 쿼리
+        When: hybrid_search() 호출
+        Then: 결과 반환"""
+        # Setup mock
+        mock_result = MagicMock()
+        mock_result.id = "test_id"
+        mock_result.score = 0.95
+        mock_result.payload = {"document": "테스트", "case_id": "case_001"}
+        mock_qdrant_client.search.return_value = [mock_result]
+
+        embedding = [0.1] * 1536
+        results = vector_store.hybrid_search(
+            query_embedding=embedding,
+            case_id="case_001"
+        )
+
+        assert len(results) == 1
+        assert results[0]["score"] == 0.95
+        assert results[0]["document"] == "테스트"
+
+    def test_hybrid_search_with_category_filter(self, vector_store, mock_qdrant_client):
+        """Given: 카테고리 필터
+        When: hybrid_search() 호출
+        Then: 필터가 적용됨"""
+        mock_qdrant_client.search.return_value = []
+
+        embedding = [0.1] * 1536
+        vector_store.hybrid_search(
+            query_embedding=embedding,
+            case_id="case_001",
+            categories=["adultery", "violence"]
+        )
+
+        # Verify search was called with filter
+        call_args = mock_qdrant_client.search.call_args
+        assert call_args is not None
+        assert call_args.kwargs.get("query_filter") is not None
+
+    def test_hybrid_search_with_confidence_filter(self, vector_store, mock_qdrant_client):
+        """Given: 신뢰도 필터
+        When: hybrid_search() 호출
+        Then: Range 필터 적용"""
+        mock_qdrant_client.search.return_value = []
+
+        embedding = [0.1] * 1536
+        vector_store.hybrid_search(
+            query_embedding=embedding,
+            case_id="case_001",
+            min_confidence=3
+        )
+
+        call_args = mock_qdrant_client.search.call_args
+        assert call_args is not None
+
+    def test_hybrid_search_with_score_threshold(self, vector_store, mock_qdrant_client):
+        """Given: 점수 임계값
+        When: hybrid_search() 호출
+        Then: score_threshold 적용"""
+        mock_qdrant_client.search.return_value = []
+
+        embedding = [0.1] * 1536
+        vector_store.hybrid_search(
+            query_embedding=embedding,
+            case_id="case_001",
+            score_threshold=0.7
+        )
+
+        call_args = mock_qdrant_client.search.call_args
+        assert call_args.kwargs.get("score_threshold") == 0.7
+
+    def test_hybrid_search_with_sender_filter(self, vector_store, mock_qdrant_client):
+        """Given: 발신자 필터
+        When: hybrid_search() 호출
+        Then: sender 필터 적용"""
+        mock_qdrant_client.search.return_value = []
+
+        embedding = [0.1] * 1536
+        vector_store.hybrid_search(
+            query_embedding=embedding,
+            case_id="case_001",
+            sender="홍길동"
+        )
+
+        call_args = mock_qdrant_client.search.call_args
+        assert call_args.kwargs.get("query_filter") is not None
+
+    def test_create_hybrid_collection(self, vector_store, mock_qdrant_client):
+        """Given: 컬렉션명
+        When: create_hybrid_collection() 호출
+        Then: Dense + Sparse 벡터 설정"""
+        mock_qdrant_client.get_collections.return_value.collections = []
+
+        vector_store.create_hybrid_collection(
+            collection_name="test_hybrid",
+            enable_sparse=True
+        )
+
+        mock_qdrant_client.create_collection.assert_called_once()
+
+    def test_add_with_sparse(self, vector_store, mock_qdrant_client):
+        """Given: Dense + Sparse 벡터
+        When: add_with_sparse() 호출
+        Then: 포인트 추가 성공"""
+        dense = [0.1] * 1536
+        sparse_indices = [1, 5, 10]
+        sparse_values = [0.5, 0.3, 0.2]
+
+        result = vector_store.add_with_sparse(
+            point_id="test_point",
+            dense_vector=dense,
+            sparse_indices=sparse_indices,
+            sparse_values=sparse_values,
+            payload={"case_id": "case_001"}
+        )
+
+        assert result is True
+        mock_qdrant_client.upsert.assert_called_once()

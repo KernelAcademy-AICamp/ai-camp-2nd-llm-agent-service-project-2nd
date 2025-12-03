@@ -37,3 +37,34 @@ try:
     __all__.append("VideoParser")
 except ImportError:
     pass  # ffmpeg-python not installed
+
+# V2 Parsers - Enhanced versions with legal citation support
+try:
+    from .kakaotalk_v2 import KakaoTalkParserV2, ParsedMessage as KakaoTalkMessage, ParsingResult as KakaoTalkParsingResult
+    __all__.extend(["KakaoTalkParserV2", "KakaoTalkMessage", "KakaoTalkParsingResult"])
+except ImportError:
+    pass
+
+try:
+    from .pdf_parser_v2 import PDFParserV2, ParsedPage, PDFParsingResult
+    __all__.extend(["PDFParserV2", "ParsedPage", "PDFParsingResult"])
+except ImportError:
+    pass
+
+try:
+    from .audio_parser_v2 import AudioParserV2, AudioSegment, AudioMetadata, AudioParsingResult
+    __all__.extend(["AudioParserV2", "AudioSegment", "AudioMetadata", "AudioParsingResult"])
+except ImportError:
+    pass
+
+try:
+    from .image_parser_v2 import (
+        ImageParserV2, ParsedImage, ImageParsingResult,
+        GPSCoordinates, DeviceInfo, EXIFMetadata
+    )
+    __all__.extend([
+        "ImageParserV2", "ParsedImage", "ImageParsingResult",
+        "GPSCoordinates", "DeviceInfo", "EXIFMetadata"
+    ])
+except ImportError:
+    pass

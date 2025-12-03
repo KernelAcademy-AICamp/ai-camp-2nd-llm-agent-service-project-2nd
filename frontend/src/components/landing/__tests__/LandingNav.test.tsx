@@ -3,7 +3,7 @@
  * Plan 3.19.1 - Navigation Bar (고정 헤더)
  *
  * Requirements:
- * - Logo on left, menu items on right (기능/가격/고객사례/로그인/무료체험)
+ * - Logo on left, menu items on right (기능/가격/고객사례/로그인/회원가입)
  * - Sticky position
  * - Scroll-triggered background blur effect
  * - Scroll-triggered shadow
@@ -29,7 +29,7 @@ describe('LandingNav Component', () => {
       expect(screen.getByText('가격')).toBeInTheDocument();
       expect(screen.getByText('고객사례')).toBeInTheDocument();
       expect(screen.getByText('로그인')).toBeInTheDocument();
-      expect(screen.getByText('무료체험')).toBeInTheDocument();
+      expect(screen.getByText('회원가입')).toBeInTheDocument();
     });
 
     it('should render menu items as navigation links', () => {
@@ -38,7 +38,8 @@ describe('LandingNav Component', () => {
       const featureLink = screen.getByRole('link', { name: '기능' });
       const pricingLink = screen.getByRole('link', { name: '가격' });
       const testimonialsLink = screen.getByRole('link', { name: '고객사례' });
-      const loginLink = screen.getByRole('link', { name: '로그인' });
+      // aria-label changes the accessible name
+      const loginLink = screen.getByRole('link', { name: /로그인/i });
 
       expect(featureLink).toBeInTheDocument();
       expect(pricingLink).toBeInTheDocument();
@@ -50,7 +51,7 @@ describe('LandingNav Component', () => {
       render(<LandingNav />);
 
       // aria-label takes precedence for accessible name
-      const ctaButton = screen.getByRole('link', { name: /무료체험/i });
+      const ctaButton = screen.getByRole('link', { name: /회원가입/i });
       expect(ctaButton).toBeInTheDocument();
       expect(ctaButton).toHaveClass('btn-primary');
     });
@@ -165,7 +166,7 @@ describe('LandingNav Component', () => {
       render(<LandingNav />);
 
       const links = screen.getAllByRole('link');
-      // Should have 5 links (기능, 가격, 고객사례, 로그인, 무료체험)
+      // Should have 5 links (기능, 가격, 고객사례, 로그인, 회원가입) + logo link + skip navigation link
       expect(links.length).toBeGreaterThanOrEqual(5);
     });
   });

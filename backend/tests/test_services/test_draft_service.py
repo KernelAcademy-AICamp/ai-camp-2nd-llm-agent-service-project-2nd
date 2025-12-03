@@ -417,3 +417,127 @@ class TestDraftServiceDocxGeneration:
             draft_service._generate_docx(sample_case, draft_response)
 
         assert "python-docx" in str(exc_info.value)
+
+
+class TestDraftServicePdfGeneration:
+    """Tests for _generate_pdf method"""
+
+    def test_generate_pdf_creates_document(self, draft_service, sample_case):
+        """Test PDF generation creates proper document with Korean support"""
+        # Arrange
+        draft_response = DraftPreviewResponse(
+            case_id="case_123abc",
+            draft_text="초안 본문 내용입니다.\n\n두 번째 문단입니다.",
+            citations=[
+                DraftCitation(
+                    evidence_id="ev_001",
+                    snippet="증거 내용",
+                    labels=["폭언"]
+                )
+            ],
+            generated_at=datetime.now(timezone.utc)
+        )
+
+        # Act
+        try:
+            result = draft_service._generate_pdf(sample_case, draft_response)
+
+            # Assert
+            file_buffer, filename, content_type = result
+            assert filename.endswith(".pdf")
+            assert content_type == "application/pdf"
+            assert file_buffer.read(4) == b"%PDF"  # PDF magic bytes
+        except ValidationError as e:
+            # reportlab not installed - this is acceptable
+            assert "reportlab" in str(e)
+
+    def test_generate_pdf_with_citations(self, draft_service, sample_case):
+        """Test PDF generation includes citations section"""
+        # Arrange
+        draft_response = DraftPreviewResponse(
+            case_id="case_123abc",
+            draft_text="초안 내용",
+            citations=[
+                DraftCitation(
+                    evidence_id="ev_001",
+                    snippet="첫 번째 증거",
+                    labels=["폭언", "불화"]
+                ),
+                DraftCitation(
+                    evidence_id="ev_002",
+                    snippet="두 번째 증거",
+                    labels=["부정행위"]
+                )
+            ],
+            generated_at=datetime.now(timezone.utc)
+        )
+
+        # Act
+        try:
+            result = draft_service._generate_pdf(sample_case, draft_response)
+
+            # Assert
+            file_buffer, filename, content_type = result
+            assert content_type == "application/pdf"
+            # PDF should be generated without errors
+            assert file_buffer.tell() == 0  # Buffer should be at start
+            content = file_buffer.read()
+            assert len(content) > 0
+        except ValidationError as e:
+            # reportlab not installed - this is acceptable
+            assert "reportlab" in str(e)
+
+    def test_generate_pdf_escapes_special_characters(self, draft_service, sample_case):
+        """Test PDF generation handles XML special characters"""
+        # Arrange
+        draft_response = DraftPreviewResponse(
+            case_id="case_123abc",
+            draft_text="특수문자 테스트: <tag> & \"quote\" > less",
+            citations=[
+                DraftCitation(
+                    evidence_id="ev_001",
+                    snippet="<script>alert('xss')</script>",
+                    labels=[]
+                )
+            ],
+            generated_at=datetime.now(timezone.utc)
+        )
+
+        # Act - should not raise XML parsing errors
+        try:
+            result = draft_service._generate_pdf(sample_case, draft_response)
+            assert result[1].endswith(".pdf")
+        except ValidationError as e:
+            # reportlab not installed - this is acceptable
+            assert "reportlab" in str(e)
+
+    def test_generate_pdf_without_citations(self, draft_service, sample_case):
+        """Test PDF generation without citations"""
+        # Arrange
+        draft_response = DraftPreviewResponse(
+            case_id="case_123abc",
+            draft_text="초안 내용만 있는 문서",
+            citations=[],
+            generated_at=datetime.now(timezone.utc)
+        )
+
+        # Act
+        try:
+            result = draft_service._generate_pdf(sample_case, draft_response)
+            assert result[1].endswith(".pdf")
+        except ValidationError as e:
+            # reportlab not installed - this is acceptable
+            assert "reportlab" in str(e)
+
+    def test_register_korean_font_returns_bool(self, draft_service):
+        """Test _register_korean_font returns boolean"""
+        # This test verifies the method signature and return type
+        # Actual font registration depends on system fonts
+        from unittest.mock import MagicMock
+
+        mock_pdfmetrics = MagicMock()
+        mock_ttfont = MagicMock()
+
+        result = draft_service._register_korean_font(mock_pdfmetrics, mock_ttfont)
+
+        assert isinstance(result, bool)

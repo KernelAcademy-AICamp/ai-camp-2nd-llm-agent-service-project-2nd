@@ -27,6 +27,7 @@ Pillow>=10.1.0                # Image processing (required for ImageOCRParser)
 # Testing
 pytest>=7.4.3
 pytest-cov>=4.1.0
+pytest-asyncio>=0.24.0        # Async test support
 
 # Development & Code Quality
 black>=23.12.1                 # Code formatter

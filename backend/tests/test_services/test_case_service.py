@@ -36,6 +36,7 @@ def sample_case():
     case = Mock(spec=Case)
     case.id = "case_123abc"
     case.title = "테스트 사건"
+    case.client_name = "홍길동"
     case.description = "테스트 설명"
     case.status = "active"
     case.created_by = "user_456"
@@ -82,6 +83,7 @@ class TestCaseServiceCreate:
         # Assert
         case_service.case_repo.create.assert_called_once_with(
             title="새 사건",
+            client_name=None,
             description="새 사건 설명",
             created_by=user_id
         )
@@ -109,6 +111,7 @@ class TestCaseServiceCreate:
         # Assert
         case_service.case_repo.create.assert_called_once_with(
             title="새 사건",
+            client_name=None,
             description=None,
             created_by=user_id
         )

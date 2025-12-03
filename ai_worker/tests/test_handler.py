@@ -278,7 +278,7 @@ class TestFileProcessing:
 
         # MetadataStore mock
         mock_metadata_instance = Mock()
-        mock_metadata_instance.save_evidence_file.return_value = {
+        mock_metadata_instance.save_file.return_value = {
             'file_id': 'test-id',
             'case_id': bucket,
             'file_path': key,
@@ -289,7 +289,7 @@ class TestFileProcessing:
 
         # VectorStore mock
         mock_vector_instance = Mock()
-        mock_vector_instance.add_evidence.return_value = 'chunk-id'
+        mock_vector_instance.add_chunk_with_metadata.return_value = 'chunk-id'
         mock_vector_class.return_value = mock_vector_instance
 
         # Article840Tagger mock
@@ -386,7 +386,7 @@ class TestStorageAndAnalysisIntegration:
         """
         Given: PDF 파일 파싱 완료
         When: route_and_process() 호출
-        Then: MetadataStore.save_evidence_file() 호출됨
+        Then: MetadataStore.save_file() 호출됨
         """
         # Given
         mock_s3_client = Mock()
@@ -394,7 +394,7 @@ class TestStorageAndAnalysisIntegration:
 
         # MetadataStore mock
         mock_metadata_instance = Mock()
-        mock_metadata_instance.save_evidence_file.return_value = {
+        mock_metadata_instance.save_file.return_value = {
             'file_id': 'test-file-id-123',
             'case_id': 'test-bucket',
             'file_path': 'test.pdf',
@@ -405,7 +405,7 @@ class TestStorageAndAnalysisIntegration:
 
         # VectorStore mock
         mock_vector_instance = Mock()
-        mock_vector_instance.add_evidence.return_value = 'chunk-id-1'
+        mock_vector_instance.add_chunk_with_metadata.return_value = 'chunk-id-1'
         mock_vector_class.return_value = mock_vector_instance
 
         # Article840Tagger mock
@@ -431,14 +431,11 @@ class TestStorageAndAnalysisIntegration:
             # When
             result = route_and_process("test-bucket", "test.pdf")
 
-        # Then
-        mock_metadata_instance.save_evidence_file.assert_called_once_with(
-            case_id="test-bucket",
-            file_path="test.pdf",
-            file_type=".pdf",
-            source_type="text"
-        )
-        assert result["file_id"] == "test-file-id-123"
+        # Then: save_file가 EvidenceFile 객체로 호출됨
+        mock_metadata_instance.save_file.assert_called_once()
+        # file_id는 동적으로 생성되므로 패턴만 확인
+        assert result["file_id"].startswith("file_")
+        assert result["status"] == "processed"
 
     @patch('handler.boto3')
     @patch('handler.MetadataStore')
@@ -454,7 +451,7 @@ class TestStorageAndAnalysisIntegration:
         """
         Given: 여러 청크로 파싱된 파일
         When: route_and_process() 호출
-        Then: 모든 청크가 VectorStore.add_evidence()로 인덱싱됨
+        Then: 모든 청크가 VectorStore.add_chunk_with_metadata()로 인덱싱됨
         """
         # Given
         mock_s3_client = Mock()
@@ -462,7 +459,7 @@ class TestStorageAndAnalysisIntegration:
 
         # MetadataStore mock
         mock_metadata_instance = Mock()
-        mock_metadata_instance.save_evidence_file.return_value = {
+        mock_metadata_instance.save_file.return_value = {
             'file_id': 'file-123',
             'case_id': 'bucket',
             'file_path': 'chat.txt',
@@ -473,7 +470,7 @@ class TestStorageAndAnalysisIntegration:
 
         # VectorStore mock
         mock_vector_instance = Mock()
-        mock_vector_instance.add_evidence.side_effect = ['chunk-1', 'chunk-2', 'chunk-3']
+        mock_vector_instance.add_chunk_with_metadata.side_effect = ['chunk-1', 'chunk-2', 'chunk-3']
         mock_vector_class.return_value = mock_vector_instance
 
         # Article840Tagger mock
@@ -503,9 +500,9 @@ class TestStorageAndAnalysisIntegration:
             result = route_and_process("bucket", "chat.txt")
 
         # Then
-        assert mock_vector_instance.add_evidence.call_count == 3
+        assert mock_vector_instance.add_chunk_with_metadata.call_count == 3
         assert result["chunks_indexed"] == 3
-        assert result["file_id"] == "file-123"
+        assert result["file_id"].startswith("file_")
 
     @patch('handler.boto3')
     @patch('handler.MetadataStore')
@@ -529,7 +526,7 @@ class TestStorageAndAnalysisIntegration:
 
         # MetadataStore mock
         mock_metadata_instance = Mock()
-        mock_metadata_instance.save_evidence_file.return_value = {
+        mock_metadata_instance.save_file.return_value = {
             'file_id': 'file-123',
             'case_id': 'bucket',
             'file_path': 'evidence.txt',
@@ -540,7 +537,7 @@ class TestStorageAndAnalysisIntegration:
 
         # VectorStore mock
         mock_vector_instance = Mock()
-        mock_vector_instance.add_evidence.return_value = 'chunk-id'
+        mock_vector_instance.add_chunk_with_metadata.return_value = 'chunk-id'
         mock_vector_class.return_value = mock_vector_instance
 
         # Article840Tagger mock
@@ -604,7 +601,7 @@ class TestStorageAndAnalysisIntegration:
 
         # MetadataStore mock
         mock_metadata_instance = Mock()
-        mock_metadata_instance.save_evidence_file.return_value = {
+        mock_metadata_instance.save_file.return_value = {
             'file_id': 'complete-file-id',
             'case_id': 'complete-bucket',
             'file_path': 'complete.pdf',
@@ -615,7 +612,7 @@ class TestStorageAndAnalysisIntegration:
 
         # VectorStore mock
         mock_vector_instance = Mock()
-        mock_vector_instance.add_evidence.side_effect = ['c1', 'c2']
+        mock_vector_instance.add_chunk_with_metadata.side_effect = ['c1', 'c2']
         mock_vector_class.return_value = mock_vector_instance
 
         # Article840Tagger mock
@@ -649,7 +646,7 @@ class TestStorageAndAnalysisIntegration:
         # Then
         assert result["status"] == "processed"
         assert result["file"] == "complete.pdf"
-        assert result["file_id"] == "complete-file-id"
+        assert result["file_id"].startswith("file_")
         assert result["chunks_indexed"] == 2
         assert result["tags"] == [
             {"categories": [], "confidence": 0.5, "matched_keywords": []},

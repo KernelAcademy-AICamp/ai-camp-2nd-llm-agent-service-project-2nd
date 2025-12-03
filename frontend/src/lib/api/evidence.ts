@@ -11,10 +11,14 @@ export interface Evidence {
   type: 'image' | 'audio' | 'video' | 'text' | 'pdf';
   filename: string;
   s3_key: string;
-  timestamp: string;
+  size: number;
+  content_type: string;
+  status: 'pending' | 'processing' | 'processed' | 'failed';
+  timestamp?: string;
   speaker?: string;
   ai_summary?: string;
   labels?: string[];
+  insights?: string[];
   article_840_tags?: {
     categories: string[];
     confidence: number;

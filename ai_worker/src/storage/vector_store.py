@@ -22,6 +22,11 @@ from qdrant_client.http.models import (
     Filter,
     FieldCondition,
     MatchValue,
+    MatchAny,
+    Range,
+    SparseVectorParams,
+    SparseVector,
+    Modifier,
 )
 
 logger = logging.getLogger(__name__)
@@ -578,7 +583,18 @@ class VectorStore:
         timestamp: str,
         sender: str,
         score: float = None,
-        collection_name: str = None
+        collection_name: str = None,
+        # Extended metadata fields
+        file_name: str = None,
+        file_type: str = None,
+        legal_categories: List[str] = None,
+        confidence_level: int = None,
+        line_number: int = None,
+        line_number_end: int = None,
+        page_number: int = None,
+        segment_start_sec: float = None,
+        segment_end_sec: float = None,
+        is_fallback_embedding: bool = False
     ) -> str:
         """
         청크 메타데이터와 함께 벡터 저장
@@ -596,12 +612,27 @@ class VectorStore:
             sender: 발신자
             score: 증거 점수 (선택)
             collection_name: 컬렉션명 (선택)
+            file_name: 원본 파일명 (선택)
+            file_type: 파일 타입 (선택, e.g., 'kakaotalk', 'pdf')
+            legal_categories: 법적 카테고리 리스트 (선택)
+            confidence_level: 신뢰도 레벨 1-5 (선택)
+            line_number: 라인 번호 (텍스트용)
+            line_number_end: 끝 라인 번호 (텍스트용)
+            page_number: 페이지 번호 (PDF용)
+            segment_start_sec: 시작 시간 (오디오/비디오용)
+            segment_end_sec: 끝 시간 (오디오/비디오용)
+            is_fallback_embedding: 폴백 임베딩 여부
 
         Returns:
-            str: 벡터 ID (chunk_id와 동일하게 사용)
+            str: 벡터 ID (UUID)
         """
         collection = self._ensure_collection(collection_name)
 
+        # Generate proper UUID for Qdrant point ID
+        # (chunk_id format "chunk_xxx" is not valid for Qdrant)
+        vector_id = str(uuid.uuid4())
+
+        # Build payload with all available metadata
         payload = {
             "chunk_id": chunk_id,
             "file_id": file_id,
@@ -610,21 +641,43 @@ class VectorStore:
             "timestamp": timestamp,
             "sender": sender,
         }
+
+        # Optional fields - only add if provided
         if score is not None:
             payload["score"] = score
+        if file_name:
+            payload["file_name"] = file_name
+        if file_type:
+            payload["file_type"] = file_type
+        if legal_categories:
+            payload["legal_categories"] = legal_categories
+        if confidence_level is not None:
+            payload["confidence_level"] = confidence_level
+        if line_number is not None:
+            payload["line_number"] = line_number
+        if line_number_end is not None:
+            payload["line_number_end"] = line_number_end
+        if page_number is not None:
+            payload["page_number"] = page_number
+        if segment_start_sec is not None:
+            payload["segment_start_sec"] = segment_start_sec
+        if segment_end_sec is not None:
+            payload["segment_end_sec"] = segment_end_sec
+        if is_fallback_embedding:
+            payload["is_fallback_embedding"] = True
 
         try:
             self.client.upsert(
                 collection_name=collection,
                 points=[
                     PointStruct(
-                        id=chunk_id,
+                        id=vector_id,
                         vector=embedding,
                         payload=payload
                     )
                 ]
             )
-            return chunk_id
+            return vector_id
 
         except Exception as e:
             logger.error(f"Failed to add chunk with metadata: {e}")
@@ -684,3 +737,250 @@ class VectorStore:
         except Exception as e:
             logger.error(f"Get chunks by case failed: {e}")
             return []
+
+    def hybrid_search(
+        self,
+        query_embedding: List[float],
+        n_results: int = 10,
+        case_id: str = None,
+        categories: Optional[List[str]] = None,
+        min_confidence: Optional[int] = None,
+        sender: Optional[str] = None,
+        file_types: Optional[List[str]] = None,
+        collection_name: str = None,
+        score_threshold: float = None
+    ) -> List[Dict[str, Any]]:
+        """
+        하이브리드 검색 (향상된 필터링)
+
+        Qdrant 네이티브 필터를 사용하여 검색 시점에 필터링합니다.
+        후처리 필터링 대비 효율적입니다.
+
+        Args:
+            query_embedding: 쿼리 임베딩 벡터
+            n_results: 반환할 결과 개수
+            case_id: 케이스 ID 필터
+            categories: 법적 카테고리 필터 (예: ["adultery", "violence"])
+            min_confidence: 최소 신뢰도 레벨 (1-5)
+            sender: 발신자 필터
+            file_types: 파일 타입 필터 (예: ["kakaotalk", "pdf"])
+            collection_name: 컬렉션명 (None이면 기본값)
+            score_threshold: 최소 유사도 점수 (0-1)
+
+        Returns:
+            List[Dict]: 검색 결과 (score 내림차순)
+                - id: 포인트 ID
+                - score: 유사도 점수 (0-1, 높을수록 유사)
+                - metadata: 페이로드 데이터
+                - document: 원본 텍스트
+        """
+        collection = self._ensure_collection(collection_name)
+
+        # 필터 조건 구성
+        must_conditions = []
+
+        # case_id 필터 (필수)
+        if case_id:
+            must_conditions.append(
+                FieldCondition(key="case_id", match=MatchValue(value=case_id))
+            )
+
+        # 카테고리 필터 (OR 조건)
+        if categories:
+            must_conditions.append(
+                FieldCondition(key="category", match=MatchAny(any=categories))
+            )
+
+        # 신뢰도 범위 필터
+        if min_confidence is not None:
+            must_conditions.append(
+                FieldCondition(
+                    key="confidence_level",
+                    range=Range(gte=min_confidence)
+                )
+            )
+
+        # 발신자 필터
+        if sender:
+            must_conditions.append(
+                FieldCondition(key="sender", match=MatchValue(value=sender))
+            )
+
+        # 파일 타입 필터 (OR 조건)
+        if file_types:
+            must_conditions.append(
+                FieldCondition(key="file_type", match=MatchAny(any=file_types))
+            )
+
+        # 필터 구성
+        query_filter = None
+        if must_conditions:
+            query_filter = Filter(must=must_conditions)
+
+        try:
+            results = self.client.search(
+                collection_name=collection,
+                query_vector=query_embedding,
+                limit=n_results,
+                query_filter=query_filter,
+                with_payload=True,
+                score_threshold=score_threshold
+            )
+
+            formatted_results = []
+            for hit in results:
+                payload = hit.payload or {}
+                document = payload.pop("document", "")
+
+                formatted_results.append({
+                    "id": str(hit.id),
+                    "score": hit.score,  # 유사도 점수 (높을수록 유사)
+                    "metadata": payload,
+                    "document": document
+                })
+
+            return formatted_results
+
+        except Exception as e:
+            logger.error(f"Hybrid search failed: {e}")
+            raise
+
+    def create_hybrid_collection(
+        self,
+        collection_name: str,
+        dense_size: int = None,
+        enable_sparse: bool = True
+    ) -> str:
+        """
+        하이브리드 검색용 컬렉션 생성 (Dense + Sparse 벡터)
+
+        Args:
+            collection_name: 컬렉션명
+            dense_size: Dense 벡터 차원 (기본값: self.vector_size)
+            enable_sparse: 스파스 벡터 활성화 여부
+
+        Returns:
+            str: 생성된 컬렉션명
+        """
+        dense_size = dense_size or self.vector_size
+
+        try:
+            # 기존 컬렉션 확인
+            collections = self.client.get_collections().collections
+            if any(c.name == collection_name for c in collections):
+                logger.info(f"Collection {collection_name} already exists")
+                return collection_name
+
+            # 벡터 설정
+            vectors_config = {
+                "dense": VectorParams(
+                    size=dense_size,
+                    distance=Distance.COSINE
+                )
+            }
+
+            # 스파스 벡터 설정 (BM25/IDF)
+            sparse_config = None
+            if enable_sparse:
+                sparse_config = {
+                    "sparse": SparseVectorParams(
+                        modifier=Modifier.IDF
+                    )
+                }
+
+            self.client.create_collection(
+                collection_name=collection_name,
+                vectors_config=vectors_config,
+                sparse_vectors_config=sparse_config
+            )
+
+            logger.info(f"Created hybrid collection: {collection_name}")
+
+            # 인덱스 생성
+            self._create_hybrid_indexes(collection_name)
+
+            self._initialized_collections.add(collection_name)
+            return collection_name
+
+        except Exception as e:
+            logger.error(f"Failed to create hybrid collection: {e}")
+            raise
+
+    def _create_hybrid_indexes(self, collection_name: str) -> None:
+        """
+        하이브리드 컬렉션용 인덱스 생성
+
+        Args:
+            collection_name: 컬렉션명
+        """
+        # 기본 인덱스
+        keyword_fields = ["case_id", "file_id", "chunk_id", "sender", "category", "file_type"]
+        integer_fields = ["confidence_level", "line_number", "page_number"]
+
+        for field in keyword_fields:
+            try:
+                self.client.create_payload_index(
+                    collection_name=collection_name,
+                    field_name=field,
+                    field_schema=models.PayloadSchemaType.KEYWORD
+                )
+            except Exception:
+                pass  # 이미 존재할 수 있음
+
+        for field in integer_fields:
+            try:
+                self.client.create_payload_index(
+                    collection_name=collection_name,
+                    field_name=field,
+                    field_schema=models.PayloadSchemaType.INTEGER
+                )
+            except Exception:
+                pass
+
+    def add_with_sparse(
+        self,
+        point_id: str,
+        dense_vector: List[float],
+        sparse_indices: List[int],
+        sparse_values: List[float],
+        payload: Dict[str, Any],
+        collection_name: str = None
+    ) -> bool:
+        """
+        Dense + Sparse 벡터로 포인트 추가
+
+        Args:
+            point_id: 포인트 ID
+            dense_vector: Dense 임베딩 벡터
+            sparse_indices: 스파스 벡터 인덱스 (비제로 위치)
+            sparse_values: 스파스 벡터 값 (TF-IDF 등)
+            payload: 메타데이터
+            collection_name: 컬렉션명
+
+        Returns:
+            bool: 성공 여부
+        """
+        collection = collection_name or self.collection_name
+
+        try:
+            point = PointStruct(
+                id=point_id,
+                vector={
+                    "dense": dense_vector,
+                    "sparse": SparseVector(
+                        indices=sparse_indices,
+                        values=sparse_values
+                    )
+                },
+                payload=payload
+            )
+
+            self.client.upsert(
+                collection_name=collection,
+                points=[point]
+            )
+            return True
+
+        except Exception as e:
+            logger.error(f"Add with sparse failed: {e}")
+            return False

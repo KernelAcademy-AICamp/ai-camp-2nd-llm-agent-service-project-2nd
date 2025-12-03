@@ -68,7 +68,7 @@ class TestPDFProcessingE2E:
 
         # MetadataStore mock
         mock_metadata = Mock()
-        mock_metadata.save_evidence_file.return_value = {
+        mock_metadata.save_file.return_value = {
             'file_id': 'pdf-file-001',
             'case_id': 'evidence-bucket',
             'file_path': 'cases/case123/document.pdf',
@@ -79,7 +79,7 @@ class TestPDFProcessingE2E:
 
         # VectorStore mock
         mock_vector = Mock()
-        mock_vector.add_evidence.side_effect = ['chunk-1', 'chunk-2', 'chunk-3']
+        mock_vector.add_chunk_with_metadata.side_effect = ['chunk-1', 'chunk-2', 'chunk-3']
         mock_vector_class.return_value = mock_vector
 
         # Article840Tagger mock
@@ -104,15 +104,15 @@ class TestPDFProcessingE2E:
         assert processing_result["status"] == "processed"
         assert processing_result["file"] == "cases/case123/document.pdf"
         assert "parser_type" in processing_result  # parser_type 존재 확인
-        assert processing_result["file_id"] == "pdf-file-001"
+        assert processing_result["file_id"].startswith("file_")
         assert processing_result["chunks_indexed"] == 3
         assert len(processing_result["tags"]) == 3
 
         # 각 컴포넌트가 올바르게 호출되었는지 검증
         mock_s3_client.download_file.assert_called_once()
         mock_pdf_parser.parse.assert_called_once()
-        mock_metadata.save_evidence_file.assert_called_once()
-        assert mock_vector.add_evidence.call_count == 3
+        mock_metadata.save_file.assert_called_once()
+        assert mock_vector.add_chunk_with_metadata.call_count == 3
         assert mock_tagger.tag.call_count == 3
 
 
@@ -181,7 +181,7 @@ class TestKakaoTalkProcessingE2E:
 
         # MetadataStore mock
         mock_metadata = Mock()
-        mock_metadata.save_evidence_file.return_value = {
+        mock_metadata.save_file.return_value = {
             'file_id': 'kakao-file-001',
             'case_id': 'chat-bucket',
             'file_path': 'cases/case456/chat.txt',
@@ -192,7 +192,7 @@ class TestKakaoTalkProcessingE2E:
 
         # VectorStore mock
         mock_vector = Mock()
-        mock_vector.add_evidence.side_effect = [f'chunk-{i}' for i in range(5)]
+        mock_vector.add_chunk_with_metadata.side_effect = [f'chunk-{i}' for i in range(5)]
         mock_vector_class.return_value = mock_vector
 
         # Article840Tagger mock
@@ -232,7 +232,7 @@ class TestKakaoTalkProcessingE2E:
         assert processing_result["status"] == "processed"
         assert processing_result["file"] == "cases/case456/chat.txt"
         assert "parser_type" in processing_result  # parser_type 존재 확인
-        assert processing_result["file_id"] == "kakao-file-001"
+        assert processing_result["file_id"].startswith("file_")
         assert processing_result["chunks_indexed"] == 5
         assert len(processing_result["tags"]) == 5
 
@@ -244,8 +244,8 @@ class TestKakaoTalkProcessingE2E:
         # 각 컴포넌트가 올바르게 호출되었는지 검증
         mock_s3_client.download_file.assert_called_once()
         mock_text_parser.parse.assert_called_once()
-        mock_metadata.save_evidence_file.assert_called_once()
-        assert mock_vector.add_evidence.call_count == 5
+        mock_metadata.save_file.assert_called_once()
+        assert mock_vector.add_chunk_with_metadata.call_count == 5
         assert mock_tagger.tag.call_count == 5
 
 
@@ -308,7 +308,7 @@ class TestImageProcessingE2E:
 
         # MetadataStore mock
         mock_metadata = Mock()
-        mock_metadata.save_evidence_file.return_value = {
+        mock_metadata.save_file.return_value = {
             'file_id': 'image-file-001',
             'case_id': 'image-bucket',
             'file_path': 'cases/case789/evidence.jpg',
@@ -319,7 +319,7 @@ class TestImageProcessingE2E:
 
         # VectorStore mock
         mock_vector = Mock()
-        mock_vector.add_evidence.return_value = 'img-chunk-1'
+        mock_vector.add_chunk_with_metadata.return_value = 'img-chunk-1'
         mock_vector_class.return_value = mock_vector
 
         # Article840Tagger mock
@@ -344,7 +344,7 @@ class TestImageProcessingE2E:
         assert processing_result["status"] == "processed"
         assert processing_result["file"] == "cases/case789/evidence.jpg"
         assert "parser_type" in processing_result  # parser_type 존재 확인
-        assert processing_result["file_id"] == "image-file-001"
+        assert processing_result["file_id"].startswith("file_")
         assert processing_result["chunks_indexed"] == 1
         assert len(processing_result["tags"]) == 1
 
@@ -357,8 +357,8 @@ class TestImageProcessingE2E:
         # 각 컴포넌트가 올바르게 호출되었는지 검증
         mock_s3_client.download_file.assert_called_once()
         mock_vision_parser.parse.assert_called_once()
-        mock_metadata.save_evidence_file.assert_called_once()
-        mock_vector.add_evidence.assert_called_once()
+        mock_metadata.save_file.assert_called_once()
+        mock_vector.add_chunk_with_metadata.assert_called_once()
         mock_tagger.tag.assert_called_once()
 
 
@@ -415,7 +415,7 @@ class TestMultiFileProcessingE2E:
 
         # MetadataStore mock
         mock_metadata = Mock()
-        mock_metadata.save_evidence_file.side_effect = [
+        mock_metadata.save_file.side_effect = [
             {'file_id': f'file-{i}', 'case_id': 'multi-bucket', 'file_path': f'file{i}', 'file_type': ext, 'created_at': '2024-01-01'}
             for i, ext in enumerate(['.pdf', '.txt', '.jpg'], 1)
         ]
@@ -423,7 +423,7 @@ class TestMultiFileProcessingE2E:
 
         # VectorStore mock
         mock_vector = Mock()
-        mock_vector.add_evidence.return_value = 'chunk-id'
+        mock_vector.add_chunk_with_metadata.return_value = 'chunk-id'
         mock_vector_class.return_value = mock_vector
 
         # Article840Tagger mock
@@ -458,11 +458,11 @@ class TestMultiFileProcessingE2E:
         # 각 파일이 독립적으로 처리되었는지 확인
         for i, res in enumerate(result_body["results"], 1):
             assert res["status"] == "processed"
-            assert res["file_id"] == f"file-{i}"
+            assert res["file_id"].startswith("file_")
 
         # 각 컴포넌트가 3번씩 호출되었는지 검증
         assert mock_s3_client.download_file.call_count == 3
-        assert mock_metadata.save_evidence_file.call_count == 3
+        assert mock_metadata.save_file.call_count == 3
 
 
 class TestErrorRecoveryE2E:

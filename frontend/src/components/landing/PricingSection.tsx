@@ -67,7 +67,7 @@ export default function PricingSection() {
   ];
 
   return (
-    <section className="py-20 px-6 bg-white" aria-label="가격 플랜">
+    <section id="pricing" className="py-20 px-6 bg-white" aria-label="가격 플랜">
       <div className="max-w-7xl mx-auto">
         <div className="space-y-12">
           {/* Section Title */}

@@ -6,6 +6,11 @@ Version: 0.2.0
 Updated: 2025-11-19
 """
 
+# .env 파일 로드 (다른 import 전에 실행)
+from pathlib import Path
+from dotenv import load_dotenv
+load_dotenv(Path(__file__).parent.parent / ".env")
+
 import logging
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
@@ -106,13 +111,15 @@ app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(AuditLogMiddleware)
 
 # 4. CORS (Must be after security headers and audit log)
+# Note: For cross-origin cookie authentication, allow_credentials=True is required
+# API Gateway also has CORS config - they should match
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins_list,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
-    expose_headers=["X-Request-ID"]
+    expose_headers=["X-Request-ID", "Set-Cookie"]
 )
 
 # Note: JWT authentication is handled per-endpoint via get_current_user_id() dependency

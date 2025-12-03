@@ -4,10 +4,11 @@ Environment variables and application settings using Pydantic Settings
 """
 
 import os
+import warnings
 from pathlib import Path
 from typing import List
 from pydantic_settings import BaseSettings
-from pydantic import Field
+from pydantic import Field, model_validator
 
 # Load .env file early so environment variables are available to boto3 and other libraries
 # This must be done before Settings class is instantiated
@@ -57,10 +58,41 @@ class Settings(BaseSettings):
     # ============================================
     # JWT Settings
     # ============================================
-    JWT_SECRET: str = Field(default="CHANGE_ME_IN_PROD", env="JWT_SECRET")
+    JWT_SECRET: str = Field(default="local-dev-secret-change-in-prod-min-32-chars", env="JWT_SECRET")
     JWT_ALGORITHM: str = Field(default="HS256", env="JWT_ALGORITHM")
     JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(default=60, env="JWT_ACCESS_TOKEN_EXPIRE_MINUTES")
     JWT_REFRESH_TOKEN_EXPIRE_DAYS: int = Field(default=7, env="JWT_REFRESH_TOKEN_EXPIRE_DAYS")
+
+    @model_validator(mode='after')
+    def validate_jwt_secret_for_production(self):
+        """
+        Validate JWT_SECRET in production environment.
+        - Must be at least 32 characters
+        - Must not be the default value
+        """
+        default_secret = "local-dev-secret-change-in-prod-min-32-chars"
+
+        if self.APP_ENV in ("prod", "production"):
+            # In production, enforce strict validation
+            if self.JWT_SECRET == default_secret:
+                raise ValueError(
+                    "JWT_SECRET must be changed from default value in production. "
+                    "Generate a strong secret: python -c \"import secrets; print(secrets.token_urlsafe(32))\""
+                )
+            if len(self.JWT_SECRET) < 32:
+                raise ValueError(
+                    f"JWT_SECRET must be at least 32 characters in production (current: {len(self.JWT_SECRET)})"
+                )
+        elif self.APP_ENV == "dev":
+            # In dev environment, warn but don't fail
+            if self.JWT_SECRET == default_secret:
+                warnings.warn(
+                    "Using default JWT_SECRET in dev environment. "
+                    "Set a strong secret before deploying to production.",
+                    UserWarning
+                )
+
+        return self
 
     # ============================================
     # Cookie Settings
@@ -107,6 +139,12 @@ class Settings(BaseSettings):
     S3_EVIDENCE_BUCKET: str = Field(default="leh-evidence-prod", env="S3_EVIDENCE_BUCKET")
     S3_EVIDENCE_PREFIX: str = Field(default="cases/", env="S3_EVIDENCE_PREFIX")
     S3_PRESIGNED_URL_EXPIRE_SECONDS: int = Field(default=300, env="S3_PRESIGNED_URL_EXPIRE_SECONDS")  # 5 minutes max
+
+    # ============================================
+    # Lambda Settings (AI Worker)
+    # ============================================
+    LAMBDA_AI_WORKER_FUNCTION: str = Field(default="leh-ai-worker", env="LAMBDA_AI_WORKER_FUNCTION")
+    LAMBDA_AI_WORKER_ENABLED: bool = Field(default=True, env="LAMBDA_AI_WORKER_ENABLED")
 
     # ============================================
     # DynamoDB Settings

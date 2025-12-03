@@ -10,11 +10,18 @@
 
 | 구분 | 완료 | 진행중 | 대기 |
 |------|:----:|:------:|:----:|
-| 핵심 기능 | 6개 | - | - |
-| AWS 연동 | 2개 | 1개 | 1개 |
-| 테스트 | 336개 | - | - |
+| 핵심 기능 | 8개 | - | - |
+| AWS 연동 | 3개 | - | 1개 |
+| 테스트 | 531개 | - | - |
 
-### 완료율: **90%** (S3 버킷 권한 대기중)
+### 완료율: **95%** (AWS 배포 대기중)
+
+**2025-12-02 업데이트:**
+- ✅ TimelineGenerator 구현 (타임라인 자동 생성)
+- ✅ Embedding Fallback Strategy 구현 (API 실패 시 폴백)
+- ✅ Extended Metadata Storage 구현 (10개 추가 필드)
+- ✅ E2E Integration Tests 수정 완료 (28개 통과)
+- ✅ Dockerfile 최적화 (Lambda 배포 준비)
 
 ---
 
@@ -49,6 +56,9 @@
 | **EvidenceScorer** | 증거력 점수화 | ✅ |
 | **RiskAnalyzer** | 위험도 분석 | ✅ |
 | **Article840Tagger** | 민법 840조 태깅 | ✅ |
+| **TimelineGenerator** | 시간순 타임라인 생성 | ✅ |
+| **ContextMatcher** | 문맥 인식 키워드 매칭 | ✅ |
+| **AIAnalyzer** | GPT-4o-mini 구조화 분석 | ✅ |
 
 ### 2.4 민법 840조 태깅 ✅ 완료
 
@@ -118,7 +128,7 @@
 
 | 항목 | 상태 |
 |------|:----:|
-| `Dockerfile.lambda` 작성 | ✅ |
+| `Dockerfile` 작성 | ✅ |
 | Python 3.12 base image | ✅ |
 | 모든 모듈 import 테스트 | ✅ |
 | ECR 리포지토리 정의 | ✅ |
@@ -130,7 +140,7 @@
 
 ## 4. 테스트 현황
 
-### 총 336개 테스트 (에러 1개 수정 필요)
+### 총 531개 유닛 테스트 통과 ✅
 
 | 테스트 모듈 | 테스트 수 | 상태 |
 |------------|:--------:|:----:|
@@ -139,10 +149,15 @@
 | Evidence Scorer | 15개 | ✅ |
 | Evidence Summarizer | 12개 | ✅ |
 | Risk Analyzer | 12개 | ✅ |
+| **TimelineGenerator** | **24개** | ✅ |
+| **Embedding Fallback** | **13개** | ✅ |
 | **MetadataStore (DynamoDB)** | **18개** | ✅ |
 | **VectorStore (Qdrant)** | **16개** | ✅ |
 | Handler | 16개 | ✅ |
+| E2E Integration | 28개 | ✅ |
 | Parsers (PDF, Audio, Image 등) | 200+개 | ✅ |
+
+**참고:** 통합 테스트(AWS/Qdrant 연결 필요)는 로컬에서 스킵됨
 
 ---
 
@@ -162,9 +177,15 @@ ai_worker/src/storage/
 
 ```
 ai_worker/src/utils/
-├── embeddings.py        # OpenAI Embedding 유틸리티
-└── logging_filter.py    # 민감정보 필터링
+├── embeddings.py        # OpenAI Embedding + Fallback Strategy
+├── logging_filter.py    # 민감정보 필터링
+└── encoding.py          # 파일 인코딩 감지
 ```
+
+**Embedding Fallback Strategy:**
+- OpenAI API 실패 시 hash 기반 결정론적 임베딩 생성
+- 데이터 손실 없이 처리 계속 가능
+- `get_embedding_with_fallback()` → (embedding, is_real) 반환
 
 ### Handler (수정)
 
@@ -184,7 +205,7 @@ ai_worker/tests/src/
 
 ```
 ai_worker/.env               # AWS 연동 환경변수
-ai_worker/Dockerfile.lambda  # Lambda 배포용
+ai_worker/Dockerfile  # Lambda 배포용
 ai_worker/requirements.txt   # 의존성 목록
 ```
 

@@ -76,6 +76,7 @@ class Case(Base):
 
     id = Column(String, primary_key=True, default=lambda: f"case_{uuid.uuid4().hex[:12]}")
     title = Column(String, nullable=False)
+    client_name = Column(String, nullable=True)  # 의뢰인 이름
     description = Column(String, nullable=True)
     status = Column(SQLEnum(CaseStatus), nullable=False, default=CaseStatus.ACTIVE)
     created_by = Column(String, ForeignKey("users.id"), nullable=False)

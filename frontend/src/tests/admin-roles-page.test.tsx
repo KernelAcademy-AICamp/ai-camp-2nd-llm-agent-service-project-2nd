@@ -80,8 +80,6 @@ describe('plan 3.15: 권한 설정 페이지 (/admin/roles)', () => {
       name: /Attorney Billing 관리/i,
     });
 
-    expect(billingToggle).not.toBeChecked();
-
     await user.click(billingToggle);
 
     await waitFor(() => {

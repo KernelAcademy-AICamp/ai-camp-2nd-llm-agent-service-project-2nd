@@ -23,9 +23,9 @@ def mock_dynamodb_client():
 def metadata_store(mock_dynamodb_client):
     """MetadataStore with mocked DynamoDB"""
     with patch.dict('os.environ', {
-        'DYNAMODB_TABLE': 'test_table',
+        'DDB_EVIDENCE_TABLE': 'test_table',
         'AWS_REGION': 'ap-northeast-2'
-    }):
+    }, clear=True):
         store = MetadataStore(table_name='test_table', region='ap-northeast-2')
         store._client = mock_dynamodb_client
         return store
@@ -37,9 +37,9 @@ class TestMetadataStoreInitialization:
     def test_metadata_store_creation(self):
         """MetadataStore 생성 테스트"""
         with patch.dict('os.environ', {
-            'DYNAMODB_TABLE': 'test_table',
+            'DDB_EVIDENCE_TABLE': 'test_table',
             'AWS_REGION': 'ap-northeast-2'
-        }):
+        }, clear=True):
             with patch('boto3.client'):
                 store = MetadataStore()
                 assert store is not None

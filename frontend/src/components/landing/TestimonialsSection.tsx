@@ -42,6 +42,7 @@ export default function TestimonialsSection() {
 
   return (
     <section
+      id="testimonials"
       className="py-20 px-6 bg-neutral-50"
       aria-label="고객 후기"
     >
