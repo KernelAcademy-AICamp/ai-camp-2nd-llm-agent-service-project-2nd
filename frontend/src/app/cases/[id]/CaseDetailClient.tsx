@@ -9,7 +9,7 @@ import { Evidence, EvidenceType, EvidenceStatus } from '@/types/evidence';
 import DraftPreviewPanel from '@/components/draft/DraftPreviewPanel';
 import DraftGenerationModal from '@/components/draft/DraftGenerationModal';
 import { DraftCitation } from '@/types/draft';
-import { downloadDraftAsDocx, DraftDownloadFormat } from '@/services/documentService';
+import { downloadDraftAsDocx, DraftDownloadFormat, DownloadResult } from '@/services/documentService';
 import {
   getPresignedUploadUrl,
   uploadToS3,
@@ -254,9 +254,11 @@ export default function CaseDetailClient({ id }: CaseDetailClientProps) {
         }
     }, [caseId, isGeneratingDraft, evidenceList]);
 
-    const handleDownload = async (content: string, format: DraftDownloadFormat = 'docx') => {
-        if (!id) return;
-        await downloadDraftAsDocx(content, id, format);
+    const handleDownload = async (content: string, format: DraftDownloadFormat = 'docx'): Promise<DownloadResult> => {
+        if (!id) {
+            return { success: false, error: '케이스 ID가 없습니다.' };
+        }
+        return downloadDraftAsDocx(content, id, format);
     };
 
     const tabItems: { id: CaseDetailTab; label: string; description: string }[] = useMemo(
