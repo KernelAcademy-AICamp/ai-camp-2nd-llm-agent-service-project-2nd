@@ -245,8 +245,8 @@ class TemplateStore:
         self._ensure_collection()
 
         try:
-            # 템플릿 ID 생성
-            template_id = f"template_{template_type.replace(' ', '_')}_{version}"
+            # 템플릿 ID 생성 (UUID 사용 - Qdrant 요구사항)
+            template_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, f"{template_type}_{version}"))
 
             # 설명 텍스트로 임베딩 생성
             embed_text = f"{template_type} {description}"
