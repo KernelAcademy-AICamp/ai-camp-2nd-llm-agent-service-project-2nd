@@ -38,12 +38,17 @@ class TestEvidenceList:
         # When: GET /cases/{case_id}/evidence
         response = client.get(f"/cases/{case_id}/evidence", headers=auth_headers)
 
-        # Then: Returns evidence list
+        # Then: Returns evidence list wrapped in EvidenceListResponse
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
-        assert isinstance(data, list)
+        # API returns EvidenceListResponse: {"evidence": [...], "total": N}
+        assert isinstance(data, dict)
+        assert "evidence" in data
+        assert "total" in data
+        assert isinstance(data["evidence"], list)
         # Initially empty since no evidence uploaded yet
-        assert len(data) == 0
+        assert len(data["evidence"]) == 0
+        assert data["total"] == 0
 
     def test_should_return_evidence_with_complete_metadata(self, client, test_user, auth_headers):
         """
