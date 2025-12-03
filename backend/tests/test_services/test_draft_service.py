@@ -227,13 +227,15 @@ class TestDraftServicePromptBuilding:
         """Test prompt structure has system and user messages"""
         # Arrange
         sections = ["청구원인"]
-        rag_context = [{"id": "ev_001", "content": "증거 내용"}]
+        evidence_context = [{"id": "ev_001", "content": "증거 내용"}]
+        legal_context = [{"article": "840", "content": "이혼 사유"}]
 
         # Act
         messages = draft_service._build_draft_prompt(
             case=sample_case,
             sections=sections,
-            rag_context=rag_context,
+            evidence_context=evidence_context,
+            legal_context=legal_context,
             language="ko",
             style="formal"
         )

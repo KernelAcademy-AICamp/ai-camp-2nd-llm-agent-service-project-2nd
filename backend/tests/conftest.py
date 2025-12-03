@@ -69,8 +69,11 @@ def mock_aws_services():
     }
     mock_boto3_client.return_value = mock_s3
 
+    # Patch boto3 at both global and module level to ensure mocks work everywhere
     with patch('boto3.client', mock_boto3_client), \
-         patch('boto3.resource', mock_boto3_resource):
+         patch('boto3.resource', mock_boto3_resource), \
+         patch('app.utils.s3.boto3.client', mock_boto3_client), \
+         patch('app.utils.dynamo.boto3.resource', mock_boto3_resource):
         yield {
             "s3": mock_s3,
             "dynamodb_table": mock_table,

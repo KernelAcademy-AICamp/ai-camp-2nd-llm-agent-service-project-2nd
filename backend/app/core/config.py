@@ -12,14 +12,16 @@ from pydantic import Field, model_validator
 
 # Load .env file early so environment variables are available to boto3 and other libraries
 # This must be done before Settings class is instantiated
-try:
-    from dotenv import load_dotenv
-    # Look for .env in backend directory or project root
-    env_path = Path(__file__).resolve().parent.parent.parent / ".env"
-    if env_path.exists():
-        load_dotenv(env_path)
-except ImportError:
-    pass  # python-dotenv not installed, rely on system env vars
+# Skip in testing environment to ensure tests use default values
+if os.environ.get("TESTING") != "true":
+    try:
+        from dotenv import load_dotenv
+        # Look for .env in backend directory or project root
+        env_path = Path(__file__).resolve().parent.parent.parent / ".env"
+        if env_path.exists():
+            load_dotenv(env_path)
+    except ImportError:
+        pass  # python-dotenv not installed, rely on system env vars
 
 
 class Settings(BaseSettings):
