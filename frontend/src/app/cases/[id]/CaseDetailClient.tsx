@@ -172,6 +172,7 @@ export default function CaseDetailClient({ id }: CaseDetailClientProps) {
                     case_id: caseId,
                     evidence_temp_id,
                     s3_key,
+                    file_size: file.size,
                 });
 
                 if (completeResult.error) {
@@ -283,14 +284,6 @@ export default function CaseDetailClient({ id }: CaseDetailClientProps) {
                             </h1>
                             <p className="text-xs text-gray-500">Case ID: {id}</p>
                         </div>
-                    </div>
-                    <div className="flex space-x-3">
-                        <button
-                            onClick={openDraftModal}
-                            className="btn-primary bg-deep-trust-blue hover:bg-slate-700"
-                        >
-                            Draft 작성
-                        </button>
                     </div>
                 </div>
             </header>

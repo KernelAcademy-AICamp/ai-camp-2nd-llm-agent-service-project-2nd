@@ -27,6 +27,11 @@ export interface Evidence {
   created_at: string;
 }
 
+export interface EvidenceDetail extends Evidence {
+  content?: string; // STT/OCR 전문 텍스트
+  qdrant_id?: string;
+}
+
 export interface EvidenceListResponse {
   evidence: Evidence[];
   total: number;
@@ -43,6 +48,7 @@ export interface UploadCompleteRequest {
   case_id: string;
   evidence_temp_id: string;
   s3_key: string;
+  file_size: number;
   note?: string;
 }
 
@@ -82,12 +88,23 @@ export async function getEvidence(
 }
 
 /**
- * Get a single evidence item by ID
+ * Get a single evidence item by ID (basic info)
  */
 export async function getEvidenceById(
   evidenceId: string
 ): Promise<ApiResponse<Evidence>> {
   return apiRequest<Evidence>(`/evidence/${evidenceId}`, {
+    method: 'GET',
+  });
+}
+
+/**
+ * Get evidence detail with full content (STT/OCR text)
+ */
+export async function getEvidenceDetail(
+  evidenceId: string
+): Promise<ApiResponse<EvidenceDetail>> {
+  return apiRequest<EvidenceDetail>(`/evidence/${evidenceId}`, {
     method: 'GET',
   });
 }

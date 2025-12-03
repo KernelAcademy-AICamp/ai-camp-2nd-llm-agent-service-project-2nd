@@ -7,8 +7,9 @@ FROM public.ecr.aws/lambda/python:3.12
 COPY requirements.txt ${LAMBDA_TASK_ROOT}
 RUN pip install --no-cache-dir -r requirements.txt
 
-# 소스 코드 복사
+# 소스 코드 복사 및 권한 설정
 COPY app/ ${LAMBDA_TASK_ROOT}/app/
+RUN chmod -R 755 ${LAMBDA_TASK_ROOT}/app/
 
 # Lambda 핸들러 설정 (app/main.py의 handler 함수)
 CMD [ "app.main.handler" ]

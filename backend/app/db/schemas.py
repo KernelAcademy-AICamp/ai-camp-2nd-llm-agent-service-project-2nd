@@ -253,6 +253,7 @@ class UploadCompleteRequest(BaseModel):
     case_id: str
     evidence_temp_id: str
     s3_key: str
+    file_size: int = 0  # File size in bytes
     note: Optional[str] = None
 
 
@@ -275,6 +276,7 @@ class EvidenceSummary(BaseModel):
     size: int  # File size in bytes
     created_at: datetime
     status: str  # pending, processing, done, error
+    ai_summary: Optional[str] = None  # AI-generated summary
     article_840_tags: Optional[Article840Tags] = None  # Article 840 tagging
 
 

@@ -45,6 +45,7 @@ from src.storage.metadata_store import MetadataStore
 from src.storage.vector_store import VectorStore
 from src.storage.schemas import EvidenceFile
 from src.analysis.article_840_tagger import Article840Tagger
+from src.analysis.summarizer import EvidenceSummarizer
 from src.utils.logging_filter import SensitiveDataFilter
 from src.utils.embeddings import get_embedding_with_fallback  # Embedding utility with fallback
 
@@ -169,6 +170,7 @@ def route_and_process(bucket_name: str, object_key: str) -> Dict[str, Any]:
 
         # 분석 엔진 초기화
         tagger = Article840Tagger()
+        summarizer = EvidenceSummarizer()
         vector_store = VectorStore()
 
         # 벡터 임베딩, 분석, 저장을 통합 처리
@@ -205,6 +207,8 @@ def route_and_process(bucket_name: str, object_key: str) -> Dict[str, Any]:
             segment_end = metadata.get("segment_end_sec")
 
             # 4. Qdrant에 벡터 + 풍부한 메타데이터 저장
+            # Collection name: case_rag_{case_id} (Backend와 동일한 형식)
+            collection_name = f"case_rag_{case_id}"
             vector_store.add_chunk_with_metadata(
                 chunk_id=chunk_id,
                 file_id=file_id,
@@ -214,6 +218,7 @@ def route_and_process(bucket_name: str, object_key: str) -> Dict[str, Any]:
                 timestamp=timestamp,
                 sender=message.sender,
                 score=None,
+                collection_name=collection_name,
                 # Extended metadata
                 file_name=file_path.name,
                 file_type=source_type,
@@ -229,8 +234,15 @@ def route_and_process(bucket_name: str, object_key: str) -> Dict[str, Any]:
 
         logger.info(f"Indexed {len(chunk_ids)} chunks to Qdrant with full metadata")
 
-        # AI 요약 생성 (간단한 통계 기반)
-        ai_summary = f"총 {len(parsed_result)}개 메시지 분석 완료. 감지된 태그: {', '.join(all_categories) if all_categories else '없음'}"
+        # AI 요약 생성 (GPT-4 기반)
+        try:
+            summary_result = summarizer.summarize_evidence(parsed_result, max_words=100)
+            ai_summary = summary_result.summary
+            logger.info(f"AI Summary generated: {ai_summary[:100]}...")
+        except Exception as e:
+            # 요약 실패 시 fallback
+            logger.warning(f"AI summarization failed, using fallback: {e}")
+            ai_summary = f"총 {len(parsed_result)}개 메시지 분석 완료. 감지된 태그: {', '.join(all_categories) if all_categories else '없음'}"
 
         # Article 840 태그 집계
         article_840_tags = {
@@ -239,17 +251,37 @@ def route_and_process(bucket_name: str, object_key: str) -> Dict[str, Any]:
             "chunks_indexed": len(chunk_ids)
         }
 
+        # 원문 텍스트 합치기 (STT/OCR 결과)
+        # 메시지가 많으면 앞부분만 저장 (DynamoDB 400KB 제한)
+        full_content = "\n".join([msg.content for msg in parsed_result])
+        if len(full_content) > 50000:  # ~50KB 제한
+            full_content = full_content[:50000] + "\n\n... (이하 생략, 전체 {} 메시지)".format(len(parsed_result))
+
         # 메타데이터 저장/업데이트 (DynamoDB)
+        # 파일명에서 원본 파일명 추출 (ev_xxx_filename.ext → filename.ext)
+        original_filename = file_path.name
+        if original_filename.startswith('ev_') and '_' in original_filename[3:]:
+            # ev_abc123_photo.jpg → photo.jpg
+            parts = original_filename.split('_', 2)
+            if len(parts) >= 3:
+                original_filename = parts[2]
+
         if backend_evidence_id:
-            # Backend가 생성한 레코드 업데이트
+            # Backend가 생성한 레코드 업데이트 (또는 먼저 실행된 경우 생성)
+            # case_id, filename 등 필수 필드도 함께 저장하여 조회 가능하게 함
             metadata_store.update_evidence_status(
                 evidence_id=backend_evidence_id,
                 status="processed",
                 ai_summary=ai_summary,
                 article_840_tags=article_840_tags,
-                qdrant_id=chunk_ids[0] if chunk_ids else None
+                qdrant_id=chunk_ids[0] if chunk_ids else None,
+                case_id=case_id,
+                filename=original_filename,
+                s3_key=object_key,
+                file_type=source_type,
+                content=full_content
             )
-            logger.info(f"Updated Backend evidence: {backend_evidence_id} → processed")
+            logger.info(f"Updated Backend evidence: {backend_evidence_id} → processed (case_id={case_id})")
         else:
             # Fallback: 새 레코드 생성 (기존 방식)
             evidence_file = EvidenceFile(
