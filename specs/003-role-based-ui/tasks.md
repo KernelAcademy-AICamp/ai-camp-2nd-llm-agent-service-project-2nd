@@ -231,41 +231,41 @@
 
 > **TDD RED Phase**: These tests MUST fail before implementation
 
-- [ ] T077 [P] [US5] Contract test for GET /detective/dashboard in backend/tests/contract/test_detective_dashboard.py
-- [ ] T078 [P] [US5] Contract test for GET /detective/cases and GET /detective/cases/{id} in backend/tests/contract/test_detective_cases.py
-- [ ] T079 [P] [US5] Contract test for POST /detective/cases/{id}/accept, /reject in backend/tests/contract/test_detective_actions.py
-- [ ] T080 [P] [US5] Contract test for POST /detective/cases/{id}/records and /report in backend/tests/contract/test_detective_records.py
-- [ ] T081 [P] [US5] Contract test for GET /detective/earnings in backend/tests/contract/test_detective_earnings.py
-- [ ] T082 [P] [US5] Integration test for detective dashboard page in frontend/src/__tests__/app/detective/dashboard.test.tsx
-- [ ] T083 [P] [US5] Integration test for GPSTracker component in frontend/src/__tests__/components/detective/GPSTracker.test.tsx
-- [ ] T084 [P] [US5] Integration test for FieldRecorder component in frontend/src/__tests__/components/detective/FieldRecorder.test.tsx
+- [X] T077 [P] [US5] Contract test for GET /detective/dashboard in backend/tests/contract/test_detective_dashboard.py
+- [X] T078 [P] [US5] Contract test for GET /detective/cases and GET /detective/cases/{id} in backend/tests/contract/test_detective_cases.py
+- [X] T079 [P] [US5] Contract test for POST /detective/cases/{id}/accept, /reject in backend/tests/contract/test_detective_actions.py
+- [X] T080 [P] [US5] Contract test for POST /detective/cases/{id}/records and /report in backend/tests/contract/test_detective_records.py
+- [X] T081 [P] [US5] Contract test for GET /detective/earnings in backend/tests/contract/test_detective_earnings.py
+- [X] T082 [P] [US5] Integration test for detective dashboard page in frontend/src/__tests__/app/detective/dashboard.test.tsx
+- [X] T083 [P] [US5] Integration test for GPSTracker component in frontend/src/__tests__/components/detective/GPSTracker.test.tsx
+- [X] T084 [P] [US5] Integration test for FieldRecorder component in frontend/src/__tests__/components/detective/FieldRecorder.test.tsx
 
 ### Backend Implementation for User Story 5
 
-- [ ] T085 [US5] Create detective portal router in backend/app/api/detective_portal.py
-- [ ] T086 [US5] Create detective dashboard endpoint GET /detective/dashboard in backend/app/api/detective_portal.py
-- [ ] T087 [US5] Create investigation list endpoint GET /detective/cases in backend/app/api/detective_portal.py
-- [ ] T088 [US5] Create investigation detail endpoint GET /detective/cases/{id} in backend/app/api/detective_portal.py
-- [ ] T089 [US5] Create accept/reject endpoints POST /detective/cases/{id}/accept, /reject in backend/app/api/detective_portal.py
-- [ ] T090 [US5] Create field record endpoint POST /detective/cases/{id}/records in backend/app/api/detective_portal.py
-- [ ] T091 [US5] [AUDIT] Add audit logging for field records and reports (Constitution Principle I) in backend/app/api/detective_portal.py
-- [ ] T092 [US5] Create report submission endpoint POST /detective/cases/{id}/report in backend/app/api/detective_portal.py
-- [ ] T093 [US5] Create earnings endpoint GET /detective/earnings in backend/app/api/detective_portal.py
-- [ ] T094 [US5] Create DetectivePortalService in backend/app/services/detective_portal_service.py
-- [ ] T095 [US5] Create detective portal schemas in backend/app/schemas/detective_portal.py
-- [ ] T096 [US5] Register detective_portal router in backend/app/main.py
+- [X] T085 [US5] Create detective portal router in backend/app/api/detective_portal.py
+- [X] T086 [US5] Create detective dashboard endpoint GET /detective/dashboard in backend/app/api/detective_portal.py
+- [X] T087 [US5] Create investigation list endpoint GET /detective/cases in backend/app/api/detective_portal.py
+- [X] T088 [US5] Create investigation detail endpoint GET /detective/cases/{id} in backend/app/api/detective_portal.py
+- [X] T089 [US5] Create accept/reject endpoints POST /detective/cases/{id}/accept, /reject in backend/app/api/detective_portal.py
+- [X] T090 [US5] Create field record endpoint POST /detective/cases/{id}/records in backend/app/api/detective_portal.py
+- [X] T091 [US5] [AUDIT] Add audit logging for field records and reports (Constitution Principle I) in backend/app/api/detective_portal.py
+- [X] T092 [US5] Create report submission endpoint POST /detective/cases/{id}/report in backend/app/api/detective_portal.py
+- [X] T093 [US5] Create earnings endpoint GET /detective/earnings in backend/app/api/detective_portal.py
+- [X] T094 [US5] Create DetectivePortalService in backend/app/services/detective_portal_service.py
+- [X] T095 [US5] Create detective portal schemas in backend/app/schemas/detective_portal.py
+- [X] T096 [US5] Register detective_portal router in backend/app/main.py
 
 ### Frontend Implementation for User Story 5
 
 - [X] T097 [P] [US5] Create detective portal layout in frontend/src/app/detective/layout.tsx
-- [ ] T098 [P] [US5] Create DetectiveNav component in frontend/src/components/detective/DetectiveNav.tsx
-- [ ] T099 [P] [US5] Create GPSTracker component with Kakao Maps in frontend/src/components/detective/GPSTracker.tsx
-- [ ] T100 [P] [US5] Create FieldRecorder component in frontend/src/components/detective/FieldRecorder.tsx
-- [ ] T101 [P] [US5] Create ReportEditor component in frontend/src/components/detective/ReportEditor.tsx
+- [X] T098 [P] [US5] Create DetectiveNav component in frontend/src/components/detective/DetectiveNav.tsx
+- [X] T099 [P] [US5] Create GPSTracker component with Kakao Maps in frontend/src/components/detective/GPSTracker.tsx
+- [X] T100 [P] [US5] Create FieldRecorder component in frontend/src/components/detective/FieldRecorder.tsx
+- [X] T101 [P] [US5] Create ReportEditor component in frontend/src/components/detective/ReportEditor.tsx
 - [X] T102 [US5] Create detective dashboard page in frontend/src/app/detective/dashboard/page.tsx
-- [ ] T103 [US5] Create investigation detail page in frontend/src/app/detective/cases/[id]/page.tsx
-- [ ] T104 [US5] Create field investigation page in frontend/src/app/detective/cases/[id]/field/page.tsx
-- [ ] T105 [US5] Create earnings page in frontend/src/app/detective/earnings/page.tsx
+- [X] T103 [US5] Create investigation detail page in frontend/src/app/detective/cases/[id]/page.tsx
+- [X] T104 [US5] Create field investigation page in frontend/src/app/detective/cases/[id]/field/page.tsx
+- [X] T105 [US5] Create earnings page in frontend/src/app/detective/earnings/page.tsx
 
 **Checkpoint**: User Story 5 complete - detectives can manage investigations and record field data (all tests GREEN)
 
