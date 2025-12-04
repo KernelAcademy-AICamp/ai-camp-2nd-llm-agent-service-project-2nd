@@ -54,14 +54,21 @@ export async function apiRequest<T>(
       // Handle both error formats: { error: { message: "..." } } and { detail: "..." }
       const errorMessage = data?.error?.message || data?.detail || 'An error occurred';
 
-      // Handle 401 Unauthorized - redirect to login
+      // Handle 401 Unauthorized - redirect to login (but not from /auth/me or if already on login)
       // Note: Cookie cleanup is handled by the logout endpoint
       if (response.status === 401 && typeof window !== 'undefined') {
         // Clear any legacy localStorage tokens (migration)
         localStorage.removeItem('authToken');
         localStorage.removeItem('user');
-        // Redirect to login page
-        window.location.href = '/login';
+        // Don't redirect if:
+        // 1. We're checking auth status (/auth/me) - 401 is expected for unauthenticated users
+        // 2. We're already on the login/signup page
+        const isAuthCheck = endpoint === '/auth/me';
+        const isAuthPage = window.location.pathname.startsWith('/login') ||
+                           window.location.pathname.startsWith('/signup');
+        if (!isAuthCheck && !isAuthPage) {
+          window.location.href = '/login';
+        }
       }
 
       return {
