@@ -20,6 +20,11 @@ from .schemas import EvidenceFile, EvidenceChunk
 logger = logging.getLogger(__name__)
 
 
+class DuplicateError(Exception):
+    """Raised when attempting to create a duplicate record."""
+    pass
+
+
 class MetadataStore:
     """
     DynamoDB 메타데이터 저장소
@@ -239,6 +244,290 @@ class MetadataStore:
             )
             logger.info(f"Updated evidence status: {evidence_id} → {status}")
         except ClientError as e:
+            logger.error(f"DynamoDB update_item error for {evidence_id}: {e}")
+            raise
+
+    # ========== Idempotency & Duplicate Check Methods ==========
+
+    def check_hash_exists(self, file_hash: str) -> Optional[Dict[str, Any]]:
+        """
+        Check if a file with the given hash already exists.
+
+        Uses a GSI on file_hash field to efficiently query.
+        Falls back to scan if GSI doesn't exist.
+
+        Args:
+            file_hash: SHA-256 hash of the file
+
+        Returns:
+            Dict with existing evidence info if found, None otherwise
+        """
+        try:
+            # Try GSI first (file_hash-index)
+            try:
+                response = self.client.query(
+                    TableName=self.table_name,
+                    IndexName='file_hash-index',
+                    KeyConditionExpression='file_hash = :hash',
+                    ExpressionAttributeValues={
+                        ':hash': {'S': file_hash}
+                    },
+                    Limit=1
+                )
+                if response.get('Items'):
+                    return self._deserialize_item(response['Items'][0])
+            except ClientError as e:
+                # GSI might not exist, fall back to scan
+                if e.response['Error']['Code'] == 'ValidationException':
+                    logger.warning("file_hash-index GSI not found, using scan fallback")
+                    response = self.client.scan(
+                        TableName=self.table_name,
+                        FilterExpression='file_hash = :hash',
+                        ExpressionAttributeValues={
+                            ':hash': {'S': file_hash}
+                        },
+                        Limit=1
+                    )
+                    if response.get('Items'):
+                        return self._deserialize_item(response['Items'][0])
+                else:
+                    raise
+
+            return None
+
+        except ClientError as e:
+            logger.error(f"DynamoDB error checking hash {file_hash[:16]}...: {e}")
+            return None
+
+    def check_s3_key_exists(self, s3_key: str) -> Optional[Dict[str, Any]]:
+        """
+        Check if evidence for given S3 key already exists.
+
+        Uses a GSI on s3_key field.
+
+        Args:
+            s3_key: S3 object key
+
+        Returns:
+            Dict with existing evidence info if found, None otherwise
+        """
+        try:
+            # Try GSI first (s3_key-index)
+            try:
+                response = self.client.query(
+                    TableName=self.table_name,
+                    IndexName='s3_key-index',
+                    KeyConditionExpression='s3_key = :key',
+                    ExpressionAttributeValues={
+                        ':key': {'S': s3_key}
+                    },
+                    Limit=1
+                )
+                if response.get('Items'):
+                    return self._deserialize_item(response['Items'][0])
+            except ClientError as e:
+                # GSI might not exist, fall back to scan
+                if e.response['Error']['Code'] == 'ValidationException':
+                    logger.warning("s3_key-index GSI not found, using scan fallback")
+                    response = self.client.scan(
+                        TableName=self.table_name,
+                        FilterExpression='s3_key = :key',
+                        ExpressionAttributeValues={
+                            ':key': {'S': s3_key}
+                        },
+                        Limit=1
+                    )
+                    if response.get('Items'):
+                        return self._deserialize_item(response['Items'][0])
+                else:
+                    raise
+
+            return None
+
+        except ClientError as e:
+            logger.error(f"DynamoDB error checking s3_key {s3_key}: {e}")
+            return None
+
+    def check_evidence_processed(self, evidence_id: str) -> bool:
+        """
+        Check if evidence has already been processed.
+
+        Args:
+            evidence_id: Evidence ID to check
+
+        Returns:
+            True if already processed, False otherwise
+        """
+        try:
+            response = self.client.get_item(
+                TableName=self.table_name,
+                Key={'evidence_id': {'S': evidence_id}},
+                ProjectionExpression='#status',
+                ExpressionAttributeNames={'#status': 'status'}
+            )
+
+            item = response.get('Item')
+            if item and item.get('status', {}).get('S') == 'processed':
+                return True
+            return False
+
+        except ClientError as e:
+            logger.error(f"DynamoDB error checking evidence {evidence_id}: {e}")
+            return False
+
+    def save_file_if_not_exists(
+        self,
+        file: EvidenceFile,
+        file_hash: str
+    ) -> bool:
+        """
+        Save evidence file metadata only if it doesn't already exist.
+
+        Uses DynamoDB conditional write to prevent duplicates.
+
+        Args:
+            file: EvidenceFile object
+            file_hash: SHA-256 hash of the file
+
+        Returns:
+            True if saved, False if already exists
+
+        Raises:
+            DuplicateError: If record already exists
+        """
+        item_data = {
+            'evidence_id': file.file_id,
+            'file_id': file.file_id,
+            'filename': file.filename,
+            'file_type': file.file_type,
+            'parsed_at': file.parsed_at.isoformat(),
+            'total_messages': file.total_messages,
+            'case_id': file.case_id,
+            'filepath': file.filepath,
+            'file_hash': file_hash,  # Add hash for duplicate detection
+            'record_type': 'file',
+            'created_at': datetime.now(timezone.utc).isoformat(),
+            'status': 'processed'
+        }
+
+        try:
+            self.client.put_item(
+                TableName=self.table_name,
+                Item=self._serialize_item(item_data),
+                ConditionExpression='attribute_not_exists(evidence_id)'
+            )
+            logger.info(f"Saved file metadata: {file.file_id} (hash: {file_hash[:16]}...)")
+            return True
+
+        except ClientError as e:
+            if e.response['Error']['Code'] == 'ConditionalCheckFailedException':
+                logger.warning(f"Evidence {file.file_id} already exists, skipping")
+                raise DuplicateError(f"Evidence {file.file_id} already exists")
+            logger.error(f"DynamoDB put_item error for file {file.file_id}: {e}")
+            raise
+
+    def update_evidence_with_hash(
+        self,
+        evidence_id: str,
+        file_hash: str,
+        status: str = "processed",
+        ai_summary: Optional[str] = None,
+        article_840_tags: Optional[dict] = None,
+        qdrant_id: Optional[str] = None,
+        case_id: Optional[str] = None,
+        filename: Optional[str] = None,
+        s3_key: Optional[str] = None,
+        file_type: Optional[str] = None,
+        content: Optional[str] = None,
+        skip_if_processed: bool = True
+    ) -> bool:
+        """
+        Update evidence with hash and processing results.
+
+        Uses conditional write to prevent re-processing if skip_if_processed=True.
+
+        Args:
+            evidence_id: Evidence ID
+            file_hash: SHA-256 hash of the file
+            status: New status
+            ai_summary: AI-generated summary
+            article_840_tags: Legal tags
+            qdrant_id: Qdrant vector ID
+            case_id: Case ID
+            filename: Original filename
+            s3_key: S3 object key
+            file_type: File type
+            content: Parsed content
+            skip_if_processed: If True, don't update if already processed
+
+        Returns:
+            True if updated, False if skipped (already processed)
+        """
+        update_expression = "SET #status = :status, processed_at = :processed_at, file_hash = :hash"
+        expression_names = {"#status": "status"}
+        expression_values = {
+            ":status": {"S": status},
+            ":processed_at": {"S": datetime.now(timezone.utc).isoformat()},
+            ":hash": {"S": file_hash}
+        }
+
+        # Build update expression with optional fields
+        if ai_summary is not None:
+            update_expression += ", ai_summary = :ai_summary"
+            expression_values[":ai_summary"] = {"S": ai_summary}
+
+        if article_840_tags is not None:
+            update_expression += ", article_840_tags = :tags"
+            expression_values[":tags"] = self._serialize_value(article_840_tags)
+
+        if qdrant_id is not None:
+            update_expression += ", qdrant_id = :qdrant_id"
+            expression_values[":qdrant_id"] = {"S": qdrant_id}
+
+        if case_id is not None:
+            update_expression += ", case_id = :case_id"
+            expression_values[":case_id"] = {"S": case_id}
+
+        if filename is not None:
+            update_expression += ", filename = :filename, original_filename = :original_filename"
+            expression_values[":filename"] = {"S": filename}
+            expression_values[":original_filename"] = {"S": filename}
+
+        if s3_key is not None:
+            update_expression += ", s3_key = :s3_key"
+            expression_values[":s3_key"] = {"S": s3_key}
+
+        if file_type is not None:
+            update_expression += ", #type = :file_type"
+            expression_names["#type"] = "type"
+            expression_values[":file_type"] = {"S": file_type}
+
+        if content is not None:
+            update_expression += ", content = :content"
+            expression_values[":content"] = {"S": content}
+
+        try:
+            update_kwargs = {
+                "TableName": self.table_name,
+                "Key": {"evidence_id": {"S": evidence_id}},
+                "UpdateExpression": update_expression,
+                "ExpressionAttributeNames": expression_names,
+                "ExpressionAttributeValues": expression_values
+            }
+
+            # Add condition to skip if already processed
+            if skip_if_processed:
+                update_kwargs["ConditionExpression"] = "#status <> :processed_status"
+                expression_values[":processed_status"] = {"S": "processed"}
+
+            self.client.update_item(**update_kwargs)
+            logger.info(f"Updated evidence: {evidence_id} → {status} (hash: {file_hash[:16]}...)")
+            return True
+
+        except ClientError as e:
+            if e.response['Error']['Code'] == 'ConditionalCheckFailedException':
+                logger.info(f"Evidence {evidence_id} already processed, skipping")
+                return False
             logger.error(f"DynamoDB update_item error for {evidence_id}: {e}")
             raise
 

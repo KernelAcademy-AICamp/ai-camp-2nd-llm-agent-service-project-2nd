@@ -201,7 +201,5 @@ docs/guides/CLAUDE.md
 docs/guides/claude.md
 
 # Personal Claude configuration directory
-.claude/
-.specify/
 .agent/
 *.pdf

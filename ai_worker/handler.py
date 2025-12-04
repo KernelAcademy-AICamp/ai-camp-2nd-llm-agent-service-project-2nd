@@ -41,13 +41,14 @@ try:
     from src.parsers import VideoParser
 except ImportError:
     VideoParser = None  # type: ignore
-from src.storage.metadata_store import MetadataStore
+from src.storage.metadata_store import MetadataStore, DuplicateError
 from src.storage.vector_store import VectorStore
 from src.storage.schemas import EvidenceFile
 from src.analysis.article_840_tagger import Article840Tagger
 from src.analysis.summarizer import EvidenceSummarizer
 from src.utils.logging_filter import SensitiveDataFilter
 from src.utils.embeddings import get_embedding_with_fallback  # Embedding utility with fallback
+from src.utils.hash import calculate_file_hash  # Hash utility for idempotency
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -149,6 +150,53 @@ def route_and_process(bucket_name: str, object_key: str) -> Dict[str, Any]:
         s3_client.download_file(bucket_name, object_key, local_path)
         logger.info(f"Downloaded {object_key} to {local_path}")
 
+        # ============================================
+        # Idempotency Check - Calculate hash and check duplicates
+        # ============================================
+        file_hash = calculate_file_hash(local_path)
+        logger.info(f"Calculated file hash: {file_hash[:16]}...")
+
+        # Initialize metadata store for idempotency checks
+        metadata_store = MetadataStore()
+
+        # Check 1: Has this evidence_id already been processed?
+        backend_evidence_id = _extract_evidence_id_from_s3_key(object_key)
+        if backend_evidence_id and metadata_store.check_evidence_processed(backend_evidence_id):
+            logger.info(f"Evidence {backend_evidence_id} already processed, skipping")
+            return {
+                "status": "skipped",
+                "reason": "already_processed",
+                "evidence_id": backend_evidence_id,
+                "file": object_key
+            }
+
+        # Check 2: Has a file with this hash already been processed?
+        existing_by_hash = metadata_store.check_hash_exists(file_hash)
+        if existing_by_hash:
+            logger.info(f"Duplicate file detected (hash match: {existing_by_hash.get('evidence_id')}), skipping")
+            return {
+                "status": "skipped",
+                "reason": "duplicate_hash",
+                "existing_evidence_id": existing_by_hash.get('evidence_id'),
+                "file_hash": file_hash[:16],
+                "file": object_key
+            }
+
+        # Check 3: Has this S3 key already been processed?
+        existing_by_s3_key = metadata_store.check_s3_key_exists(object_key)
+        if existing_by_s3_key and existing_by_s3_key.get('status') == 'processed':
+            logger.info(f"S3 key already processed ({existing_by_s3_key.get('evidence_id')}), skipping")
+            return {
+                "status": "skipped",
+                "reason": "already_processed_s3_key",
+                "existing_evidence_id": existing_by_s3_key.get('evidence_id'),
+                "file": object_key
+            }
+
+        # ============================================
+        # Parsing - File is new, proceed with processing
+        # ============================================
+
         # 파서 실행
         parsed_result = parser.parse(local_path)
         logger.info(f"Parsed {object_key} with {parser.__class__.__name__}")
@@ -165,8 +213,7 @@ def route_and_process(bucket_name: str, object_key: str) -> Dict[str, Any]:
         file_id = backend_evidence_id or f"file_{uuid.uuid4().hex[:12]}"
         source_type = parsed_result[0].metadata.get("source_type", "unknown") if parsed_result else "unknown"
 
-        # 메타데이터 저장 (DynamoDB)
-        metadata_store = MetadataStore()
+        # 메타데이터 저장 (DynamoDB) - metadata_store already initialized above
 
         # 분석 엔진 초기화
         tagger = Article840Tagger()
@@ -269,8 +316,10 @@ def route_and_process(bucket_name: str, object_key: str) -> Dict[str, Any]:
         if backend_evidence_id:
             # Backend가 생성한 레코드 업데이트 (또는 먼저 실행된 경우 생성)
             # case_id, filename 등 필수 필드도 함께 저장하여 조회 가능하게 함
-            metadata_store.update_evidence_status(
+            # Use update_evidence_with_hash for idempotency (conditional write)
+            updated = metadata_store.update_evidence_with_hash(
                 evidence_id=backend_evidence_id,
+                file_hash=file_hash,
                 status="processed",
                 ai_summary=ai_summary,
                 article_840_tags=article_840_tags,
@@ -279,11 +328,22 @@ def route_and_process(bucket_name: str, object_key: str) -> Dict[str, Any]:
                 filename=original_filename,
                 s3_key=object_key,
                 file_type=source_type,
-                content=full_content
+                content=full_content,
+                skip_if_processed=True  # Idempotency: skip if already processed
             )
-            logger.info(f"Updated Backend evidence: {backend_evidence_id} → processed (case_id={case_id})")
+            if updated:
+                logger.info(f"Updated Backend evidence: {backend_evidence_id} → processed (case_id={case_id})")
+            else:
+                logger.info(f"Evidence {backend_evidence_id} was already processed (concurrent execution)")
+                return {
+                    "status": "skipped",
+                    "reason": "concurrent_processed",
+                    "evidence_id": backend_evidence_id,
+                    "file": object_key
+                }
         else:
             # Fallback: 새 레코드 생성 (기존 방식)
+            # Use save_file_if_not_exists for idempotency (conditional write)
             evidence_file = EvidenceFile(
                 file_id=file_id,
                 filename=file_path.name,
@@ -293,8 +353,17 @@ def route_and_process(bucket_name: str, object_key: str) -> Dict[str, Any]:
                 case_id=case_id,
                 filepath=object_key
             )
-            metadata_store.save_file(evidence_file)
-            logger.info(f"Created new evidence record: {file_id}")
+            try:
+                metadata_store.save_file_if_not_exists(evidence_file, file_hash)
+                logger.info(f"Created new evidence record: {file_id}")
+            except DuplicateError:
+                logger.info(f"Evidence {file_id} already exists (concurrent execution)")
+                return {
+                    "status": "skipped",
+                    "reason": "concurrent_created",
+                    "evidence_id": file_id,
+                    "file": object_key
+                }
 
         return {
             "status": "processed",
@@ -304,6 +373,7 @@ def route_and_process(bucket_name: str, object_key: str) -> Dict[str, Any]:
             "case_id": case_id,
             "file_id": file_id,
             "evidence_id": backend_evidence_id,
+            "file_hash": file_hash,  # Include hash for idempotency tracking
             "chunks_indexed": len(chunk_ids),
             "tags": tags_list,
             "ai_summary": ai_summary
