@@ -24,15 +24,17 @@
 | Metric | Value |
 |:-------|:------|
 | Total Tasks | 154 |
-| Test Tasks | 40 |
-| Implementation Tasks | 106 |
+| Active Tasks | 149 |
+| Removed Tasks | 5 (T083, T084, T099, T100, T104 - GPS/field out of scope) |
+| Test Tasks | 38 (was 40, -2 removed) |
+| Implementation Tasks | 103 (was 106, -3 removed) |
 | Setup Tasks | 4 |
 | Polish Tasks | 8 |
 | User Story 1 Tasks | 14 (6 tests + 8 impl) |
 | User Story 2 Tasks | 14 (4 tests + 10 impl) |
 | User Story 3 Tasks | 16 (4 tests + 12 impl) |
 | User Story 4 Tasks | 22 (6 tests + 16 impl) |
-| User Story 5 Tasks | 29 (8 tests + 21 impl) |
+| User Story 5 Tasks | 24 (6 tests + 18 impl) - was 29, 5 removed |
 | User Story 6 Tasks | 19 (6 tests + 13 impl) |
 | User Story 7 Tasks | 16 (4 tests + 12 impl) |
 | User Story 8 Tasks | 13 (2 tests + 11 impl) |
@@ -237,8 +239,8 @@
 - [X] T080 [P] [US5] Contract test for POST /detective/cases/{id}/records and /report in backend/tests/contract/test_detective_records.py
 - [X] T081 [P] [US5] Contract test for GET /detective/earnings in backend/tests/contract/test_detective_earnings.py
 - [X] T082 [P] [US5] Integration test for detective dashboard page in frontend/src/__tests__/app/detective/dashboard.test.tsx
-- [X] T083 [P] [US5] Integration test for GPSTracker component in frontend/src/__tests__/components/detective/GPSTracker.test.tsx
-- [X] T084 [P] [US5] Integration test for FieldRecorder component in frontend/src/__tests__/components/detective/FieldRecorder.test.tsx
+- [REMOVED] T083 [P] [US5] ~~Integration test for GPSTracker component~~ (GPS out of scope)
+- [REMOVED] T084 [P] [US5] ~~Integration test for FieldRecorder component~~ (field recording out of scope)
 
 ### Backend Implementation for User Story 5
 
@@ -259,15 +261,15 @@
 
 - [X] T097 [P] [US5] Create detective portal layout in frontend/src/app/detective/layout.tsx
 - [X] T098 [P] [US5] Create DetectiveNav component in frontend/src/components/detective/DetectiveNav.tsx
-- [X] T099 [P] [US5] Create GPSTracker component with Kakao Maps in frontend/src/components/detective/GPSTracker.tsx
-- [X] T100 [P] [US5] Create FieldRecorder component in frontend/src/components/detective/FieldRecorder.tsx
+- [REMOVED] T099 [P] [US5] ~~Create GPSTracker component~~ (GPS out of scope)
+- [REMOVED] T100 [P] [US5] ~~Create FieldRecorder component~~ (field recording out of scope)
 - [X] T101 [P] [US5] Create ReportEditor component in frontend/src/components/detective/ReportEditor.tsx
 - [X] T102 [US5] Create detective dashboard page in frontend/src/app/detective/dashboard/page.tsx
 - [X] T103 [US5] Create investigation detail page in frontend/src/app/detective/cases/[id]/page.tsx
-- [X] T104 [US5] Create field investigation page in frontend/src/app/detective/cases/[id]/field/page.tsx
+- [REMOVED] T104 [US5] ~~Create field investigation page~~ (field recording out of scope)
 - [X] T105 [US5] Create earnings page in frontend/src/app/detective/earnings/page.tsx
 
-**Checkpoint**: User Story 5 complete - detectives can manage investigations and record field data (all tests GREEN)
+**Checkpoint**: User Story 5 complete - detectives can manage investigations, upload evidence, and submit reports (all tests GREEN)
 
 ---
 

@@ -82,14 +82,13 @@ frontend/src/app/
 │   ├── dashboard/
 │   ├── cases/
 │   │   └── [id]/
-│   │       ├── page.tsx
-│   │       ├── field/         # Field investigation
-│   │       ├── evidence/
-│   │       └── report/
+│   │       ├── page.tsx       # Case detail with accept/reject
+│   │       └── evidence/      # Evidence upload
 │   ├── messages/
 │   ├── calendar/
 │   ├── earnings/
 │   └── layout.tsx
+│   # Note: field/ page removed (GPS/field recording out of scope)
 └── middleware.ts              # Role-based routing
 ```
 
@@ -110,10 +109,9 @@ frontend/src/components/
 │   └── LawyerChat.tsx
 ├── detective/
 │   ├── DetectiveNav.tsx
-│   ├── FieldRecorder.tsx
-│   ├── GPSTracker.tsx
 │   ├── ReportEditor.tsx
 │   └── EvidenceCollector.tsx
+│   # Note: GPSTracker, FieldRecorder removed (out of platform scope)
 ├── shared/
 │   ├── MessageThread.tsx
 │   ├── Calendar.tsx

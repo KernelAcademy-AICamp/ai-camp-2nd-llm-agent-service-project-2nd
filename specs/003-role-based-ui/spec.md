@@ -80,17 +80,19 @@ Legal Evidence Hub의 역할 기반 UI 시스템 구현. 변호사(Lawyer), 의�
 ### US5: 탐정 포털 (Priority: P2)
 
 **As a** detective
-**I want to** manage investigation tasks and submit evidence
-**So that** I can support lawyers with field investigation
+**I want to** manage investigation requests and submit evidence
+**So that** I can support lawyers with investigation tasks
 
 **Acceptance Criteria:**
-- [ ] 탐정 대시보드 (의뢰 현황)
-- [ ] 의뢰 목록 및 상세
-- [ ] 현장 조사 기록 (GPS, 사진, 메모)
-- [ ] 증거 수집 및 업로드
-- [ ] 조사 보고서 작성
+- [ ] 탐정 대시보드 (의뢰 현황, 수익 요약)
+- [ ] 의뢰 목록 및 상세 (수락/거절)
+- [ ] 증거 업로드 (기존 Evidence 시스템 활용)
+- [ ] 조사 보고서 작성 및 제출
+- [ ] 정산/수익 확인
 
 **Screen Reference:** D-01 ~ D-06 in SCREEN_DEFINITION.md
+
+**Note:** GPS 추적 및 현장 기록 기능은 플랫폼 범위 외로 제외됨. LEH는 증거 수집/관리/분석 플랫폼이며, 현장 채집 도구가 아님.
 
 ---
 
