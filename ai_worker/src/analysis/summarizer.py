@@ -12,6 +12,7 @@ from pydantic import BaseModel, Field
 import openai
 
 from src.parsers.base import Message
+from src.prompts.tone_guidelines import DISCLAIMER_TEXT
 
 
 class SummaryType(str, Enum):
@@ -373,7 +374,7 @@ class EvidenceSummarizer:
                 messages=[
                     {
                         "role": "system",
-                        "content": "당신은 법률 증거 분석 전문가입니다. 주어진 대화나 문서를 명확하고 간결하게 요약합니다."
+                        "content": "당신은 법률 증거 분석 전문가입니다. 주어진 대화나 문서의 객관적 사실만 요약합니다. 조언이나 판단 표현은 포함하지 않습니다. '~입니다', '~으로 확인됩니다' 형태로 작성합니다."
                     },
                     {
                         "role": "user",

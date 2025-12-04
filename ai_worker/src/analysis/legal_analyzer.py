@@ -25,6 +25,7 @@ from src.schemas import (
     ConfidenceLevel,
 )
 from src.parsers.base import Message
+from src.prompts.tone_guidelines import OBJECTIVE_TONE_GUIDELINES
 from .article_840_tagger import Article840Tagger, Article840Category
 from .evidence_scorer import EvidenceScorer
 
@@ -258,8 +259,8 @@ class LegalAnalyzer:
             return self._fallback_to_keyword(chunk)
 
     def _get_system_prompt(self) -> str:
-        """AI 분석용 시스템 프롬프트"""
-        return """당신은 한국 이혼 소송 전문 법률 AI입니다.
+        """AI 분석용 시스템 프롬프트 (톤 가이드라인 포함)"""
+        base_prompt = """당신은 한국 이혼 소송 전문 법률 AI입니다.
 주어진 메시지/증거를 분석하여 민법 840조 이혼 사유에 해당하는지 판단합니다.
 
 ## 민법 840조 이혼 사유 카테고리
@@ -289,11 +290,13 @@ class LegalAnalyzer:
     "primary_category": "main_category",
     "confidence_level": 1-5,
     "confidence_score": 0.0-1.0,
-    "reasoning": "분류 이유 설명 (한국어)",
+    "reasoning": "분류 이유 설명 (한국어, 객관적 톤 사용)",
     "matched_keywords": ["키워드1", "키워드2"],
     "requires_human_review": true/false,
     "review_reason": "검토 필요 시 이유"
 }"""
+        # 톤앤매너 가이드라인 추가
+        return f"{base_prompt}\n\n{OBJECTIVE_TONE_GUIDELINES}"
 
     def _build_analysis_prompt(self, chunk: EvidenceChunk) -> str:
         """분석용 프롬프트 생성"""

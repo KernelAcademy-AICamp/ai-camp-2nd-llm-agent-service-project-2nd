@@ -30,6 +30,7 @@ from src.schemas import (
     get_system_prompt_categories,
 )
 from src.exceptions import AnalysisError
+from src.prompts.tone_guidelines import OBJECTIVE_TONE_GUIDELINES
 
 logger = logging.getLogger(__name__)
 
@@ -64,7 +65,7 @@ SYSTEM_PROMPT = """당신은 대한민국 가사소송 전문 법률 AI입니다
 - primary_ground: 부정행위
 - confidence: 0.75
 - key_phrases: ["호텔에서", "그 사람", "또 만났어"]
-- reasoning: 호텔 만남과 '또'라는 표현이 반복적 외도를 암시
+- reasoning: 호텔 만남과 '또' 표현으로 반복적 외도 정황이 나타납니다
 
 ### 예시 2: 가정폭력
 입력: "남편이 또 때렸어. 멍이 들었어."
@@ -72,7 +73,7 @@ SYSTEM_PROMPT = """당신은 대한민국 가사소송 전문 법률 AI입니다
 - primary_ground: 가정폭력
 - confidence: 0.85
 - key_phrases: ["때렸어", "멍이 들었어"]
-- reasoning: 신체 폭력의 직접적 진술과 상해 증거
+- reasoning: 신체 폭력의 직접적 진술과 상해 증거가 확인됩니다
 
 ### 예시 3: 무관한 메시지
 입력: "오늘 저녁 뭐 먹을까?"
@@ -80,7 +81,7 @@ SYSTEM_PROMPT = """당신은 대한민국 가사소송 전문 법률 AI입니다
 - primary_ground: 무관
 - confidence: 0.95
 - key_phrases: []
-- reasoning: 일상 대화로 이혼 사유와 무관
+- reasoning: 일상 대화로 이혼 사유와 무관한 내용입니다
 
 ### 예시 4: 부정문 (False Positive 방지)
 입력: "바람 안 피웠어. 오해야."
@@ -88,7 +89,7 @@ SYSTEM_PROMPT = """당신은 대한민국 가사소송 전문 법률 AI입니다
 - primary_ground: 무관
 - confidence: 0.7
 - key_phrases: ["바람 안 피웠어", "오해"]
-- reasoning: 부정문으로 외도를 부인하는 내용
+- reasoning: 부정문으로 외도를 부인하는 내용입니다
 
 ## 출력 형식
 
@@ -136,9 +137,11 @@ class AIAnalyzer:
         self._system_prompt = self._build_system_prompt()
 
     def _build_system_prompt(self) -> str:
-        """시스템 프롬프트 생성"""
+        """시스템 프롬프트 생성 (톤 가이드라인 포함)"""
         categories = get_system_prompt_categories()
-        return SYSTEM_PROMPT.format(categories=categories)
+        base_prompt = SYSTEM_PROMPT.format(categories=categories)
+        # 톤앤매너 가이드라인 추가
+        return f"{base_prompt}\n\n{OBJECTIVE_TONE_GUIDELINES}"
 
     def _get_client(self):
         """OpenAI 클라이언트 가져오기 (lazy initialization)"""
