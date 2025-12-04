@@ -9,6 +9,20 @@ import os
 import uuid
 
 
+def pytest_collection_modifyitems(config, items):
+    """
+    Skip tests marked with @pytest.mark.requires_aws when AWS credentials are not available
+    """
+    skip_aws = pytest.mark.skip(
+        reason="AWS credentials not configured (requires_aws marker)"
+    )
+    for item in items:
+        if "requires_aws" in item.keywords:
+            # Check if real AWS credentials are available
+            if not os.environ.get("AWS_ACCESS_KEY_ID") or not os.environ.get("AWS_SECRET_ACCESS_KEY"):
+                item.add_marker(skip_aws)
+
+
 def pytest_configure(config):
     """
     Configure environment for pytest.
@@ -22,18 +36,21 @@ def pytest_configure(config):
     os.environ["DATABASE_URL"] = "sqlite:///./test.db"
     os.environ["TESTING"] = "true"
 
-    # Set other test defaults
+    # Set other test defaults (always set these to override any .env values)
     defaults = {
         "APP_ENV": "local",
         "APP_DEBUG": "true",
         "JWT_SECRET": "test-secret-key-for-ci-pipeline-32chars",
         "S3_EVIDENCE_BUCKET": "test-bucket",
+        "S3_PRESIGNED_URL_EXPIRE_SECONDS": "300",  # Force default per SECURITY_COMPLIANCE.md
         "DDB_EVIDENCE_TABLE": "test-evidence-table",
         "QDRANT_HOST": "",  # Empty = in-memory mode for tests
         "OPENAI_API_KEY": "test-openai-key",
     }
+    # Force test defaults (critical values that must be isolated from .env)
+    force_defaults = ["S3_PRESIGNED_URL_EXPIRE_SECONDS", "DATABASE_URL", "JWT_SECRET"]
     for key, value in defaults.items():
-        if not os.environ.get(key):
+        if key in force_defaults or not os.environ.get(key):
             os.environ[key] = value
 
     # DO NOT load .env file - we want complete isolation from production config
@@ -48,11 +65,36 @@ def mock_aws_services():
     """
     Mock all AWS services (S3, DynamoDB) at session level
     to prevent tests from requiring real AWS credentials
-    """
-    mock_boto3_client = MagicMock()
-    mock_boto3_resource = MagicMock()
 
-    # Mock DynamoDB Table
+    Note: dynamo.py uses boto3.client (not boto3.resource)
+    """
+    # Mock DynamoDB client (low-level API)
+    mock_dynamodb_client = MagicMock()
+    mock_dynamodb_client.query.return_value = {"Items": []}
+    mock_dynamodb_client.scan.return_value = {"Items": []}
+    mock_dynamodb_client.get_item.return_value = {}  # No Item = not found
+    mock_dynamodb_client.put_item.return_value = {}
+    mock_dynamodb_client.delete_item.return_value = {}
+
+    # Mock S3 client
+    mock_s3_client = MagicMock()
+    mock_s3_client.generate_presigned_url.return_value = "https://test-bucket.s3.amazonaws.com/presigned-url"
+    mock_s3_client.generate_presigned_post.return_value = {
+        "url": "https://test-bucket.s3.amazonaws.com",
+        "fields": {"key": "test-key"}
+    }
+
+    def mock_boto3_client(service_name, **kwargs):
+        """Return appropriate mock based on service"""
+        if service_name == 's3':
+            return mock_s3_client
+        elif service_name == 'dynamodb':
+            return mock_dynamodb_client
+        else:
+            return MagicMock()
+
+    # Also support resource API for any code that might use it
+    mock_boto3_resource = MagicMock()
     mock_table = MagicMock()
     mock_table.query.return_value = {"Items": []}
     mock_table.scan.return_value = {"Items": []}
@@ -60,22 +102,14 @@ def mock_aws_services():
     mock_table.put_item.return_value = {}
     mock_boto3_resource.return_value.Table.return_value = mock_table
 
-    # Mock S3 client
-    mock_s3 = MagicMock()
-    mock_s3.generate_presigned_url.return_value = "https://test-bucket.s3.amazonaws.com/presigned-url"
-    mock_s3.generate_presigned_post.return_value = {
-        "url": "https://test-bucket.s3.amazonaws.com",
-        "fields": {"key": "test-key"}
-    }
-    mock_boto3_client.return_value = mock_s3
-
     # Patch boto3 at both global and module level to ensure mocks work everywhere
     with patch('boto3.client', mock_boto3_client), \
          patch('boto3.resource', mock_boto3_resource), \
          patch('app.utils.s3.boto3.client', mock_boto3_client), \
-         patch('app.utils.dynamo.boto3.resource', mock_boto3_resource):
+         patch('app.utils.dynamo.boto3.client', mock_boto3_client):
         yield {
-            "s3": mock_s3,
+            "s3": mock_s3_client,
+            "dynamodb": mock_dynamodb_client,
             "dynamodb_table": mock_table,
         }
 
