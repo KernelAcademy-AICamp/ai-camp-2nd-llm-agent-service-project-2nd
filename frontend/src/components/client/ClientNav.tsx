@@ -74,7 +74,7 @@ export default function ClientNav({ items, className = '' }: ClientNavProps) {
   return (
     <nav className={`space-y-1 ${className}`}>
       {items.map((item) => {
-        const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
+        const isActive = pathname === item.href || (pathname?.startsWith(`${item.href}/`) ?? false);
 
         return (
           <Link

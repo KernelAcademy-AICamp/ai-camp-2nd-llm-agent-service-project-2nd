@@ -197,25 +197,25 @@
 
 ### Backend Implementation for User Story 4
 
-- [ ] T061 [US4] Create client portal router in backend/app/api/client_portal.py
-- [ ] T062 [US4] Create client dashboard endpoint GET /client/dashboard in backend/app/api/client_portal.py
-- [ ] T063 [US4] Create client case list endpoint GET /client/cases in backend/app/api/client_portal.py
-- [ ] T064 [US4] Create client case view endpoint GET /client/cases/{id} in backend/app/api/client_portal.py
-- [ ] T065 [US4] Create client evidence upload endpoint POST /client/cases/{id}/evidence in backend/app/api/client_portal.py
-- [ ] T066 [US4] [AUDIT] Add audit logging for evidence upload (Constitution Principle I) in backend/app/api/client_portal.py
-- [ ] T067 [US4] Create ClientPortalService in backend/app/services/client_portal_service.py
-- [ ] T068 [US4] Create client portal schemas in backend/app/schemas/client_portal.py
-- [ ] T069 [US4] Register client_portal router in backend/app/main.py
+- [X] T061 [US4] Create client portal router in backend/app/api/client_portal.py
+- [X] T062 [US4] Create client dashboard endpoint GET /client/dashboard in backend/app/api/client_portal.py
+- [X] T063 [US4] Create client case list endpoint GET /client/cases in backend/app/api/client_portal.py
+- [X] T064 [US4] Create client case view endpoint GET /client/cases/{id} in backend/app/api/client_portal.py
+- [X] T065 [US4] Create client evidence upload endpoint POST /client/cases/{id}/evidence in backend/app/api/client_portal.py
+- [X] T066 [US4] [AUDIT] Add audit logging for evidence upload (Constitution Principle I) in backend/app/api/client_portal.py
+- [X] T067 [US4] Create ClientPortalService in backend/app/services/client_portal_service.py
+- [X] T068 [US4] Create client portal schemas in backend/app/schemas/client_portal.py
+- [X] T069 [US4] Register client_portal router in backend/app/main.py
 
 ### Frontend Implementation for User Story 4
 
 - [X] T070 [P] [US4] Create client portal layout in frontend/src/app/client/layout.tsx
-- [ ] T071 [P] [US4] Create ClientNav component in frontend/src/components/client/ClientNav.tsx
-- [ ] T072 [P] [US4] Create ProgressTracker component in frontend/src/components/client/ProgressTracker.tsx
-- [ ] T073 [P] [US4] Create EvidenceUploader component in frontend/src/components/client/EvidenceUploader.tsx
+- [X] T071 [P] [US4] Create ClientNav component in frontend/src/components/client/ClientNav.tsx
+- [X] T072 [P] [US4] Create ProgressTracker component in frontend/src/components/client/ProgressTracker.tsx
+- [X] T073 [P] [US4] Create EvidenceUploader component in frontend/src/components/client/EvidenceUploader.tsx
 - [X] T074 [US4] Create client dashboard page in frontend/src/app/client/dashboard/page.tsx
-- [ ] T075 [US4] Create client case detail page in frontend/src/app/client/cases/[id]/page.tsx
-- [ ] T076 [US4] Create evidence submission page in frontend/src/app/client/cases/[id]/evidence/page.tsx
+- [X] T075 [US4] Create client case detail page in frontend/src/app/client/cases/[id]/page.tsx
+- [X] T076 [US4] Create evidence submission page in frontend/src/app/client/evidence/page.tsx
 
 **Checkpoint**: User Story 4 complete - clients can view cases and submit evidence (all tests GREEN)
 
