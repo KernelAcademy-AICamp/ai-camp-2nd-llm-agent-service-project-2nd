@@ -19,7 +19,7 @@ import {
 } from '@/lib/api/evidence';
 import { getCase, Case } from '@/lib/api/cases';
 import { generateDraftPreview, DraftCitation as ApiDraftCitation } from '@/lib/api/draft';
-import { mapApiEvidenceListToEvidence } from '@/lib/utils/evidenceMapper';
+import { mapApiEvidenceToEvidence, mapApiEvidenceListToEvidence } from '@/lib/utils/evidenceMapper';
 
 /**
  * Convert API draft citation to component DraftCitation type
@@ -117,6 +117,53 @@ export default function CaseDetailClient({ id }: CaseDetailClientProps) {
         fetchCaseData();
     }, [caseId]);
 
+    // Auto-polling: silently check for status updates without full re-render
+    useEffect(() => {
+        // Check if there are any evidence items still processing
+        const hasProcessingItems = evidenceList.some(
+            e => e.status === 'processing' || e.status === 'queued' || e.status === 'uploading'
+        );
+
+        if (!hasProcessingItems || !caseId) return;
+
+        // Poll every 5 seconds while there are processing items
+        const pollInterval = setInterval(async () => {
+            try {
+                const result = await getEvidence(caseId);
+                if (result.data) {
+                    const newList = result.data.evidence.map(e => mapApiEvidenceToEvidence(e));
+
+                    // Only update if there are actual status changes
+                    setEvidenceList(prevList => {
+                        // Check if any item's status has changed
+                        let hasChanges = false;
+                        const updatedList = prevList.map(prevItem => {
+                            const newItem = newList.find(n => n.id === prevItem.id);
+                            if (newItem && (newItem.status !== prevItem.status || newItem.summary !== prevItem.summary)) {
+                                hasChanges = true;
+                                return newItem;
+                            }
+                            return prevItem;
+                        });
+
+                        // Also check for new items
+                        const newItems = newList.filter(n => !prevList.some(p => p.id === n.id));
+                        if (newItems.length > 0) {
+                            hasChanges = true;
+                        }
+
+                        // Only trigger re-render if something changed
+                        return hasChanges ? [...updatedList, ...newItems] : prevList;
+                    });
+                }
+            } catch {
+                // Silently ignore polling errors
+            }
+        }, 5000);
+
+        return () => clearInterval(pollInterval);
+    }, [evidenceList, caseId]);
+
     const handleUpload = useCallback(async (files: File[]) => {
         if (files.length === 0 || !caseId) return;
 
@@ -172,6 +219,7 @@ export default function CaseDetailClient({ id }: CaseDetailClientProps) {
                     case_id: caseId,
                     evidence_temp_id,
                     s3_key,
+                    file_size: file.size,
                 });
 
                 if (completeResult.error) {
@@ -285,14 +333,6 @@ export default function CaseDetailClient({ id }: CaseDetailClientProps) {
                             </h1>
                             <p className="text-xs text-gray-500">Case ID: {id}</p>
                         </div>
-                    </div>
-                    <div className="flex space-x-3">
-                        <button
-                            onClick={openDraftModal}
-                            className="btn-primary bg-deep-trust-blue hover:bg-slate-700"
-                        >
-                            Draft 작성
-                        </button>
                     </div>
                 </div>
             </header>

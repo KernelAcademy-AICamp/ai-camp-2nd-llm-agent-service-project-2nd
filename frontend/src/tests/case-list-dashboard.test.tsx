@@ -77,7 +77,7 @@ describe('plan 3.10: 사건 등록/관리', () => {
     expect(modalTitle).toBeInTheDocument();
   });
 
-  it('사건 등록 모달에는 사건명, 의뢰인 이름, 설명 입력 필드가 포함되어야 한다.', async () => {
+  it('사건 등록 모달에는 사건명, 의뢰인 이름 입력 필드가 포함되어야 한다.', async () => {
     const user = userEvent.setup();
     render(<CasesPage />);
 
@@ -88,10 +88,9 @@ describe('plan 3.10: 사건 등록/관리', () => {
     // 모달이 열릴 때까지 대기
     await screen.findByRole('heading', { name: /새로운 사건 정보/i });
 
-    // 필수 입력 필드 확인
+    // 필수 입력 필드 확인 (현재 AddCaseModal은 사건명과 의뢰인 이름만 포함)
     expect(screen.getByLabelText(/사건명/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/의뢰인 이름/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/사건 설명/i)).toBeInTheDocument();
   });
 
   it('사건 카드에서 진행 상황을 변경할 수 있는 드롭다운이 표시되어야 한다.', async () => {

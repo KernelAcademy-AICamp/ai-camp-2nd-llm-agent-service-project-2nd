@@ -12,6 +12,7 @@ export interface Evidence {
     summary?: string;
     size: number;
     downloadUrl?: string;
+    content?: string; // STT/OCR 원문 텍스트
 
     // AI Worker generated fields (optional - populated after processing)
     speaker?: SpeakerType;

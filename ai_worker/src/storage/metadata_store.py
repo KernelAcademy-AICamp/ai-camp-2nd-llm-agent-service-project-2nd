@@ -159,14 +159,21 @@ class MetadataStore:
         status: str = "processed",
         ai_summary: Optional[str] = None,
         article_840_tags: Optional[dict] = None,
-        qdrant_id: Optional[str] = None
+        qdrant_id: Optional[str] = None,
+        case_id: Optional[str] = None,
+        filename: Optional[str] = None,
+        s3_key: Optional[str] = None,
+        file_type: Optional[str] = None,
+        content: Optional[str] = None
     ) -> None:
         """
-        Backend가 생성한 evidence 레코드의 상태 업데이트
+        Backend가 생성한 evidence 레코드의 상태 업데이트 (또는 생성)
 
         AI Worker가 파일 처리 완료 후 Backend 레코드를 UPDATE합니다.
+        Backend보다 AI Worker가 먼저 실행될 수 있으므로, 필수 필드도 함께 저장합니다.
         - status: pending → processed
         - 분석 결과 필드 추가 (ai_summary, article_840_tags, qdrant_id)
+        - 필수 필드 추가 (case_id, filename, s3_key) - Backend가 늦게 저장해도 조회 가능
 
         Args:
             evidence_id: Backend에서 생성한 evidence ID (예: ev_abc123)
@@ -174,6 +181,11 @@ class MetadataStore:
             ai_summary: AI 생성 요약
             article_840_tags: 민법 840조 태그 딕셔너리
             qdrant_id: Qdrant에 저장된 벡터 ID
+            case_id: 사건 ID (조회용 GSI 키)
+            filename: 원본 파일명
+            s3_key: S3 저장 경로
+            file_type: 파일 타입 (document, image, audio 등)
+            content: 파싱된 원문 텍스트 (STT/OCR 결과)
         """
         update_expression = "SET #status = :status, processed_at = :processed_at"
         expression_names = {"#status": "status"}
@@ -193,6 +205,29 @@ class MetadataStore:
         if qdrant_id is not None:
             update_expression += ", qdrant_id = :qdrant_id"
             expression_values[":qdrant_id"] = {"S": qdrant_id}
+
+        # 필수 필드들 (Backend보다 먼저 실행될 경우를 대비)
+        if case_id is not None:
+            update_expression += ", case_id = :case_id"
+            expression_values[":case_id"] = {"S": case_id}
+
+        if filename is not None:
+            update_expression += ", filename = :filename, original_filename = :original_filename"
+            expression_values[":filename"] = {"S": filename}
+            expression_values[":original_filename"] = {"S": filename}
+
+        if s3_key is not None:
+            update_expression += ", s3_key = :s3_key"
+            expression_values[":s3_key"] = {"S": s3_key}
+
+        if file_type is not None:
+            update_expression += ", #type = :file_type"
+            expression_names["#type"] = "type"
+            expression_values[":file_type"] = {"S": file_type}
+
+        if content is not None:
+            update_expression += ", content = :content"
+            expression_values[":content"] = {"S": content}
 
         try:
             self.client.update_item(

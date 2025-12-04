@@ -22,7 +22,8 @@ export interface User {
 
 export function useAuth() {
   const router = useRouter();
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  // Initialize with null to distinguish "not checked yet" from "checked and false"
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [user, setUser] = useState<User | null>(null);
 

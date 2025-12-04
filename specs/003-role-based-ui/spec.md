@@ -1,0 +1,162 @@
+# Feature Specification: Role-Based UI System
+
+**Feature ID**: 003-role-based-ui
+**Version**: 1.0.0
+**Status**: Draft
+
+---
+
+## Overview
+
+Legal Evidence Hub의 역할 기반 UI 시스템 구현. 변호사(Lawyer), 의뢰인(Client), 탐정(Detective) 3가지 역할에 대한 전용 포털 및 화면 구현.
+
+## User Stories
+
+### US1: 역할 및 인증 시스템 확장 (Priority: P1) - Foundation
+
+**As a** system administrator
+**I want to** have CLIENT and DETECTIVE roles in the system
+**So that** different users can access role-specific features
+
+**Acceptance Criteria:**
+- [ ] UserRole enum에 CLIENT, DETECTIVE 추가
+- [ ] 역할별 권한 정의 (RolePermissions)
+- [ ] 역할 기반 라우팅 미들웨어
+- [ ] 로그인 후 역할별 리다이렉션
+
+---
+
+### US2: 변호사 대시보드 (Priority: P1) - MVP
+
+**As a** lawyer
+**I want to** see my case overview on a dashboard
+**So that** I can quickly understand my workload and priorities
+
+**Acceptance Criteria:**
+- [ ] 진행중/검토필요/완료 케이스 통계 카드
+- [ ] 최근 케이스 목록 (5건)
+- [ ] 오늘/이번주 일정 요약
+- [ ] 최근 알림 피드
+- [ ] 월간 업무 통계 차트
+
+**Screen Reference:** L-01 in SCREEN_DEFINITION.md
+
+---
+
+### US3: 변호사 케이스 관리 (Priority: P1) - MVP
+
+**As a** lawyer
+**I want to** manage my cases with filtering and bulk actions
+**So that** I can efficiently handle multiple cases
+
+**Acceptance Criteria:**
+- [ ] 케이스 목록 테이블/카드 뷰
+- [ ] 검색 및 필터 (유형/상태/기간/키워드)
+- [ ] 일괄 선택 및 작업 (AI 분석, 상태 변경)
+- [ ] 케이스 상세 페이지
+- [ ] 증거 목록 및 AI 요약 표시
+
+**Screen Reference:** L-02, L-03 in SCREEN_DEFINITION.md
+
+---
+
+### US4: 의뢰인 포털 (Priority: P2)
+
+**As a** client
+**I want to** view my case status and communicate with my lawyer
+**So that** I can stay informed about my case progress
+
+**Acceptance Criteria:**
+- [ ] 의뢰인 대시보드 (케이스 진행 상황)
+- [ ] 진행 단계 시각화 (Progress Bar)
+- [ ] 증거 제출 페이지 (드래그&드롭)
+- [ ] 변호사 소통 메시지
+- [ ] 일정 및 알림 확인
+
+**Screen Reference:** C-01 ~ C-05 in SCREEN_DEFINITION.md
+
+---
+
+### US5: 탐정 포털 (Priority: P2)
+
+**As a** detective
+**I want to** manage investigation tasks and submit evidence
+**So that** I can support lawyers with field investigation
+
+**Acceptance Criteria:**
+- [ ] 탐정 대시보드 (의뢰 현황)
+- [ ] 의뢰 목록 및 상세
+- [ ] 현장 조사 기록 (GPS, 사진, 메모)
+- [ ] 증거 수집 및 업로드
+- [ ] 조사 보고서 작성
+
+**Screen Reference:** D-01 ~ D-06 in SCREEN_DEFINITION.md
+
+---
+
+### US6: 역할 간 소통 시스템 (Priority: P3)
+
+**As a** user (lawyer/client/detective)
+**I want to** communicate with other parties in real-time
+**So that** we can coordinate on case activities
+
+**Acceptance Criteria:**
+- [ ] 실시간 메시지 (WebSocket)
+- [ ] 파일 첨부 기능
+- [ ] 읽음 확인
+- [ ] 알림 푸시
+
+**Screen Reference:** L-11, C-05, D-07 in SCREEN_DEFINITION.md
+
+---
+
+### US7: 일정 관리 (Priority: P3)
+
+**As a** lawyer
+**I want to** manage my calendar with case-linked events
+**So that** I never miss important court dates or meetings
+
+**Acceptance Criteria:**
+- [ ] 월/주/일 캘린더 뷰
+- [ ] 케이스 연동 일정
+- [ ] 리마인더 알림
+- [ ] 일정 유형별 색상 구분
+
+**Screen Reference:** L-09 in SCREEN_DEFINITION.md
+
+---
+
+### US8: 청구/정산 시스템 (Priority: P4)
+
+**As a** lawyer
+**I want to** manage billing for my cases
+**So that** I can track payments and invoices
+
+**Acceptance Criteria:**
+- [ ] 착수금/성공보수 관리
+- [ ] 청구서 생성
+- [ ] 결제 현황 추적
+- [ ] 의뢰인 결제 페이지
+
+**Screen Reference:** L-10, C-07 in SCREEN_DEFINITION.md
+
+---
+
+## Out of Scope
+
+- Admin 역할 화면 (기존 구현 유지)
+- 결제 게이트웨이 연동 (Phase 2)
+- 모바일 앱 (웹 반응형으로 대체)
+
+## Dependencies
+
+- 기존 인증 시스템 (JWT)
+- 기존 케이스/증거 API
+- 타임라인 기능 (002-evidence-timeline)
+
+## Technical Notes
+
+- Frontend: Next.js 14 App Router
+- Backend: FastAPI
+- Real-time: WebSocket (FastAPI)
+- State: React Context + SWR

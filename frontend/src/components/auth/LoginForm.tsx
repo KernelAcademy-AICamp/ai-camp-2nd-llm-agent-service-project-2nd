@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { login } from '@/lib/api/auth';
 import { Button, Input } from '@/components/primitives';
+import { getDashboardPath, UserRole } from '@/types/user';
 
 export default function LoginForm() {
   const router = useRouter();
@@ -34,10 +35,20 @@ export default function LoginForm() {
       // Store user info for display purposes
       if (response.data.user) {
         localStorage.setItem('user', JSON.stringify(response.data.user));
+
+        // Set user_data cookie for middleware and portal layouts
+        const userData = {
+          name: response.data.user.name,
+          email: response.data.user.email,
+          role: response.data.user.role,
+        };
+        document.cookie = `user_data=${encodeURIComponent(JSON.stringify(userData))}; path=/; max-age=${7 * 24 * 60 * 60}`;
       }
 
-      // Redirect to cases page
-      router.push('/cases');
+      // Redirect based on user role
+      const userRole = response.data.user?.role as UserRole || 'lawyer';
+      const dashboardPath = getDashboardPath(userRole);
+      router.push(dashboardPath);
     } catch {
       setError('로그인 중 오류가 발생했습니다.');
     } finally {

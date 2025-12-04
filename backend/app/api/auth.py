@@ -173,7 +173,8 @@ def signup(
         email=request.email,
         password=request.password,
         name=request.name,
-        accept_terms=request.accept_terms
+        accept_terms=request.accept_terms,
+        role=request.role
     )
 
     # Create refresh token

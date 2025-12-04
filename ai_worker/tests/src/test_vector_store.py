@@ -126,7 +126,10 @@ class TestVectorStoreAddEvidence:
             score=8.5
         )
 
-        assert vector_id == "chunk001"
+        # Implementation returns UUID, not chunk_id (Qdrant requires UUID for point ID)
+        # Verify it's a valid UUID string format
+        import uuid
+        uuid.UUID(vector_id)  # Will raise ValueError if invalid UUID
         mock_qdrant_client.upsert.assert_called_once()
 
 

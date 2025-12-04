@@ -199,14 +199,18 @@ class TestArticle840Tags:
         assert response.status_code == 200
         data = response.json()
 
-        assert len(data) == 2
+        # API returns EvidenceListResponse: {"evidence": [...], "total": N}
+        assert "evidence" in data
+        assert "total" in data
+        assert data["total"] == 2
+        assert len(data["evidence"]) == 2
 
         # First evidence has tags
-        assert data[0]["article_840_tags"] is not None
-        assert len(data[0]["article_840_tags"]["categories"]) == 2
+        assert data["evidence"][0]["article_840_tags"] is not None
+        assert len(data["evidence"][0]["article_840_tags"]["categories"]) == 2
 
         # Second evidence has no tags
-        assert data[1]["article_840_tags"] is None
+        assert data["evidence"][1]["article_840_tags"] is None
 
     def test_filter_evidence_by_single_category(
         self,
@@ -284,10 +288,12 @@ class TestArticle840Tags:
         assert response.status_code == 200
         data = response.json()
 
+        # API returns EvidenceListResponse: {"evidence": [...], "total": N}
+        assert "evidence" in data
         # Should return only ev_001 and ev_003 (both have "adultery")
-        assert len(data) == 2
-        assert data[0]["id"] == "ev_001"
-        assert data[1]["id"] == "ev_003"
+        assert len(data["evidence"]) == 2
+        assert data["evidence"][0]["id"] == "ev_001"
+        assert data["evidence"][1]["id"] == "ev_003"
 
     def test_filter_evidence_by_multiple_categories(
         self,
@@ -365,10 +371,12 @@ class TestArticle840Tags:
         assert response.status_code == 200
         data = response.json()
 
+        # API returns EvidenceListResponse: {"evidence": [...], "total": N}
+        assert "evidence" in data
         # Should return ev_001 (adultery) and ev_002 (desertion)
-        assert len(data) == 2
-        assert data[0]["id"] == "ev_001"
-        assert data[1]["id"] == "ev_002"
+        assert len(data["evidence"]) == 2
+        assert data["evidence"][0]["id"] == "ev_001"
+        assert data["evidence"][1]["id"] == "ev_002"
 
     def test_filter_evidence_excludes_untagged_items(
         self,
@@ -428,9 +436,11 @@ class TestArticle840Tags:
         assert response.status_code == 200
         data = response.json()
 
+        # API returns EvidenceListResponse: {"evidence": [...], "total": N}
+        assert "evidence" in data
         # Should return only ev_001 (has tags), exclude ev_002 (no tags)
-        assert len(data) == 1
-        assert data[0]["id"] == "ev_001"
+        assert len(data["evidence"]) == 1
+        assert data["evidence"][0]["id"] == "ev_001"
 
     def test_article_840_category_enum_values(self):
         """

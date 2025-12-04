@@ -165,6 +165,14 @@ jobs:
       - name: Run pytest
         env:
           TESTING: true
+          AWS_REGION: ap-northeast-2
+          AWS_ACCESS_KEY_ID: test-access-key
+          AWS_SECRET_ACCESS_KEY: test-secret-key
+          S3_EVIDENCE_BUCKET: test-bucket
+          DDB_EVIDENCE_TABLE: test-evidence-table
+          OPENAI_API_KEY: test-openai-key
+          QDRANT_URL: http://localhost:6333
+          QDRANT_API_KEY: test-qdrant-key
         run: pytest --cov=src --cov-report=xml -v -m "not integration"
 
       - name: Upload coverage report

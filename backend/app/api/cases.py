@@ -32,7 +32,13 @@ from app.db.schemas import (
 from app.services.case_service import CaseService
 from app.services.evidence_service import EvidenceService
 from app.services.draft_service import DraftService
-from app.core.dependencies import get_current_user_id
+from app.core.dependencies import (
+    get_current_user_id,
+    get_current_user,
+    require_internal_user,
+    require_lawyer_or_admin
+)
+from app.db.models import User
 
 
 router = APIRouter()
@@ -41,7 +47,7 @@ router = APIRouter()
 @router.post("", response_model=CaseOut, status_code=status.HTTP_201_CREATED)
 def create_case(
     case_data: CaseCreate,
-    user_id: str = Depends(get_current_user_id),
+    current_user: User = Depends(require_internal_user),
     db: Session = Depends(get_db)
 ):
     """
@@ -57,10 +63,15 @@ def create_case(
 
     **Authentication:**
     - Requires valid JWT token
+    - Only internal users (lawyer, staff, admin) can create cases
     - Creator is automatically added as case owner
+
+    **Role Restrictions:**
+    - LAWYER, STAFF, ADMIN: Can create cases
+    - CLIENT, DETECTIVE: Cannot create cases (403 Forbidden)
     """
     case_service = CaseService(db)
-    return case_service.create_case(case_data, user_id)
+    return case_service.create_case(case_data, current_user.id)
 
 
 @router.get("", response_model=List[CaseOut])

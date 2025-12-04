@@ -66,6 +66,38 @@ class TextParser(BaseParser):
             )
             return [message]
 
+        elif extension == ".csv":
+            # CSV 파일 처리 (텍스트로 읽음)
+            content = self._parse_csv_file(filepath)
+            message = Message(
+                content=content,
+                sender="System",
+                timestamp=datetime.now(),
+                metadata={
+                    "source_type": "csv",
+                    "filename": path.name,
+                    "filepath": str(path.absolute()),
+                    "extension": extension
+                }
+            )
+            return [message]
+
+        elif extension == ".json":
+            # JSON 파일 처리 (텍스트로 읽음)
+            content = self._parse_text_file(filepath)
+            message = Message(
+                content=content,
+                sender="System",
+                timestamp=datetime.now(),
+                metadata={
+                    "source_type": "json",
+                    "filename": path.name,
+                    "filepath": str(path.absolute()),
+                    "extension": extension
+                }
+            )
+            return [message]
+
         elif extension == ".pdf":
             content = self._parse_pdf_file(filepath)
             message = Message(
@@ -98,6 +130,37 @@ class TextParser(BaseParser):
             content = f.read()
 
         return content.strip()
+
+    def _parse_csv_file(self, filepath: str) -> str:
+        """
+        CSV 파일 파싱 (텍스트로 변환)
+
+        Args:
+            filepath: CSV 파일 경로
+
+        Returns:
+            str: CSV 내용을 읽기 쉬운 형태로 변환
+        """
+        import csv
+
+        rows = []
+        with open(filepath, "r", encoding="utf-8") as f:
+            reader = csv.reader(f)
+            headers = None
+            for idx, row in enumerate(reader):
+                if idx == 0:
+                    headers = row
+                    continue
+                if headers:
+                    # "헤더1: 값1, 헤더2: 값2" 형식으로 변환
+                    formatted = ", ".join(
+                        f"{h}: {v}" for h, v in zip(headers, row) if v
+                    )
+                    rows.append(formatted)
+                else:
+                    rows.append(", ".join(row))
+
+        return "\n".join(rows)
 
     def _parse_pdf_file(self, filepath: str) -> str:
         """
