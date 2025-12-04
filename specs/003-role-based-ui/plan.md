@@ -336,3 +336,4 @@ DELETE /calendar/events/{id}    # Delete event
 - Evidence upload validation
 - Message encryption (future)
 - GPS data privacy
+- **Audit Logging (Constitution Principle I)**: All new endpoints (messaging, calendar, billing, field records) MUST integrate with existing `audit_logs` table. All CRUD operations require immutable audit trail for legal compliance.

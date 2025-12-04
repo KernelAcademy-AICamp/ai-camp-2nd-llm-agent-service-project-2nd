@@ -18,18 +18,19 @@
 
 | Metric | Value |
 |:-------|:------|
-| Total Tasks | 72 |
+| Total Tasks | 78 |
 | User Story 1 Tasks | 8 |
 | User Story 2 Tasks | 10 |
 | User Story 3 Tasks | 12 |
-| User Story 4 Tasks | 14 |
-| User Story 5 Tasks | 16 |
-| User Story 6 Tasks | 6 |
-| User Story 7 Tasks | 4 |
-| User Story 8 Tasks | 2 |
+| User Story 4 Tasks | 15 |
+| User Story 5 Tasks | 17 |
+| User Story 6 Tasks | 7 |
+| User Story 7 Tasks | 5 |
+| User Story 8 Tasks | 3 |
 | Setup Tasks | 4 |
 | Foundational Tasks | 6 |
 | Parallel Opportunities | 28 |
+| Audit Compliance Tasks | 5 |
 
 ---
 
@@ -153,6 +154,7 @@
 - [ ] T042 [US4] Create client dashboard endpoint GET /client/dashboard in backend/app/api/client_portal.py
 - [ ] T043 [US4] Create client case view endpoint GET /client/cases/{id} in backend/app/api/client_portal.py
 - [ ] T044 [US4] Create client evidence upload endpoint POST /client/cases/{id}/evidence in backend/app/api/client_portal.py
+- [ ] T044a [US4] [AUDIT] Add audit logging for evidence upload (Constitution Principle I) in backend/app/api/client_portal.py
 - [ ] T045 [US4] Create ClientPortalService in backend/app/services/client_portal_service.py
 - [ ] T046 [US4] Create client portal schemas in backend/app/schemas/client_portal.py
 - [ ] T047 [US4] Register client_portal router in backend/app/main.py
@@ -183,6 +185,7 @@
 - [ ] T056 [US5] Create detective dashboard endpoint GET /detective/dashboard in backend/app/api/detective_portal.py
 - [ ] T057 [US5] Create investigation list endpoint GET /detective/cases in backend/app/api/detective_portal.py
 - [ ] T058 [US5] Create field record endpoint POST /detective/cases/{id}/records in backend/app/api/detective_portal.py
+- [ ] T058a [US5] [AUDIT] Add audit logging for field records and reports (Constitution Principle I) in backend/app/api/detective_portal.py
 - [ ] T059 [US5] Create report submission endpoint POST /detective/cases/{id}/report in backend/app/api/detective_portal.py
 - [ ] T060 [US5] Create DetectivePortalService in backend/app/services/detective_portal_service.py
 - [ ] T061 [US5] Create detective portal schemas in backend/app/schemas/detective_portal.py
@@ -215,6 +218,7 @@
 - [ ] T072 [US6] Create MessagingService in backend/app/services/messaging_service.py
 - [ ] T073 [US6] Create messaging schemas in backend/app/schemas/messaging.py
 - [ ] T074 [US6] Register messaging router and WebSocket endpoint in backend/app/main.py
+- [ ] T074a [US6] [AUDIT] Add audit logging for message send/read operations (Constitution Principle I) in backend/app/api/messaging.py
 
 ### Frontend Implementation for User Story 6
 
@@ -235,6 +239,8 @@
 
 - [ ] T077 [US7] Create calendar router in backend/app/api/calendar.py
 - [ ] T078 [US7] Create CalendarService in backend/app/services/calendar_service.py
+- [ ] T078a [US7] Register calendar router in backend/app/main.py
+- [ ] T078b [US7] [AUDIT] Add audit logging for calendar CRUD operations (Constitution Principle I) in backend/app/api/calendar.py
 
 ### Frontend Implementation for User Story 7
 
@@ -252,6 +258,7 @@
 **Independent Test**: Create invoice, view client payment status
 
 - [ ] T081 [US8] Create billing router and service in backend/app/api/billing.py
+- [ ] T081a [US8] [AUDIT] Add audit logging for invoice creation and payment (Constitution Principle I) in backend/app/api/billing.py
 - [ ] T082 [US8] Create billing page in frontend/src/app/lawyer/billing/page.tsx
 
 **Checkpoint**: User Story 8 complete - basic billing works
