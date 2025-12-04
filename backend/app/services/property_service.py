@@ -16,7 +16,7 @@ from app.db.models import PropertyType
 from app.repositories.property_repository import PropertyRepository
 from app.repositories.case_repository import CaseRepository
 from app.repositories.case_member_repository import CaseMemberRepository
-from app.core.errors import NotFoundError, PermissionError
+from app.middleware import NotFoundError, PermissionError
 
 
 class PropertyService:
