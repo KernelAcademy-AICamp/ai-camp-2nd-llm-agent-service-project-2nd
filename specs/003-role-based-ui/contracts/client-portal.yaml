@@ -1,0 +1,496 @@
+openapi: 3.1.0
+info:
+  title: Client Portal API
+  description: API endpoints for client portal (의뢰인 포털)
+  version: 1.0.0
+  contact:
+    name: Team H·P·L
+
+servers:
+  - url: /api/v1
+    description: API Server
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: Client Dashboard
+    description: Client dashboard and overview
+  - name: Client Cases
+    description: Case viewing and evidence submission
+  - name: Client Messages
+    description: Communication with lawyer
+  - name: Client Billing
+    description: Invoice and payment management
+
+paths:
+  /client/dashboard:
+    get:
+      tags: [Client Dashboard]
+      summary: Get client dashboard data
+      operationId: getClientDashboard
+      responses:
+        '200':
+          description: Dashboard data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientDashboard'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /client/cases:
+    get:
+      tags: [Client Cases]
+      summary: List client's cases
+      operationId: listClientCases
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [active, closed, all]
+            default: active
+      responses:
+        '200':
+          description: List of cases
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ClientCaseListItem'
+
+  /client/cases/{caseId}:
+    get:
+      tags: [Client Cases]
+      summary: Get case detail (limited view for client)
+      operationId: getClientCaseDetail
+      parameters:
+        - $ref: '#/components/parameters/CaseId'
+      responses:
+        '200':
+          description: Case detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientCaseDetail'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /client/cases/{caseId}/evidence:
+    post:
+      tags: [Client Cases]
+      summary: Upload evidence to case
+      operationId: uploadClientEvidence
+      parameters:
+        - $ref: '#/components/parameters/CaseId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EvidenceUploadRequest'
+      responses:
+        '201':
+          description: Evidence upload initiated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EvidenceUploadResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /client/messages:
+    get:
+      tags: [Client Messages]
+      summary: List messages with lawyer
+      operationId: listClientMessages
+      parameters:
+        - name: case_id
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+            maximum: 100
+        - name: before
+          in: query
+          description: Cursor for pagination (message ID)
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of messages
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageList'
+
+    post:
+      tags: [Client Messages]
+      summary: Send message to lawyer
+      operationId: sendClientMessage
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MessageCreate'
+      responses:
+        '201':
+          description: Message sent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+
+  /client/billing:
+    get:
+      tags: [Client Billing]
+      summary: List invoices
+      operationId: listClientInvoices
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, paid, overdue, all]
+            default: all
+      responses:
+        '200':
+          description: List of invoices
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/InvoiceSummary'
+
+  /client/billing/{invoiceId}/pay:
+    post:
+      tags: [Client Billing]
+      summary: Initiate payment for invoice
+      operationId: payClientInvoice
+      parameters:
+        - name: invoiceId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Payment initiated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentInitiation'
+        '400':
+          description: Invoice already paid or cancelled
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    CaseId:
+      name: caseId
+      in: path
+      required: true
+      schema:
+        type: string
+
+  responses:
+    Unauthorized:
+      description: Authentication required
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Forbidden:
+      description: Access denied
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    BadRequest:
+      description: Invalid request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        detail:
+          type: string
+        status_code:
+          type: integer
+      required: [detail, status_code]
+
+    ClientDashboard:
+      type: object
+      properties:
+        active_cases:
+          type: integer
+          description: Number of active cases
+        pending_actions:
+          type: integer
+          description: Evidence submissions or messages pending
+        upcoming_events:
+          type: array
+          items:
+            $ref: '#/components/schemas/UpcomingEvent'
+        recent_messages:
+          type: array
+          items:
+            $ref: '#/components/schemas/MessagePreview'
+        pending_invoices:
+          type: number
+          format: decimal
+          description: Total amount of pending invoices (KRW)
+
+    ClientCaseListItem:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        status:
+          type: string
+          enum: [active, pending, closed]
+        lawyer_name:
+          type: string
+        progress_percent:
+          type: integer
+          minimum: 0
+          maximum: 100
+        updated_at:
+          type: string
+          format: date-time
+
+    ClientCaseDetail:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        status:
+          type: string
+        lawyer:
+          $ref: '#/components/schemas/LawyerInfo'
+        progress:
+          $ref: '#/components/schemas/CaseProgress'
+        evidence_count:
+          type: integer
+        next_event:
+          $ref: '#/components/schemas/UpcomingEvent'
+        created_at:
+          type: string
+          format: date-time
+
+    CaseProgress:
+      type: object
+      properties:
+        current_step:
+          type: integer
+        total_steps:
+          type: integer
+        steps:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              status:
+                type: string
+                enum: [completed, current, pending]
+              completed_at:
+                type: string
+                format: date-time
+
+    LawyerInfo:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+
+    UpcomingEvent:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        event_type:
+          type: string
+        start_time:
+          type: string
+          format: date-time
+        case_title:
+          type: string
+
+    MessagePreview:
+      type: object
+      properties:
+        id:
+          type: string
+        sender_name:
+          type: string
+        content_preview:
+          type: string
+          maxLength: 100
+        created_at:
+          type: string
+          format: date-time
+        is_read:
+          type: boolean
+
+    MessageList:
+      type: object
+      properties:
+        messages:
+          type: array
+          items:
+            $ref: '#/components/schemas/Message'
+        has_more:
+          type: boolean
+        next_cursor:
+          type: string
+
+    Message:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        case_id:
+          type: string
+        sender_id:
+          type: string
+        sender_name:
+          type: string
+        content:
+          type: string
+        attachments:
+          type: array
+          items:
+            $ref: '#/components/schemas/Attachment'
+        read_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+
+    MessageCreate:
+      type: object
+      required: [case_id, content]
+      properties:
+        case_id:
+          type: string
+        content:
+          type: string
+          maxLength: 10000
+        attachment_ids:
+          type: array
+          items:
+            type: string
+
+    Attachment:
+      type: object
+      properties:
+        id:
+          type: string
+        filename:
+          type: string
+        size:
+          type: integer
+        mime_type:
+          type: string
+        download_url:
+          type: string
+          format: uri
+
+    EvidenceUploadRequest:
+      type: object
+      required: [filename, mime_type]
+      properties:
+        filename:
+          type: string
+        mime_type:
+          type: string
+        description:
+          type: string
+
+    EvidenceUploadResponse:
+      type: object
+      properties:
+        evidence_id:
+          type: string
+        upload_url:
+          type: string
+          format: uri
+          description: Presigned S3 URL for upload
+        expires_at:
+          type: string
+          format: date-time
+
+    InvoiceSummary:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        invoice_number:
+          type: string
+        case_title:
+          type: string
+        amount:
+          type: number
+          format: decimal
+        status:
+          type: string
+          enum: [pending, paid, overdue]
+        due_date:
+          type: string
+          format: date
+        created_at:
+          type: string
+          format: date-time
+
+    PaymentInitiation:
+      type: object
+      properties:
+        payment_id:
+          type: string
+        redirect_url:
+          type: string
+          format: uri
+          description: Payment gateway redirect URL

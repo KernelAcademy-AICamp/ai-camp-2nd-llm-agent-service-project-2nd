@@ -1,0 +1,337 @@
+openapi: 3.1.0
+info:
+  title: Messaging API
+  description: Real-time messaging API for cross-role communication
+  version: 1.0.0
+  contact:
+    name: Team H·P·L
+
+servers:
+  - url: /api/v1
+    description: API Server
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: Messages
+    description: Message CRUD operations
+  - name: WebSocket
+    description: Real-time messaging via WebSocket
+
+paths:
+  /messages/{caseId}:
+    get:
+      tags: [Messages]
+      summary: Get messages for a case
+      operationId: getMessages
+      parameters:
+        - name: caseId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+            maximum: 100
+        - name: before
+          in: query
+          description: Message ID for cursor-based pagination
+          schema:
+            type: string
+        - name: after
+          in: query
+          description: Message ID to get newer messages
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of messages
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageListResponse'
+        '403':
+          description: Not a member of this case
+
+  /messages:
+    post:
+      tags: [Messages]
+      summary: Send a message
+      operationId: sendMessage
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MessageCreate'
+      responses:
+        '201':
+          description: Message sent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '400':
+          description: Invalid request
+        '403':
+          description: Not allowed to send to this case
+
+  /messages/{messageId}/read:
+    put:
+      tags: [Messages]
+      summary: Mark message as read
+      operationId: markMessageRead
+      parameters:
+        - name: messageId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Message marked as read
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+
+  /messages/upload:
+    post:
+      tags: [Messages]
+      summary: Get presigned URL for attachment upload
+      operationId: getAttachmentUploadUrl
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [case_id, filename, mime_type]
+              properties:
+                case_id:
+                  type: string
+                filename:
+                  type: string
+                mime_type:
+                  type: string
+                size:
+                  type: integer
+      responses:
+        '200':
+          description: Upload URL generated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  attachment_id:
+                    type: string
+                  upload_url:
+                    type: string
+                    format: uri
+                  expires_at:
+                    type: string
+                    format: date-time
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    MessageListResponse:
+      type: object
+      properties:
+        messages:
+          type: array
+          items:
+            $ref: '#/components/schemas/Message'
+        has_more:
+          type: boolean
+        next_cursor:
+          type: string
+          description: Use as 'before' param for next page
+
+    Message:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        case_id:
+          type: string
+        sender:
+          $ref: '#/components/schemas/MessageSender'
+        recipient_id:
+          type: string
+          description: Null means broadcast to all case members
+        content:
+          type: string
+        attachments:
+          type: array
+          items:
+            $ref: '#/components/schemas/MessageAttachment'
+        read_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+
+    MessageSender:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        role:
+          type: string
+          enum: [lawyer, client, detective]
+        avatar_url:
+          type: string
+          format: uri
+
+    MessageCreate:
+      type: object
+      required: [case_id, content]
+      properties:
+        case_id:
+          type: string
+        recipient_id:
+          type: string
+          description: Optional - if null, broadcasts to all case members
+        content:
+          type: string
+          minLength: 1
+          maxLength: 10000
+        attachment_ids:
+          type: array
+          items:
+            type: string
+          maxItems: 10
+
+    MessageAttachment:
+      type: object
+      properties:
+        id:
+          type: string
+        filename:
+          type: string
+        size:
+          type: integer
+          description: File size in bytes
+        mime_type:
+          type: string
+        thumbnail_url:
+          type: string
+          format: uri
+          description: For images/videos
+        download_url:
+          type: string
+          format: uri
+
+    # WebSocket Message Types
+    WebSocketMessage:
+      oneOf:
+        - $ref: '#/components/schemas/WSNewMessage'
+        - $ref: '#/components/schemas/WSReadReceipt'
+        - $ref: '#/components/schemas/WSTypingIndicator'
+        - $ref: '#/components/schemas/WSError'
+
+    WSNewMessage:
+      type: object
+      required: [type, data]
+      properties:
+        type:
+          type: string
+          const: new_message
+        data:
+          $ref: '#/components/schemas/Message'
+
+    WSReadReceipt:
+      type: object
+      required: [type, data]
+      properties:
+        type:
+          type: string
+          const: read_receipt
+        data:
+          type: object
+          properties:
+            message_id:
+              type: string
+            read_by:
+              type: string
+            read_at:
+              type: string
+              format: date-time
+
+    WSTypingIndicator:
+      type: object
+      required: [type, data]
+      properties:
+        type:
+          type: string
+          const: typing
+        data:
+          type: object
+          properties:
+            user_id:
+              type: string
+            user_name:
+              type: string
+            is_typing:
+              type: boolean
+
+    WSError:
+      type: object
+      required: [type, data]
+      properties:
+        type:
+          type: string
+          const: error
+        data:
+          type: object
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+
+# WebSocket endpoint documentation (not OpenAPI standard)
+x-websocket-endpoints:
+  /ws/messages/{caseId}:
+    description: |
+      Real-time messaging WebSocket endpoint.
+
+      ## Connection
+      ```
+      ws://api.example.com/ws/messages/{caseId}?token={jwt_token}
+      ```
+
+      ## Authentication
+      JWT token must be passed as query parameter.
+
+      ## Message Types (Server → Client)
+      - `new_message`: New message received
+      - `read_receipt`: Message marked as read
+      - `typing`: User typing indicator
+      - `error`: Error notification
+
+      ## Message Types (Client → Server)
+      - `typing`: Send typing indicator
+        ```json
+        {"type": "typing", "data": {"is_typing": true}}
+        ```
+
+      ## Reconnection
+      Client should implement exponential backoff reconnection.
+      On reconnect, fetch messages via REST API to sync missed messages.
