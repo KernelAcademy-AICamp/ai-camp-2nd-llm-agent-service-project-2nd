@@ -119,9 +119,9 @@
 > **TDD RED Phase**: These tests MUST fail before implementation
 
 - [X] T025 [P] [US2] Contract test for GET /lawyer/dashboard endpoint in backend/tests/contract/test_lawyer_dashboard.py
-- [ ] T026 [P] [US2] Contract test for dashboard stats calculation in backend/tests/unit/test_lawyer_dashboard_service.py
+- [X] T026 [P] [US2] Contract test for dashboard stats calculation in backend/tests/unit/test_lawyer_dashboard_service.py
 - [X] T027 [P] [US2] Integration test for lawyer dashboard page rendering in frontend/src/__tests__/app/lawyer/dashboard.test.tsx
-- [ ] T028 [P] [US2] Integration test for StatsCard component in frontend/src/__tests__/components/lawyer/StatsCard.test.tsx
+- [X] T028 [P] [US2] Integration test for StatsCard component in frontend/src/__tests__/components/lawyer/StatsCard.test.tsx
 
 ### Backend Implementation for User Story 2
 
