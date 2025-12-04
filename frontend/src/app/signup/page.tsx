@@ -56,13 +56,20 @@ export default function SignupPage() {
         return;
       }
 
-      // Store auth token
-      // NOTE: See Issue #63 for HTTP-only cookie migration plan
-      localStorage.setItem('authToken', response.data.access_token);
+      // Authentication token is now handled via HTTP-only cookie (set by backend)
+      // We only cache user display info locally, NOT the auth token
 
-      // Store user info for display purposes
+      // Cache user info for display purposes only (not for auth)
       if (response.data.user) {
-        localStorage.setItem('user', JSON.stringify(response.data.user));
+        const userData = {
+          name: response.data.user.name,
+          email: response.data.user.email,
+          role: response.data.user.role,
+        };
+        // Set user_data cookie for middleware
+        document.cookie = `user_data=${encodeURIComponent(JSON.stringify(userData))}; path=/; max-age=${7 * 24 * 60 * 60}`;
+        // Cache for display purposes
+        localStorage.setItem('userCache', JSON.stringify(userData));
       }
 
       // Redirect to cases page
