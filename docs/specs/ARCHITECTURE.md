@@ -44,6 +44,91 @@ LEH는 **이혼 사건 전용 AI 파라리걸 플랫폼**이다.
 
 ---
 
+## 👥 1.1 유스케이스 다이어그램
+
+```mermaid
+---
+title: LEH 유스케이스 다이어그램
+---
+flowchart TB
+    subgraph Actors
+        L[👨‍⚖️ Lawyer<br/>변호사]
+        P[👩‍💼 Paralegal<br/>사무장]
+        A[👤 Admin<br/>관리자]
+        W[🤖 AI Worker]
+    end
+
+    subgraph "Legal Evidence Hub (LEH)"
+        UC1[UC1: 로그인/인증]
+        UC2[UC2: 사건 생성/관리]
+        UC3[UC3: 당사자 관리]
+        UC4[UC4: 증거 업로드]
+        UC5[UC5: 증거 분석 상태 조회]
+        UC6[UC6: 증거 타임라인 조회]
+        UC7[UC7: 벡터 검색 RAG]
+        UC8[UC8: AI 요약/라벨 확인]
+        UC9[UC9: 소장/준비서면 초안 생성]
+        UC10[UC10: 초안 수정/확정]
+        UC11[UC11: 사용자/권한 관리]
+        UC12[UC12: 감사 로그 조회]
+        UC13[UC13: 재분석 요청]
+    end
+
+    %% Lawyer connections
+    L --> UC1
+    L --> UC2
+    L --> UC3
+    L --> UC4
+    L --> UC5
+    L --> UC6
+    L --> UC7
+    L --> UC8
+    L --> UC9
+    L --> UC10
+    L --> UC12
+
+    %% Paralegal connections
+    P --> UC1
+    P --> UC2
+    P --> UC3
+    P --> UC4
+    P --> UC5
+    P --> UC6
+    P --> UC7
+    P --> UC8
+    P --> UC13
+
+    %% Admin connections
+    A --> UC1
+    A --> UC11
+    A --> UC12
+
+    %% AI Worker connections
+    W --> UC5
+    W --> UC8
+    W --> UC13
+```
+
+### 유스케이스 설명
+
+| UC | 이름 | 설명 |
+|----|------|------|
+| UC1 | 로그인/인증 | JWT 기반 인증, 역할별 접근 제어 |
+| UC2 | 사건 생성/관리 | 이혼 사건 CRUD, 상태 관리 |
+| UC3 | 당사자 관리 | 원고/피고 정보 관리 |
+| UC4 | 증거 업로드 | S3 Presigned URL 통한 증거 파일 업로드 |
+| UC5 | 증거 분석 상태 조회 | AI Worker 처리 상태 확인 |
+| UC6 | 증거 타임라인 조회 | 시간순 증거 목록 및 필터링 |
+| UC7 | 벡터 검색 (RAG) | Qdrant 기반 의미 검색 |
+| UC8 | AI 요약/라벨 확인 | 민법 840조 태그, 요약 조회 |
+| UC9 | 소장/준비서면 초안 생성 | RAG + GPT 기반 초안 Preview |
+| UC10 | 초안 수정/확정 | 변호사 검토 후 최종 확정 |
+| UC11 | 사용자/권한 관리 | 관리자 전용 사용자 관리 |
+| UC12 | 감사 로그 조회 | 시스템 활동 로그 조회 |
+| UC13 | 재분석 요청 | 증거 재처리 요청 |
+
+---
+
 ## 🏗 2. 아키텍처 개요 다이어그램
 
 ### 2.1 High-Level Architecture
