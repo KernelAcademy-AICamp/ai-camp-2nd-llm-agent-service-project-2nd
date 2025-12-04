@@ -188,12 +188,12 @@
 
 > **TDD RED Phase**: These tests MUST fail before implementation
 
-- [ ] T055 [P] [US4] Contract test for GET /client/dashboard in backend/tests/contract/test_client_dashboard.py
-- [ ] T056 [P] [US4] Contract test for GET /client/cases and GET /client/cases/{id} in backend/tests/contract/test_client_cases.py
-- [ ] T057 [P] [US4] Contract test for POST /client/cases/{id}/evidence in backend/tests/contract/test_client_evidence.py
-- [ ] T058 [P] [US4] Integration test for client dashboard page in frontend/src/__tests__/app/client/dashboard.test.tsx
-- [ ] T059 [P] [US4] Integration test for ProgressTracker component in frontend/src/__tests__/components/client/ProgressTracker.test.tsx
-- [ ] T060 [P] [US4] Integration test for EvidenceUploader component in frontend/src/__tests__/components/client/EvidenceUploader.test.tsx
+- [X] T055 [P] [US4] Contract test for GET /client/dashboard in backend/tests/contract/test_client_portal.py
+- [X] T056 [P] [US4] Contract test for GET /client/cases in backend/tests/contract/test_client_portal.py
+- [X] T057 [P] [US4] Contract test for POST /client/cases/{id}/evidence in backend/tests/contract/test_client_portal.py
+- [X] T058 [P] [US4] Integration test for client cases page in frontend/src/__tests__/app/client/cases.test.tsx
+- [X] T059 [P] [US4] Integration test for ProgressTracker component in frontend/src/__tests__/components/client/ProgressTracker.test.tsx
+- [X] T060 [P] [US4] Integration test for EvidenceUploader component in frontend/src/__tests__/components/client/EvidenceUploader.test.tsx
 
 ### Backend Implementation for User Story 4
 

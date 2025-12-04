@@ -447,3 +447,120 @@ def admin_auth_headers(admin_user):
     return {
         "Authorization": f"Bearer {token}"
     }
+
+
+@pytest.fixture
+def client_user(test_env):
+    """
+    Create a client user in the database for client portal tests
+
+    Password: client_password123
+
+    US4 Tests (T055-T060)
+    """
+    from app.db.session import get_db
+    from app.db.models import User, Case, CaseMember, InviteToken
+    from app.core.security import hash_password
+    from sqlalchemy.orm import Session
+
+    # Generate unique email for each test run to prevent conflicts
+    unique_id = uuid.uuid4().hex[:8]
+    unique_email = f"client_{unique_id}@test.com"
+
+    # Create client user
+    db: Session = next(get_db())
+    try:
+        user = User(
+            email=unique_email,
+            hashed_password=hash_password("client_password123"),
+            name="테스트 의뢰인",
+            role="client"
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+
+        yield user
+
+        # Cleanup - delete in correct order to respect foreign keys
+        db.query(InviteToken).filter(InviteToken.created_by == user.id).delete()
+        db.query(CaseMember).filter(CaseMember.user_id == user.id).delete()
+        db.query(Case).filter(Case.created_by == user.id).delete()
+        db.delete(user)
+        db.commit()
+    finally:
+        db.close()
+
+
+@pytest.fixture
+def client_auth_headers(client_user):
+    """
+    Generate authentication headers with JWT token for client_user
+
+    Returns:
+        dict: Headers with Authorization Bearer token
+    """
+    from app.core.security import create_access_token
+
+    # Create JWT token for client user
+    token = create_access_token(data={"sub": client_user.id, "role": client_user.role})
+
+    return {
+        "Authorization": f"Bearer {token}"
+    }
+
+
+@pytest.fixture
+def test_case_with_client(test_env, client_user, test_user):
+    """
+    Create a case with client as a member for client portal tests
+
+    Creates:
+    - A case owned by test_user (lawyer)
+    - client_user added as MEMBER
+
+    US4 Tests (T055-T060)
+    """
+    from app.db.session import get_db
+    from app.db.models import Case, CaseMember, Evidence
+    from sqlalchemy.orm import Session
+
+    db: Session = next(get_db())
+    try:
+        # Create case
+        case = Case(
+            title="테스트 이혼 소송",
+            description="의뢰인 테스트용 케이스",
+            status="active",
+            created_by=test_user.id
+        )
+        db.add(case)
+        db.commit()
+        db.refresh(case)
+
+        # Add lawyer as OWNER
+        owner_member = CaseMember(
+            case_id=case.id,
+            user_id=test_user.id,
+            role="owner"
+        )
+        db.add(owner_member)
+
+        # Add client as MEMBER
+        client_member = CaseMember(
+            case_id=case.id,
+            user_id=client_user.id,
+            role="member"
+        )
+        db.add(client_member)
+        db.commit()
+
+        yield case
+
+        # Cleanup - delete evidence first (foreign key constraint)
+        db.query(Evidence).filter(Evidence.case_id == case.id).delete()
+        db.query(CaseMember).filter(CaseMember.case_id == case.id).delete()
+        db.delete(case)
+        db.commit()
+    finally:
+        db.close()
