@@ -128,5 +128,9 @@ export async function getTimeline(
         };
     }
 
-    return response as ApiResponse<TimelineResult>;
+    // Return error response (no data)
+    return {
+        error: response.error,
+        status: response.status,
+    };
 }

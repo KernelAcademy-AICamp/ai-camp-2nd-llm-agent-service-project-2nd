@@ -32,8 +32,8 @@
 
 **Purpose**: Project initialization and basic structure for timeline feature
 
-- [ ] T001 Create feature branch `002-evidence-timeline` from dev
-- [ ] T002 [P] Verify DynamoDB table `leh_evidence` schema has required fields (timestamp, labels, speaker, article_840_tags)
+- [x] T001 Create feature branch `002-evidence-timeline` from dev
+- [x] T002 [P] Verify DynamoDB table `leh_evidence` schema has required fields (timestamp, labels, speaker, article_840_tags)
 
 **Checkpoint**: Environment ready for development
 
@@ -45,10 +45,10 @@
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T003 Create backend timeline schemas (TimelineEventType enum, TimelineEvent, TimelineFilter, TimelineResult) in backend/app/schemas/timeline.py
-- [ ] T004 [P] Create frontend TypeScript types (TimelineEventType, TimelineEvent, TimelineFilter, TimelineResult) in frontend/src/types/timeline.ts
-- [ ] T005 Extend evidence repository with `get_evidence_by_case_for_timeline()` method in backend/app/repositories/evidence_repository.py
-- [ ] T006 Add significance calculation constants (SIGNIFICANCE_WEIGHTS, KEY_EVIDENCE_THRESHOLD) to backend/app/services/timeline_service.py
+- [x] T003 Create backend timeline schemas (TimelineEventType enum, TimelineEvent, TimelineFilter, TimelineResult) in backend/app/schemas/timeline.py
+- [x] T004 [P] Create frontend TypeScript types (TimelineEventType, TimelineEvent, TimelineFilter, TimelineResult) in frontend/src/types/timeline.ts
+- [x] T005 Use existing `get_evidence_by_case()` from dynamo.py (no new repository needed)
+- [x] T006 Add significance calculation constants (SIGNIFICANCE_WEIGHTS, KEY_EVIDENCE_THRESHOLD) to backend/app/services/timeline_service.py
 
 **Checkpoint**: Foundation ready - user story implementation can now begin
 
@@ -62,20 +62,20 @@
 
 ### Backend Implementation for User Story 1
 
-- [ ] T007 [US1] Implement `_build_events()` method in TimelineService to convert DynamoDB evidence to TimelineEvent objects in backend/app/services/timeline_service.py
-- [ ] T008 [US1] Implement `_calculate_significance()` method to compute significance score from Article 840 labels in backend/app/services/timeline_service.py
-- [ ] T009 [US1] Implement `get_timeline()` method with case access validation in backend/app/services/timeline_service.py
-- [ ] T010 [US1] Create timeline router with `GET /cases/{case_id}/timeline` endpoint in backend/app/api/timeline.py
-- [ ] T011 [US1] Register timeline router in FastAPI app in backend/app/main.py
+- [x] T007 [US1] Implement `_build_events()` method in TimelineService to convert DynamoDB evidence to TimelineEvent objects in backend/app/services/timeline_service.py
+- [x] T008 [US1] Implement `_calculate_significance()` method to compute significance score from Article 840 labels in backend/app/services/timeline_service.py
+- [x] T009 [US1] Implement `get_timeline()` method with case access validation in backend/app/services/timeline_service.py
+- [x] T010 [US1] Create timeline router with `GET /cases/{case_id}/timeline` endpoint in backend/app/api/timeline.py
+- [x] T011 [US1] Register timeline router in FastAPI app in backend/app/main.py
 
 ### Frontend Implementation for User Story 1
 
-- [ ] T012 [P] [US1] Create timeline API client with `fetchTimeline()` function in frontend/src/lib/api/timeline.ts
-- [ ] T013 [P] [US1] Create `useTimeline` hook with TanStack Query in frontend/src/hooks/useTimeline.ts
-- [ ] T014 [US1] Create TimelineEvent component with type icons, date/time display, speaker badge, and summary in frontend/src/components/evidence/TimelineEvent.tsx
-- [ ] T015 [US1] Enhance existing Timeline component to use TimelineEvent, support chronological sorting (asc/desc), and handle click navigation in frontend/src/components/evidence/Timeline.tsx
-- [ ] T016 [US1] Create timeline page route with data fetching and loading/empty states in frontend/src/app/cases/[id]/timeline/page.tsx
-- [ ] T017 [US1] Add audit log entry for TIMELINE_VIEW action in backend/app/services/timeline_service.py
+- [x] T012 [P] [US1] Create timeline API client with `getTimeline()` function in frontend/src/lib/api/timeline.ts
+- [x] T013 [P] [US1] Create `useTimeline` hook with useState/useCallback in frontend/src/hooks/useTimeline.ts
+- [x] T014 [US1] Create TimelineEvent component with type icons, date/time display, speaker badge, and summary in frontend/src/components/evidence/TimelineEvent.tsx
+- [x] T015 [US1] Enhance existing Timeline component to use TimelineEvent, support chronological sorting (asc/desc), and handle click navigation in frontend/src/components/evidence/Timeline.tsx
+- [x] T016 [US1] Create timeline page route with data fetching and loading/empty states in frontend/src/app/cases/[id]/timeline/page.tsx
+- [x] T017 [US1] Add audit log entry for TIMELINE_VIEW action in backend/app/services/timeline_service.py
 
 **Checkpoint**: User Story 1 complete - timeline displays evidence chronologically with proper markers
 
