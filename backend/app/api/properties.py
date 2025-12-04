@@ -6,9 +6,14 @@ GET /cases/{case_id}/properties/{property_id} - Get property detail
 PATCH /cases/{case_id}/properties/{property_id} - Update property
 DELETE /cases/{case_id}/properties/{property_id} - Delete property
 GET /cases/{case_id}/properties/summary - Get property summary
+
+Division Prediction API endpoints
+GET /cases/{case_id}/division-prediction - Get latest prediction
+POST /cases/{case_id}/division-prediction - Calculate new prediction
 """
 
 from fastapi import APIRouter, Depends, status
+from typing import Optional
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
@@ -17,9 +22,12 @@ from app.db.schemas import (
     PropertyUpdate,
     PropertyOut,
     PropertyListResponse,
-    PropertySummary
+    PropertySummary,
+    DivisionPredictionOut,
+    DivisionPredictionRequest
 )
 from app.services.property_service import PropertyService
+from app.services.prediction_service import PredictionService
 from app.core.dependencies import get_current_user_id
 
 
@@ -174,3 +182,70 @@ def delete_property(
     """
     service = PropertyService(db)
     service.delete_property(case_id, property_id, user_id)
+
+
+# ============================================
+# Division Prediction Endpoints
+# ============================================
+
+@router.get(
+    "/cases/{case_id}/division-prediction",
+    response_model=Optional[DivisionPredictionOut]
+)
+def get_division_prediction(
+    case_id: str,
+    user_id: str = Depends(get_current_user_id),
+    db: Session = Depends(get_db)
+):
+    """
+    Get the latest division prediction for a case
+
+    Returns the most recent prediction if one exists.
+    To calculate a new prediction, use POST.
+
+    **Response:**
+    - 200: Latest prediction (or null if none exists)
+    - 404: Case not found
+    - 403: User does not have access to case
+    """
+    service = PredictionService(db)
+    return service.get_prediction(case_id, user_id)
+
+
+@router.post(
+    "/cases/{case_id}/division-prediction",
+    response_model=DivisionPredictionOut,
+    status_code=status.HTTP_201_CREATED
+)
+def calculate_division_prediction(
+    case_id: str,
+    request: DivisionPredictionRequest = None,
+    user_id: str = Depends(get_current_user_id),
+    db: Session = Depends(get_db)
+):
+    """
+    Calculate a new division prediction for a case
+
+    This analyzes all properties and evidence for the case
+    and generates a new prediction using AI Worker.
+
+    **Request Body (optional):**
+    - force_recalculate: Force recalculation even if recent prediction exists
+
+    **Response:**
+    - 201: New prediction created
+    - 404: Case not found
+    - 403: User does not have access to case
+
+    **Note:**
+    - Prediction includes plaintiff/defendant ratios, amounts
+    - Evidence impacts show how each piece of evidence affects the ratio
+    - Similar cases from precedent database are included
+    - Confidence level indicates reliability of prediction
+    """
+    service = PredictionService(db)
+    return service.calculate_prediction(
+        case_id,
+        user_id,
+        request or DivisionPredictionRequest()
+    )
