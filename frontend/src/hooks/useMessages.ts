@@ -179,7 +179,7 @@ export function useMessages({ caseId, recipientId }: UseMessagesOptions): UseMes
 
       case 'typing': {
         const typingData = data.payload as TypingPayload;
-        if (typingData.case_id === caseId && typingData.recipient_id !== user?.id) {
+        if (typingData.case_id === caseId && typingData.user_id !== user?.id) {
           setIsTyping(typingData.is_typing);
           // Clear typing indicator after 3 seconds
           if (typingData.is_typing) {
@@ -232,8 +232,8 @@ export function useMessages({ caseId, recipientId }: UseMessagesOptions): UseMes
       },
       recipient_id: request.recipient_id,
       content: request.content,
-      attachments: request.attachments || null,
-      read_at: null,
+      attachments: request.attachments,
+      read_at: undefined,
       created_at: new Date().toISOString(),
       is_mine: true,
     };
