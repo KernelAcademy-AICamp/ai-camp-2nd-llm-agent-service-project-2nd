@@ -12,7 +12,8 @@
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useLawyerDashboard } from '@/hooks/useLawyerDashboard';
-import { StatsCard, StatsCardSkeleton } from '@/components/lawyer/StatsCard';
+import { StatsCard } from '@/components/lawyer/StatsCard';
+import { DashboardSkeleton } from '@/components/shared/LoadingSkeletons';
 import { useRole } from '@/hooks/useRole';
 
 // Icons for stats cards
@@ -149,19 +150,7 @@ export default function LawyerDashboardPage() {
 
   // Loading state
   if (isLoading) {
-    return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-semibold text-gray-900">대시보드</h1>
-          <p className="text-gray-500 mt-1">로딩 중...</p>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {[...Array(4)].map((_, i) => (
-            <StatsCardSkeleton key={i} />
-          ))}
-        </div>
-      </div>
-    );
+    return <DashboardSkeleton />;
   }
 
   // Error state

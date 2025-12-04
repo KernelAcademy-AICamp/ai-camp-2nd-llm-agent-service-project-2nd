@@ -14,7 +14,12 @@ import type {
   ReportResponse,
   EarningsResponse,
   AcceptRejectResponse,
+  FieldRecord,
 } from '@/types/detective-portal';
+
+// Re-export types for convenience
+export type { FieldRecord };
+export type CaseDetailData = DetectiveCaseDetailResponse;
 
 /**
  * Get detective dashboard data

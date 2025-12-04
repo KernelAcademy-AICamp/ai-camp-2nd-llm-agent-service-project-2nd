@@ -5,11 +5,13 @@
  * 003-role-based-ui Feature
  *
  * Shared sidebar navigation for all role-based portals.
+ * Supports responsive design with mobile drawer.
  * Uses design system tokens.
  */
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useEffect } from 'react';
 import { UserRole, ROLE_DISPLAY_NAMES } from '@/types/user';
 
 export interface NavItem {
@@ -26,7 +28,16 @@ interface PortalSidebarProps {
   userEmail: string;
   navItems: NavItem[];
   onLogout: () => void;
+  isOpen?: boolean;
+  onClose?: () => void;
 }
+
+// Close icon for mobile drawer
+const CloseIcon = () => (
+  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+  </svg>
+);
 
 // Icons as simple SVG components
 const DashboardIcon = () => (
@@ -89,6 +100,8 @@ export function PortalSidebar({
   userEmail,
   navItems,
   onLogout,
+  isOpen = true,
+  onClose,
 }: PortalSidebarProps) {
   const pathname = usePathname();
 
@@ -100,25 +113,65 @@ export function PortalSidebar({
     return pathname.startsWith(href);
   };
 
+  // Close sidebar on route change (mobile)
+  useEffect(() => {
+    if (onClose) {
+      onClose();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname]);
+
+  // Close on escape key
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && onClose) {
+        onClose();
+      }
+    };
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [onClose]);
+
   return (
-    <aside
-      className="flex flex-col w-64 h-screen bg-[var(--color-secondary)] text-white"
-      style={{
-        position: 'fixed',
-        left: 0,
-        top: 0,
-        bottom: 0,
-      }}
-    >
-      {/* Logo */}
-      <div className="flex items-center h-16 px-6 border-b border-white/10">
-        <Link href="/" className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-[var(--color-primary)] flex items-center justify-center font-bold">
-            LEH
-          </div>
-          <span className="font-semibold text-lg">Legal Evidence</span>
-        </Link>
-      </div>
+    <>
+      {/* Backdrop for mobile */}
+      {isOpen && onClose && (
+        <div
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          onClick={onClose}
+          aria-hidden="true"
+        />
+      )}
+
+      {/* Sidebar */}
+      <aside
+        className={`
+          flex flex-col w-64 h-screen bg-[var(--color-secondary)] text-white
+          fixed left-0 top-0 bottom-0 z-50
+          transform transition-transform duration-300 ease-in-out
+          lg:translate-x-0
+          ${isOpen ? 'translate-x-0' : '-translate-x-full'}
+        `}
+      >
+        {/* Logo */}
+        <div className="flex items-center justify-between h-16 px-6 border-b border-white/10">
+          <Link href="/" className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-[var(--color-primary)] flex items-center justify-center font-bold">
+              LEH
+            </div>
+            <span className="font-semibold text-lg">Legal Evidence</span>
+          </Link>
+          {/* Close button for mobile */}
+          {onClose && (
+            <button
+              onClick={onClose}
+              className="lg:hidden p-2 rounded-lg hover:bg-white/10 transition-colors"
+              aria-label="메뉴 닫기"
+            >
+              <CloseIcon />
+            </button>
+          )}
+        </div>
 
       {/* User Info */}
       <div className="px-6 py-4 border-b border-white/10">
@@ -179,8 +232,16 @@ export function PortalSidebar({
           <span>로그아웃</span>
         </button>
       </div>
-    </aside>
+      </aside>
+    </>
   );
 }
+
+// Hamburger menu icon for mobile header
+export const HamburgerIcon = () => (
+  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+  </svg>
+);
 
 export default PortalSidebar;

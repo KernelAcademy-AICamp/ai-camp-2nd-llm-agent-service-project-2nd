@@ -5,12 +5,13 @@
  * 003-role-based-ui Feature
  *
  * Layout for the detective portal with field investigation tools.
+ * Responsive design with mobile drawer.
  * Uses design system tokens.
  */
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import PortalSidebar, { NavIcons, NavItem } from '@/components/shared/PortalSidebar';
+import PortalSidebar, { NavIcons, NavItem, HamburgerIcon } from '@/components/shared/PortalSidebar';
 import { logout } from '@/lib/api/auth';
 
 // Detective navigation items
@@ -66,6 +67,7 @@ export default function DetectiveLayout({
   const router = useRouter();
   const [user, setUser] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     const getUserData = () => {
@@ -125,22 +127,28 @@ export default function DetectiveLayout({
         userEmail={user.email}
         navItems={detectiveNavItems}
         onLogout={handleLogout}
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
       />
 
       {/* Main Content */}
-      <main
-        className="flex-1 ml-64"
-        style={{
-          minHeight: '100vh',
-        }}
-      >
+      <main className="flex-1 lg:ml-64 min-h-screen">
         {/* Top Header */}
-        <header className="sticky top-0 z-10 h-16 bg-white border-b border-[var(--color-border-default)] flex items-center px-6">
+        <header className="sticky top-0 z-10 h-16 bg-white border-b border-[var(--color-border-default)] flex items-center px-4 lg:px-6">
+          {/* Mobile menu button */}
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="lg:hidden p-2 rounded-lg hover:bg-[var(--color-bg-secondary)] transition-colors mr-2"
+            aria-label="메뉴 열기"
+          >
+            <HamburgerIcon />
+          </button>
+
           <div className="flex-1" />
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4">
             {/* Quick cases button */}
             <button
-              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-hover)] transition-colors min-h-[44px]"
+              className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-lg bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-hover)] transition-colors min-h-[44px]"
               onClick={() => router.push('/detective/cases')}
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -169,7 +177,7 @@ export default function DetectiveLayout({
         </header>
 
         {/* Page Content */}
-        <div className="p-6">
+        <div className="p-4 lg:p-6">
           {children}
         </div>
       </main>

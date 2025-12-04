@@ -630,3 +630,112 @@ def detective_auth_headers(detective_user):
     return {
         "Authorization": f"Bearer {token}"
     }
+
+
+# ============================================
+# Calendar Test Fixtures (US7 - T125-T140)
+# ============================================
+
+@pytest.fixture
+def lawyer_user(test_user):
+    """
+    Alias for test_user as lawyer - used in calendar tests
+
+    Returns:
+        User: Lawyer user object
+    """
+    return test_user
+
+
+@pytest.fixture
+def lawyer_token(auth_headers):
+    """
+    Get JWT token string for lawyer user
+
+    Returns:
+        str: JWT token string (without 'Bearer ' prefix)
+    """
+    # Extract token from auth_headers
+    bearer_header = auth_headers.get("Authorization", "")
+    if bearer_header.startswith("Bearer "):
+        return bearer_header[7:]
+    return bearer_header
+
+
+@pytest.fixture
+def client_token(client_auth_headers):
+    """
+    Get JWT token string for client user
+
+    Returns:
+        str: JWT token string (without 'Bearer ' prefix)
+    """
+    # Extract token from auth_headers
+    bearer_header = client_auth_headers.get("Authorization", "")
+    if bearer_header.startswith("Bearer "):
+        return bearer_header[7:]
+    return bearer_header
+
+
+@pytest.fixture
+def db_session(test_env):
+    """
+    Database session for direct DB operations in tests
+
+    Returns:
+        Session: SQLAlchemy session
+    """
+    from app.db.session import get_db
+    from sqlalchemy.orm import Session
+
+    db: Session = next(get_db())
+    try:
+        yield db
+    finally:
+        db.close()
+
+
+@pytest.fixture
+def test_case(test_env, test_user):
+    """
+    Create a test case for calendar tests
+
+    Returns:
+        Case: Test case object
+    """
+    from app.db.session import get_db
+    from app.db.models import Case, CaseMember
+    from sqlalchemy.orm import Session
+
+    db: Session = next(get_db())
+    try:
+        # Create case
+        case = Case(
+            title="캘린더 테스트 케이스",
+            description="캘린더 일정 테스트용",
+            status="active",
+            created_by=test_user.id
+        )
+        db.add(case)
+        db.commit()
+        db.refresh(case)
+
+        # Add owner as case member
+        member = CaseMember(
+            case_id=case.id,
+            user_id=test_user.id,
+            role="owner"
+        )
+        db.add(member)
+        db.commit()
+
+        yield case
+
+        # Cleanup
+        from app.db.models import CalendarEvent
+        db.query(CalendarEvent).filter(CalendarEvent.case_id == case.id).delete()
+        db.query(CaseMember).filter(CaseMember.case_id == case.id).delete()
+        db.delete(case)
+        db.commit()
+    finally:
+        db.close()

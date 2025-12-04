@@ -13,8 +13,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { ConversationList } from './ConversationList';
 import { MessageList } from './MessageList';
 import { MessageInput } from './MessageInput';
-import { useConversations, useMessages } from '@/hooks/useMessages';
-import type { ConversationSummary } from '@/types/message';
+import { useConversations, useMessages, type ConversationSummary } from '@/hooks/useMessages';
 
 interface MessagesPageContentProps {
   portalType: 'lawyer' | 'client' | 'detective';
@@ -41,9 +40,9 @@ export function MessagesPageContent({
     refresh: refreshConversations,
   } = useConversations();
 
-  // Get caseId and otherUserId from URL or selected conversation
+  // Get caseId and recipientId from URL or selected conversation
   const caseId = searchParams?.get('case') || selectedConversation?.case_id || '';
-  const otherUserId = searchParams?.get('user') || selectedConversation?.other_user.id || '';
+  const recipientId = searchParams?.get('user') || selectedConversation?.other_user.id || '';
 
   // Fetch messages for selected conversation
   const {
@@ -51,17 +50,21 @@ export function MessagesPageContent({
     isLoading: isLoadingMessages,
     error: messagesError,
     hasMore,
-    wsStatus,
-    typingUsers,
-    sendMessage,
+    isConnected,
+    isTyping,
+    sendMessage: sendMessageApi,
     loadMore,
     markAsRead,
-    sendTyping,
+    sendTypingIndicator,
   } = useMessages({
     caseId,
-    otherUserId,
-    enableWebSocket: false, // Disabled for now (HTTP-only cookie auth)
+    recipientId,
   });
+
+  // Computed values for UI compatibility
+  const wsStatus = isConnected ? 'connected' : 'disconnected';
+  const typingUsers = isTyping ? [recipientId] : [];
+  const sendTyping = sendTypingIndicator;
 
   // Handle conversation selection
   const handleSelectConversation = useCallback(

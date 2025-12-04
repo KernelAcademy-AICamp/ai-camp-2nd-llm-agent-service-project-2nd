@@ -342,3 +342,72 @@ export function useMessages({ caseId, recipientId }: UseMessagesOptions): UseMes
 }
 
 export default useMessages;
+
+/**
+ * useConversations Hook
+ *
+ * Fetches and manages conversation list.
+ */
+interface UseConversationsReturn {
+  conversations: ConversationSummary[];
+  totalUnread: number;
+  isLoading: boolean;
+  error: string | null;
+  refresh: () => Promise<void>;
+}
+
+interface ConversationSummary {
+  id: string;
+  case_id: string;
+  case_title: string;
+  other_user: {
+    id: string;
+    name: string;
+    role: string;
+  };
+  last_message?: {
+    content: string;
+    created_at: string;
+    is_mine: boolean;
+  };
+  unread_count: number;
+}
+
+export function useConversations(): UseConversationsReturn {
+  const [conversations, setConversations] = useState<ConversationSummary[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchConversations = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      // For now, return mock data until API is ready
+      // In production, this would call: await getConversations();
+      const mockConversations: ConversationSummary[] = [];
+      setConversations(mockConversations);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : '대화 목록을 불러오는데 실패했습니다.');
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchConversations();
+  }, [fetchConversations]);
+
+  const totalUnread = conversations.reduce((sum, c) => sum + c.unread_count, 0);
+
+  return {
+    conversations,
+    totalUnread,
+    isLoading,
+    error,
+    refresh: fetchConversations,
+  };
+}
+
+// Re-export types
+export type { ConversationSummary };
