@@ -9,6 +9,7 @@ import { Evidence, EvidenceType, EvidenceStatus } from '@/types/evidence';
 import DraftPreviewPanel from '@/components/draft/DraftPreviewPanel';
 import DraftGenerationModal from '@/components/draft/DraftGenerationModal';
 import { DraftCitation } from '@/types/draft';
+import { PropertyDivisionDashboard } from '@/components/property-division';
 import { downloadDraftAsDocx, DraftDownloadFormat } from '@/services/documentService';
 import {
   getPresignedUploadUrl,
@@ -33,7 +34,7 @@ function mapApiCitationToCitation(apiCitation: ApiDraftCitation, evidenceList: E
     quote: apiCitation.snippet,
   };
 }
-type CaseDetailTab = 'evidence' | 'opponent' | 'timeline' | 'draft';
+type CaseDetailTab = 'evidence' | 'opponent' | 'timeline' | 'draft' | 'property';
 type UploadFeedback = { message: string; tone: 'info' | 'success' | 'error' };
 type UploadStatus = {
   isUploading: boolean;
@@ -336,6 +337,7 @@ export default function CaseDetailClient({ id }: CaseDetailClientProps) {
     const tabItems: { id: CaseDetailTab; label: string; description: string }[] = useMemo(
         () => [
             { id: 'evidence', label: '증거', description: '업로드 · 상태 · 요약' },
+            { id: 'property', label: '재산분할', description: '재산 목록 · AI 예측' },
             { id: 'opponent', label: '상대방 주장', description: '주장 정리 & AI 추천' },
             { id: 'timeline', label: '타임라인', description: '사건 맥락 · 흐름' },
             { id: 'draft', label: 'Draft', description: 'AI 초안 검토/다운로드' },
@@ -516,6 +518,12 @@ export default function CaseDetailClient({ id }: CaseDetailClientProps) {
                             )}
                         </section>
                     </div>
+                )}
+
+                {activeTab === 'property' && (
+                    <section role="tabpanel" aria-label="재산분할 탭">
+                        <PropertyDivisionDashboard caseId={caseId} />
+                    </section>
                 )}
 
                 {activeTab === 'opponent' && (
