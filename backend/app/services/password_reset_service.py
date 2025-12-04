@@ -92,8 +92,12 @@ class PasswordResetService:
         if not reset_token:
             raise ValidationError("유효하지 않은 비밀번호 재설정 링크입니다.")
 
-        # Check if expired
-        if reset_token.expires_at < datetime.now(timezone.utc):
+        # Check if expired (handle both naive and aware datetimes)
+        now = datetime.now(timezone.utc)
+        expires_at = reset_token.expires_at
+        if expires_at.tzinfo is None:
+            expires_at = expires_at.replace(tzinfo=timezone.utc)
+        if expires_at < now:
             raise ValidationError("비밀번호 재설정 링크가 만료되었습니다. 다시 요청해주세요.")
 
         # Find user

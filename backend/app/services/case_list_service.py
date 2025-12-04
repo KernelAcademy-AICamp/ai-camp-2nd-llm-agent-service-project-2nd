@@ -147,9 +147,15 @@ class CaseListService:
         # Get member count
         member_count = len(case.members) if case.members else 0
 
-        # Calculate days since update
+        # Calculate days since update (handle both naive and aware datetimes)
         now = datetime.now(timezone.utc)
-        days_since_update = (now - case.updated_at).days if case.updated_at else 0
+        if case.updated_at:
+            updated = case.updated_at
+            if updated.tzinfo is None:
+                updated = updated.replace(tzinfo=timezone.utc)
+            days_since_update = (now - updated).days
+        else:
+            days_since_update = 0
 
         # Get owner name
         owner_name = case.owner.name if case.owner else None
