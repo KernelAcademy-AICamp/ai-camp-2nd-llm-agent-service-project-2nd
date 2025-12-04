@@ -564,3 +564,69 @@ def test_case_with_client(test_env, client_user, test_user):
         db.commit()
     finally:
         db.close()
+
+
+@pytest.fixture
+def detective_user(test_env):
+    """
+    Create a detective user in the database for detective portal tests
+
+    Password: detective_password123
+
+    US5 Tests (T077-T084)
+    """
+    from app.db.session import get_db
+    from app.db.models import User, Case, CaseMember, InviteToken, InvestigationRecord
+    from app.core.security import hash_password
+    from sqlalchemy.orm import Session
+
+    # Generate unique email for each test run to prevent conflicts
+    unique_id = uuid.uuid4().hex[:8]
+    unique_email = f"detective_{unique_id}@test.com"
+
+    # Create detective user
+    db: Session = next(get_db())
+    try:
+        user = User(
+            email=unique_email,
+            hashed_password=hash_password("detective_password123"),
+            name="테스트 탐정",
+            role="detective"
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+
+        yield user
+
+        # Cleanup - delete in correct order to respect foreign keys
+        db.query(InviteToken).filter(InviteToken.created_by == user.id).delete()
+        db.query(CaseMember).filter(CaseMember.user_id == user.id).delete()
+        db.query(Case).filter(Case.created_by == user.id).delete()
+        # Clean up investigation records if the model exists
+        try:
+            db.query(InvestigationRecord).filter(InvestigationRecord.detective_id == user.id).delete()
+        except Exception:
+            pass  # Model may not have detective_id field
+        db.delete(user)
+        db.commit()
+    finally:
+        db.close()
+
+
+@pytest.fixture
+def detective_auth_headers(detective_user):
+    """
+    Generate authentication headers with JWT token for detective_user
+
+    Returns:
+        dict: Headers with Authorization Bearer token
+    """
+    from app.core.security import create_access_token
+
+    # Create JWT token for detective user
+    token = create_access_token(data={"sub": detective_user.id, "role": detective_user.role})
+
+    return {
+        "Authorization": f"Bearer {token}"
+    }
