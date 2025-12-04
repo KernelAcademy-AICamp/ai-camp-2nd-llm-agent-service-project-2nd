@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, CheckCircle2, Filter, Shield, Sparkles, Loader2, AlertCircle, RefreshCw } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Filter, Shield, Sparkles, Loader2, AlertCircle, RefreshCw, Users, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
 import EvidenceUpload from '@/components/evidence/EvidenceUpload';
 import EvidenceTable from '@/components/evidence/EvidenceTable';
@@ -408,6 +408,19 @@ export default function CaseDetailClient({ id }: CaseDetailClientProps) {
                             </button>
                         );
                     })}
+
+                    {/* Relationship Graph Link */}
+                    <Link
+                        href={`/lawyer/cases/${caseId}/relationship`}
+                        className="flex items-center gap-2 rounded-xl border border-secondary/30 bg-secondary/5 px-4 py-3 text-secondary hover:bg-secondary/10 hover:border-secondary/50 transition-all ml-auto"
+                    >
+                        <Users className="w-5 h-5" />
+                        <div className="text-left">
+                            <span className="text-sm font-semibold block">인물 관계도</span>
+                            <span className="text-xs text-secondary/70">AI 분석 결과</span>
+                        </div>
+                        <ExternalLink className="w-4 h-4 ml-1" />
+                    </Link>
                 </nav>
 
                 {activeTab === 'evidence' && (
