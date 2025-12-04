@@ -12,8 +12,14 @@ from app.db.schemas import (
     DraftPreviewRequest,
     DraftPreviewResponse,
     DraftCitation,
-    DraftExportFormat
+    DraftExportFormat,
+    DraftCreate,
+    DraftUpdate,
+    DraftResponse,
+    DraftListItem,
+    DraftDocumentStatus
 )
+from app.db.models import DraftDocument, DraftStatus, DocumentType
 from app.repositories.case_repository import CaseRepository
 from app.repositories.case_member_repository import CaseMemberRepository
 from app.utils.dynamo import get_evidence_by_case
@@ -756,3 +762,337 @@ class DraftService:
 
         # No Korean font found - will use default font
         return False
+
+    # ============================================
+    # Draft CRUD Operations
+    # ============================================
+
+    def list_drafts(self, case_id: str, user_id: str) -> List[DraftListItem]:
+        """
+        List all drafts for a case
+
+        Args:
+            case_id: Case ID
+            user_id: User ID requesting drafts
+
+        Returns:
+            List of draft summaries
+
+        Raises:
+            NotFoundError: Case not found
+            PermissionError: User does not have access to case
+        """
+        # Validate case access
+        case = self.case_repo.get_by_id(case_id)
+        if not case:
+            raise NotFoundError("Case")
+
+        if not self.member_repo.has_access(case_id, user_id):
+            raise PermissionError("You do not have access to this case")
+
+        # Query drafts for case
+        drafts = self.db.query(DraftDocument).filter(
+            DraftDocument.case_id == case_id
+        ).order_by(DraftDocument.updated_at.desc()).all()
+
+        return [
+            DraftListItem(
+                id=d.id,
+                case_id=d.case_id,
+                title=d.title,
+                document_type=d.document_type.value,
+                version=d.version,
+                status=d.status.value,
+                updated_at=d.updated_at
+            ) for d in drafts
+        ]
+
+    def get_draft(self, case_id: str, draft_id: str, user_id: str) -> DraftResponse:
+        """
+        Get a specific draft by ID
+
+        Args:
+            case_id: Case ID
+            draft_id: Draft ID
+            user_id: User ID requesting draft
+
+        Returns:
+            Draft response with full content
+
+        Raises:
+            NotFoundError: Case or draft not found
+            PermissionError: User does not have access to case
+        """
+        # Validate case access
+        case = self.case_repo.get_by_id(case_id)
+        if not case:
+            raise NotFoundError("Case")
+
+        if not self.member_repo.has_access(case_id, user_id):
+            raise PermissionError("You do not have access to this case")
+
+        # Get draft
+        draft = self.db.query(DraftDocument).filter(
+            DraftDocument.id == draft_id,
+            DraftDocument.case_id == case_id
+        ).first()
+
+        if not draft:
+            raise NotFoundError("Draft")
+
+        return DraftResponse(
+            id=draft.id,
+            case_id=draft.case_id,
+            title=draft.title,
+            document_type=draft.document_type.value,
+            content=draft.content,
+            version=draft.version,
+            status=draft.status.value,
+            created_by=draft.created_by,
+            created_at=draft.created_at,
+            updated_at=draft.updated_at
+        )
+
+    def create_draft(
+        self,
+        case_id: str,
+        draft_data: DraftCreate,
+        user_id: str
+    ) -> DraftResponse:
+        """
+        Create a new draft document
+
+        Args:
+            case_id: Case ID
+            draft_data: Draft creation data
+            user_id: User ID creating draft
+
+        Returns:
+            Created draft response
+
+        Raises:
+            NotFoundError: Case not found
+            PermissionError: User does not have write access to case
+        """
+        # Validate case access (need write permission)
+        case = self.case_repo.get_by_id(case_id)
+        if not case:
+            raise NotFoundError("Case")
+
+        if not self.member_repo.has_write_access(case_id, user_id):
+            raise PermissionError("You do not have write access to this case")
+
+        # Map schema document type to model enum
+        doc_type_map = {
+            "complaint": DocumentType.COMPLAINT,
+            "motion": DocumentType.MOTION,
+            "brief": DocumentType.BRIEF,
+            "response": DocumentType.RESPONSE,
+        }
+
+        # Create draft
+        draft = DraftDocument(
+            case_id=case_id,
+            title=draft_data.title,
+            document_type=doc_type_map.get(draft_data.document_type.value, DocumentType.BRIEF),
+            content=draft_data.content.model_dump() if draft_data.content else {},
+            version=1,
+            status=DraftStatus.DRAFT,
+            created_by=user_id
+        )
+
+        self.db.add(draft)
+        self.db.commit()
+        self.db.refresh(draft)
+
+        return DraftResponse(
+            id=draft.id,
+            case_id=draft.case_id,
+            title=draft.title,
+            document_type=draft.document_type.value,
+            content=draft.content,
+            version=draft.version,
+            status=draft.status.value,
+            created_by=draft.created_by,
+            created_at=draft.created_at,
+            updated_at=draft.updated_at
+        )
+
+    def update_draft(
+        self,
+        case_id: str,
+        draft_id: str,
+        update_data: DraftUpdate,
+        user_id: str
+    ) -> DraftResponse:
+        """
+        Update an existing draft document
+
+        Args:
+            case_id: Case ID
+            draft_id: Draft ID
+            update_data: Draft update data
+            user_id: User ID updating draft
+
+        Returns:
+            Updated draft response
+
+        Raises:
+            NotFoundError: Case or draft not found
+            PermissionError: User does not have write access to case
+        """
+        # Validate case access (need write permission)
+        case = self.case_repo.get_by_id(case_id)
+        if not case:
+            raise NotFoundError("Case")
+
+        if not self.member_repo.has_write_access(case_id, user_id):
+            raise PermissionError("You do not have write access to this case")
+
+        # Get draft
+        draft = self.db.query(DraftDocument).filter(
+            DraftDocument.id == draft_id,
+            DraftDocument.case_id == case_id
+        ).first()
+
+        if not draft:
+            raise NotFoundError("Draft")
+
+        # Map schema document type to model enum
+        doc_type_map = {
+            "complaint": DocumentType.COMPLAINT,
+            "motion": DocumentType.MOTION,
+            "brief": DocumentType.BRIEF,
+            "response": DocumentType.RESPONSE,
+        }
+
+        # Map schema status to model enum
+        status_map = {
+            "draft": DraftStatus.DRAFT,
+            "reviewed": DraftStatus.REVIEWED,
+            "exported": DraftStatus.EXPORTED,
+        }
+
+        # Update fields if provided
+        if update_data.title is not None:
+            draft.title = update_data.title
+
+        if update_data.document_type is not None:
+            draft.document_type = doc_type_map.get(
+                update_data.document_type.value,
+                draft.document_type
+            )
+
+        if update_data.content is not None:
+            draft.content = update_data.content.model_dump()
+            # Increment version when content changes
+            draft.version += 1
+
+        if update_data.status is not None:
+            draft.status = status_map.get(
+                update_data.status.value,
+                draft.status
+            )
+
+        self.db.commit()
+        self.db.refresh(draft)
+
+        return DraftResponse(
+            id=draft.id,
+            case_id=draft.case_id,
+            title=draft.title,
+            document_type=draft.document_type.value,
+            content=draft.content,
+            version=draft.version,
+            status=draft.status.value,
+            created_by=draft.created_by,
+            created_at=draft.created_at,
+            updated_at=draft.updated_at
+        )
+
+    def save_generated_draft(
+        self,
+        case_id: str,
+        draft_response: DraftPreviewResponse,
+        user_id: str
+    ) -> DraftResponse:
+        """
+        Save a generated draft preview to the database
+
+        This method converts the ephemeral DraftPreviewResponse into
+        a persisted DraftDocument that can be edited and exported.
+
+        Args:
+            case_id: Case ID
+            draft_response: Generated draft preview response
+            user_id: User ID saving the draft
+
+        Returns:
+            Saved draft response
+
+        Raises:
+            NotFoundError: Case not found
+            PermissionError: User does not have write access
+        """
+        # Validate case access
+        case = self.case_repo.get_by_id(case_id)
+        if not case:
+            raise NotFoundError("Case")
+
+        if not self.member_repo.has_write_access(case_id, user_id):
+            raise PermissionError("You do not have write access to this case")
+
+        # Build content structure from draft preview
+        content = {
+            "header": {
+                "court_name": "",
+                "case_number": "",
+                "parties": {}
+            },
+            "sections": [
+                {
+                    "title": "본문",
+                    "content": draft_response.draft_text,
+                    "order": 1
+                }
+            ],
+            "citations": [
+                {
+                    "evidence_id": c.evidence_id,
+                    "snippet": c.snippet,
+                    "labels": c.labels
+                } for c in draft_response.citations
+            ],
+            "footer": {
+                "date": draft_response.generated_at.strftime("%Y년 %m월 %d일"),
+                "attorney": ""
+            }
+        }
+
+        # Create draft
+        draft = DraftDocument(
+            case_id=case_id,
+            title=f"{case.title} - 초안",
+            document_type=DocumentType.BRIEF,
+            content=content,
+            version=1,
+            status=DraftStatus.DRAFT,
+            created_by=user_id
+        )
+
+        self.db.add(draft)
+        self.db.commit()
+        self.db.refresh(draft)
+
+        return DraftResponse(
+            id=draft.id,
+            case_id=draft.case_id,
+            title=draft.title,
+            document_type=draft.document_type.value,
+            content=draft.content,
+            version=draft.version,
+            status=draft.status.value,
+            created_by=draft.created_by,
+            created_at=draft.created_at,
+            updated_at=draft.updated_at
+        )

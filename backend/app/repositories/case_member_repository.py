@@ -120,6 +120,30 @@ class CaseMemberRepository:
         member = self.get_member(case_id, user_id)
         return member is not None and member.role == CaseMemberRole.OWNER
 
+    def has_write_access(self, case_id: str, user_id: str) -> bool:
+        """
+        Check if user has write access to a case
+
+        Write access is granted to:
+        - Case owner
+        - Case member (MEMBER role)
+
+        Viewers (VIEWER role) do NOT have write access.
+
+        Args:
+            case_id: Case ID
+            user_id: User ID
+
+        Returns:
+            True if user has write access, False otherwise
+        """
+        member = self.get_member(case_id, user_id)
+        if member is None:
+            return False
+
+        # Owner and member have write access, viewer does not
+        return member.role in (CaseMemberRole.OWNER, CaseMemberRole.MEMBER)
+
     def add_members_batch(
         self,
         case_id: str,

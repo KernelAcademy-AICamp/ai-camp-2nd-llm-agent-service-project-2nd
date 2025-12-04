@@ -347,6 +347,88 @@ class DraftExportFormat(str, Enum):
     PDF = "pdf"
 
 
+class DraftDocumentType(str, Enum):
+    """Draft document type options"""
+    COMPLAINT = "complaint"      # 소장
+    MOTION = "motion"            # 신청서
+    BRIEF = "brief"              # 준비서면
+    RESPONSE = "response"        # 답변서
+
+
+class DraftDocumentStatus(str, Enum):
+    """Draft document status options"""
+    DRAFT = "draft"              # Initial AI-generated
+    REVIEWED = "reviewed"        # Lawyer has reviewed/edited
+    EXPORTED = "exported"        # Has been exported at least once
+
+
+class DraftContentSection(BaseModel):
+    """Draft content section schema"""
+    title: str
+    content: str
+    order: int
+
+
+class DraftContent(BaseModel):
+    """Structured draft content schema"""
+    header: Optional[dict] = None
+    sections: List[DraftContentSection] = Field(default_factory=list)
+    citations: List[DraftCitation] = Field(default_factory=list)
+    footer: Optional[dict] = None
+
+
+class DraftCreate(BaseModel):
+    """Draft creation request schema"""
+    title: str = Field(..., min_length=1, max_length=255)
+    document_type: DraftDocumentType = DraftDocumentType.BRIEF
+    content: DraftContent
+
+
+class DraftUpdate(BaseModel):
+    """Draft update request schema"""
+    title: Optional[str] = Field(None, min_length=1, max_length=255)
+    document_type: Optional[DraftDocumentType] = None
+    content: Optional[DraftContent] = None
+    status: Optional[DraftDocumentStatus] = None
+
+
+class DraftResponse(BaseModel):
+    """Draft response schema"""
+    id: str
+    case_id: str
+    title: str
+    document_type: DraftDocumentType
+    content: dict  # Structured content with sections
+    version: int
+    status: DraftDocumentStatus
+    created_by: str
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class DraftListItem(BaseModel):
+    """Draft list item schema (summary)"""
+    id: str
+    case_id: str
+    title: str
+    document_type: DraftDocumentType
+    version: int
+    status: DraftDocumentStatus
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class DraftListResponse(BaseModel):
+    """Draft list response schema"""
+    drafts: List[DraftListItem]
+    total: int
+
+
 # ============================================
 # Audit Log Schemas
 # ============================================
@@ -375,6 +457,8 @@ class AuditAction(str, Enum):
 
     # Draft actions
     GENERATE_DRAFT = "GENERATE_DRAFT"
+    EXPORT_DRAFT = "EXPORT_DRAFT"
+    UPDATE_DRAFT = "UPDATE_DRAFT"
 
 
 class AuditLogOut(BaseModel):

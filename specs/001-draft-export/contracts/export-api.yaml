@@ -1,0 +1,547 @@
+openapi: 3.0.3
+info:
+  title: Draft Export API
+  description: API endpoints for exporting AI-generated draft documents to Word and PDF formats
+  version: 1.0.0
+  contact:
+    name: LEH Development Team
+
+servers:
+  - url: /api/v1
+    description: API v1 prefix
+
+tags:
+  - name: drafts
+    description: Draft document operations
+  - name: exports
+    description: Export operations
+
+paths:
+  /cases/{case_id}/drafts:
+    get:
+      summary: List drafts for a case
+      description: Get all draft documents for a specific case
+      tags: [drafts]
+      operationId: listDrafts
+      parameters:
+        - name: case_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [draft, reviewed, exported]
+        - name: document_type
+          in: query
+          schema:
+            type: string
+            enum: [complaint, motion, brief, response]
+      responses:
+        '200':
+          description: List of drafts
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  drafts:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/DraftSummary'
+                  total:
+                    type: integer
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /cases/{case_id}/drafts/{draft_id}:
+    get:
+      summary: Get draft details
+      description: Get full content of a specific draft document
+      tags: [drafts]
+      operationId: getDraft
+      parameters:
+        - name: case_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: draft_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Draft document details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Draft'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    patch:
+      summary: Update draft content
+      description: Update draft content after preview edits
+      tags: [drafts]
+      operationId: updateDraft
+      parameters:
+        - name: case_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: draft_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DraftUpdateRequest'
+      responses:
+        '200':
+          description: Updated draft
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Draft'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /cases/{case_id}/drafts/{draft_id}/export:
+    post:
+      summary: Export draft to file
+      description: |
+        Initiate export of a draft document to Word or PDF format.
+        For small documents (<30 pages), returns the file directly.
+        For large documents, returns an export job ID for polling.
+      tags: [exports]
+      operationId: exportDraft
+      parameters:
+        - name: case_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: draft_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExportRequest'
+      responses:
+        '200':
+          description: Export completed (small documents)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExportResult'
+        '202':
+          description: Export job created (large documents)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExportJob'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /cases/{case_id}/exports/{job_id}:
+    get:
+      summary: Get export job status
+      description: Poll for the status of an export job (for large documents)
+      tags: [exports]
+      operationId: getExportJob
+      parameters:
+        - name: case_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: job_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Export job status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExportJob'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /cases/{case_id}/exports:
+    get:
+      summary: List export history
+      description: Get export history for a case (for audit purposes)
+      tags: [exports]
+      operationId: listExports
+      parameters:
+        - name: case_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: draft_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+          description: Filter by specific draft
+        - name: format
+          in: query
+          schema:
+            type: string
+            enum: [docx, pdf]
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: Export history
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  exports:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ExportJob'
+                  total:
+                    type: integer
+
+components:
+  schemas:
+    DraftSummary:
+      type: object
+      required:
+        - id
+        - case_id
+        - title
+        - document_type
+        - status
+        - version
+        - created_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        case_id:
+          type: string
+          format: uuid
+        title:
+          type: string
+          example: "이혼소송 준비서면"
+        document_type:
+          type: string
+          enum: [complaint, motion, brief, response]
+        status:
+          type: string
+          enum: [draft, reviewed, exported]
+        version:
+          type: integer
+          minimum: 1
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    Draft:
+      allOf:
+        - $ref: '#/components/schemas/DraftSummary'
+        - type: object
+          required:
+            - content
+          properties:
+            content:
+              $ref: '#/components/schemas/DraftContent'
+            created_by:
+              type: string
+              format: uuid
+
+    DraftContent:
+      type: object
+      required:
+        - header
+        - sections
+      properties:
+        header:
+          type: object
+          properties:
+            court_name:
+              type: string
+              example: "서울가정법원"
+            case_number:
+              type: string
+              example: "2025드단12345"
+            parties:
+              type: object
+              properties:
+                plaintiff:
+                  type: string
+                  example: "원고 김○○"
+                defendant:
+                  type: string
+                  example: "피고 이○○"
+        sections:
+          type: array
+          items:
+            type: object
+            properties:
+              title:
+                type: string
+                example: "청구취지"
+              content:
+                type: string
+              order:
+                type: integer
+        citations:
+          type: array
+          items:
+            type: object
+            properties:
+              evidence_id:
+                type: string
+              reference:
+                type: string
+                example: "[증 제1호증]"
+              description:
+                type: string
+        footer:
+          type: object
+          properties:
+            date:
+              type: string
+              example: "2025년 12월 3일"
+            attorney:
+              type: string
+              example: "변호사 박○○"
+
+    DraftUpdateRequest:
+      type: object
+      properties:
+        content:
+          $ref: '#/components/schemas/DraftContent'
+        status:
+          type: string
+          enum: [reviewed]
+          description: Optionally mark as reviewed
+
+    ExportRequest:
+      type: object
+      required:
+        - format
+      properties:
+        format:
+          type: string
+          enum: [docx, pdf]
+          description: Export format
+        include_header:
+          type: boolean
+          default: true
+          description: Include page headers
+        include_footer:
+          type: boolean
+          default: true
+          description: Include page footers with page numbers
+
+    ExportResult:
+      type: object
+      required:
+        - download_url
+        - format
+        - file_size
+        - page_count
+        - expires_at
+      properties:
+        download_url:
+          type: string
+          format: uri
+          description: S3 presigned URL for download (valid 1 hour)
+        format:
+          type: string
+          enum: [docx, pdf]
+        file_size:
+          type: integer
+          description: File size in bytes
+        page_count:
+          type: integer
+          description: Number of pages in document
+        expires_at:
+          type: string
+          format: date-time
+          description: When the download URL expires
+
+    ExportJob:
+      type: object
+      required:
+        - id
+        - draft_id
+        - case_id
+        - format
+        - status
+        - started_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        draft_id:
+          type: string
+          format: uuid
+        case_id:
+          type: string
+          format: uuid
+        format:
+          type: string
+          enum: [docx, pdf]
+        status:
+          type: string
+          enum: [pending, processing, completed, failed]
+        download_url:
+          type: string
+          format: uri
+          description: Available when status is completed
+        file_size:
+          type: integer
+          description: Available when status is completed
+        page_count:
+          type: integer
+          description: Available when status is completed
+        error_message:
+          type: string
+          description: Available when status is failed
+        started_at:
+          type: string
+          format: date-time
+        completed_at:
+          type: string
+          format: date-time
+        expires_at:
+          type: string
+          format: date-time
+          description: When the download URL expires
+
+  responses:
+    BadRequest:
+      description: Invalid request parameters
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              detail:
+                type: string
+              status_code:
+                type: integer
+                example: 400
+
+    Unauthorized:
+      description: Authentication required
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              detail:
+                type: string
+                example: "Not authenticated"
+              status_code:
+                type: integer
+                example: 401
+
+    Forbidden:
+      description: Insufficient permissions
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              detail:
+                type: string
+                example: "Not authorized to access this case"
+              status_code:
+                type: integer
+                example: 403
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              detail:
+                type: string
+                example: "Draft not found"
+              status_code:
+                type: integer
+                example: 404
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token from HTTP-only cookie
+
+security:
+  - bearerAuth: []
