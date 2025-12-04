@@ -105,6 +105,8 @@ Legal Evidence Hub의 역할 기반 UI 시스템 구현. 변호사(Lawyer), 의�
 - [ ] 파일 첨부 기능
 - [ ] 읽음 확인
 - [ ] 알림 푸시
+- [ ] **메시지 영구 저장** (DB에 모든 메시지 저장)
+- [ ] **오프라인 큐** (접속 시 읽지 않은 메시지 전달)
 
 **Screen Reference:** L-11, C-05, D-07 in SCREEN_DEFINITION.md
 
@@ -160,3 +162,31 @@ Legal Evidence Hub의 역할 기반 UI 시스템 구현. 변호사(Lawyer), 의�
 - Backend: FastAPI
 - Real-time: WebSocket (FastAPI)
 - State: React Context + SWR
+
+## Data Model
+
+### Case Status Lifecycle
+```
+OPEN → IN_PROGRESS → REVIEW → CLOSED
+```
+- **OPEN**: 신규 케이스 생성 시 초기 상태
+- **IN_PROGRESS**: 변호사가 작업 중인 케이스
+- **REVIEW**: AI 분석 완료 후 검토 대기 상태
+- **CLOSED**: 종료된 케이스
+
+### Role-Based Permissions
+
+| Role | Case Access | Evidence | Reports | Scope |
+|------|-------------|----------|---------|-------|
+| **Lawyer** | Full CRUD | Full CRUD | Full CRUD | All assigned cases |
+| **Client** | Read only | Read + Submit | Read only | Own cases only |
+| **Detective** | Read only | Read + Submit | Read + Submit | Assigned investigations only |
+
+---
+
+## Clarifications
+
+### Session 2024-12-04
+- Q: 케이스 상태 전환(lifecycle) 흐름은? → A: OPEN → IN_PROGRESS → REVIEW → CLOSED (검토 단계 포함)
+- Q: 역할별 권한 모델은? → A: Lawyer: Full CRUD / Client: Read + Submit evidence / Detective: Read + Submit reports (assigned only)
+- Q: 실시간 메시지 저장 방식은? → A: DB 영구 저장 + 오프라인 큐 (접속 시 읽지 않은 메시지 전달)

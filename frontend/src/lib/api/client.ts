@@ -1,6 +1,10 @@
 /**
  * API Client Configuration
  * Base API client for making HTTP requests to the backend
+ *
+ * Security: Uses HTTP-only cookies for authentication (XSS protection)
+ * - Token is never stored in localStorage
+ * - Cookies are automatically included via credentials: 'include'
  */
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
@@ -13,6 +17,11 @@ export interface ApiResponse<T> {
 
 /**
  * Generic API request function
+ *
+ * Authentication is handled via HTTP-only cookies:
+ * - credentials: 'include' ensures cookies are sent with requests
+ * - No token is stored in localStorage (XSS protection)
+ * - Backend sets/clears cookies on login/logout
  */
 export async function apiRequest<T>(
   endpoint: string,
@@ -21,14 +30,11 @@ export async function apiRequest<T>(
   try {
     const url = `${API_BASE_URL}${endpoint}`;
 
-    // Get auth token from localStorage
-    const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
-
     const response = await fetch(url, {
       ...options,
+      credentials: 'include', // Include HTTP-only cookies
       headers: {
         'Content-Type': 'application/json',
-        ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
         ...options.headers,
       },
     });
@@ -48,9 +54,12 @@ export async function apiRequest<T>(
       // Handle both error formats: { error: { message: "..." } } and { detail: "..." }
       const errorMessage = data?.error?.message || data?.detail || 'An error occurred';
 
-      // Handle 401 Unauthorized - clear token and redirect to login
+      // Handle 401 Unauthorized - redirect to login
+      // Note: Cookie cleanup is handled by the logout endpoint
       if (response.status === 401 && typeof window !== 'undefined') {
+        // Clear any legacy localStorage tokens (migration)
         localStorage.removeItem('authToken');
+        localStorage.removeItem('user');
         // Redirect to login page
         window.location.href = '/login';
       }
