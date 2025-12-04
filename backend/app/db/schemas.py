@@ -7,7 +7,10 @@ from pydantic import BaseModel, EmailStr, Field
 from typing import Optional, List
 from datetime import datetime
 from enum import Enum
-from app.db.models import UserRole, UserStatus, CaseStatus, CaseMemberRole
+from app.db.models import (
+    UserRole, UserStatus, CaseStatus, CaseMemberRole,
+    CalendarEventType, InvestigationRecordType, InvoiceStatus
+)
 
 
 # ============================================
@@ -401,3 +404,288 @@ class AuditLogListResponse(BaseModel):
     page: int
     page_size: int
     total_pages: int
+
+
+# ============================================
+# Messaging Schemas
+# ============================================
+class MessageCreate(BaseModel):
+    """Message creation request schema"""
+    case_id: str
+    recipient_id: str
+    content: str = Field(..., min_length=1)
+    attachments: Optional[List[str]] = None  # List of attachment URLs
+
+
+class MessageOut(BaseModel):
+    """Message output schema"""
+    id: str
+    case_id: str
+    sender_id: str
+    sender_name: Optional[str] = None
+    recipient_id: str
+    recipient_name: Optional[str] = None
+    content: str
+    attachments: Optional[List[str]] = None
+    read_at: Optional[datetime] = None
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class MessageListResponse(BaseModel):
+    """Message list response schema"""
+    messages: List[MessageOut]
+    total: int
+    unread_count: int = 0
+
+
+class MarkMessageReadRequest(BaseModel):
+    """Mark message as read request"""
+    message_ids: List[str]
+
+
+# ============================================
+# Calendar Event Schemas
+# ============================================
+class CalendarEventCreate(BaseModel):
+    """Calendar event creation request schema"""
+    case_id: Optional[str] = None
+    title: str = Field(..., min_length=1, max_length=255)
+    description: Optional[str] = None
+    event_type: CalendarEventType = CalendarEventType.OTHER
+    start_time: datetime
+    end_time: Optional[datetime] = None
+    location: Optional[str] = None
+    reminder_minutes: int = 30
+
+
+class CalendarEventUpdate(BaseModel):
+    """Calendar event update request schema"""
+    case_id: Optional[str] = None
+    title: Optional[str] = Field(None, min_length=1, max_length=255)
+    description: Optional[str] = None
+    event_type: Optional[CalendarEventType] = None
+    start_time: Optional[datetime] = None
+    end_time: Optional[datetime] = None
+    location: Optional[str] = None
+    reminder_minutes: Optional[int] = None
+
+
+class CalendarEventOut(BaseModel):
+    """Calendar event output schema"""
+    id: str
+    user_id: str
+    case_id: Optional[str] = None
+    case_title: Optional[str] = None  # Joined from Case table
+    title: str
+    description: Optional[str] = None
+    event_type: CalendarEventType
+    start_time: datetime
+    end_time: Optional[datetime] = None
+    location: Optional[str] = None
+    reminder_minutes: int
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class CalendarEventListResponse(BaseModel):
+    """Calendar event list response schema"""
+    events: List[CalendarEventOut]
+    total: int
+
+
+# ============================================
+# Investigation Record Schemas (Detective)
+# ============================================
+class InvestigationRecordCreate(BaseModel):
+    """Investigation record creation request schema"""
+    case_id: str
+    record_type: InvestigationRecordType
+    content: Optional[str] = None
+    location_lat: Optional[str] = None
+    location_lng: Optional[str] = None
+    location_address: Optional[str] = None
+    attachments: Optional[List[str]] = None
+    recorded_at: datetime
+
+
+class InvestigationRecordOut(BaseModel):
+    """Investigation record output schema"""
+    id: str
+    case_id: str
+    detective_id: str
+    detective_name: Optional[str] = None
+    record_type: InvestigationRecordType
+    content: Optional[str] = None
+    location_lat: Optional[str] = None
+    location_lng: Optional[str] = None
+    location_address: Optional[str] = None
+    attachments: Optional[List[str]] = None
+    recorded_at: datetime
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class InvestigationRecordListResponse(BaseModel):
+    """Investigation record list response schema"""
+    records: List[InvestigationRecordOut]
+    total: int
+
+
+class InvestigationReportSubmit(BaseModel):
+    """Investigation report submission schema"""
+    case_id: str
+    summary: str = Field(..., min_length=10)
+    findings: str
+    evidence_ids: List[str] = Field(default_factory=list)
+    recommendations: Optional[str] = None
+
+
+# ============================================
+# Invoice/Billing Schemas
+# ============================================
+class InvoiceCreate(BaseModel):
+    """Invoice creation request schema"""
+    case_id: str
+    client_id: str
+    amount: str = Field(..., description="Amount in KRW")
+    description: Optional[str] = None
+    due_date: Optional[datetime] = None
+
+
+class InvoiceUpdate(BaseModel):
+    """Invoice update request schema"""
+    amount: Optional[str] = None
+    description: Optional[str] = None
+    status: Optional[InvoiceStatus] = None
+    due_date: Optional[datetime] = None
+
+
+class InvoiceOut(BaseModel):
+    """Invoice output schema"""
+    id: str
+    case_id: str
+    case_title: Optional[str] = None
+    client_id: str
+    client_name: Optional[str] = None
+    lawyer_id: str
+    lawyer_name: Optional[str] = None
+    amount: str
+    description: Optional[str] = None
+    status: InvoiceStatus
+    due_date: Optional[datetime] = None
+    paid_at: Optional[datetime] = None
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class InvoiceListResponse(BaseModel):
+    """Invoice list response schema"""
+    invoices: List[InvoiceOut]
+    total: int
+    total_pending: str = "0"  # Total pending amount
+    total_paid: str = "0"  # Total paid amount
+
+
+class InvoicePaymentRequest(BaseModel):
+    """Invoice payment request schema"""
+    payment_method: str = Field(..., description="Payment method (card, bank, etc.)")
+    payment_reference: Optional[str] = None
+
+
+# ============================================
+# Dashboard Schemas
+# ============================================
+class LawyerDashboardStats(BaseModel):
+    """Lawyer dashboard statistics"""
+    active_cases: int = 0
+    pending_review: int = 0
+    completed_cases: int = 0
+    total_evidence: int = 0
+    upcoming_events: int = 0
+    unread_messages: int = 0
+
+
+class ClientDashboardStats(BaseModel):
+    """Client dashboard statistics"""
+    total_cases: int = 0
+    active_cases: int = 0
+    pending_invoices: int = 0
+    total_evidence: int = 0
+    unread_messages: int = 0
+
+
+class DetectiveDashboardStats(BaseModel):
+    """Detective dashboard statistics"""
+    assigned_cases: int = 0
+    pending_cases: int = 0
+    completed_cases: int = 0
+    total_records: int = 0
+    pending_reports: int = 0
+    total_earnings: str = "0"  # Total earnings in KRW
+
+
+# ============================================
+# Role Permission Configuration
+# ============================================
+class PortalAccess(BaseModel):
+    """Portal access configuration per role"""
+    role: UserRole
+    portal_path: str
+    allowed_features: List[str]
+    restricted_features: List[str] = Field(default_factory=list)
+
+
+# Default role permissions configuration
+ROLE_PORTAL_CONFIG = {
+    UserRole.ADMIN: PortalAccess(
+        role=UserRole.ADMIN,
+        portal_path="/admin",
+        allowed_features=["*"],  # All access
+        restricted_features=[]
+    ),
+    UserRole.LAWYER: PortalAccess(
+        role=UserRole.LAWYER,
+        portal_path="/lawyer",
+        allowed_features=[
+            "dashboard", "cases", "evidence", "timeline", "draft",
+            "clients", "investigators", "calendar", "billing", "messages"
+        ],
+        restricted_features=["admin"]
+    ),
+    UserRole.STAFF: PortalAccess(
+        role=UserRole.STAFF,
+        portal_path="/lawyer",  # Same as lawyer
+        allowed_features=[
+            "dashboard", "cases", "evidence", "timeline",
+            "calendar", "messages"
+        ],
+        restricted_features=["admin", "billing", "draft"]
+    ),
+    UserRole.CLIENT: PortalAccess(
+        role=UserRole.CLIENT,
+        portal_path="/client",
+        allowed_features=[
+            "dashboard", "cases", "evidence", "timeline",
+            "messages", "billing"
+        ],
+        restricted_features=["admin", "draft", "investigators"]
+    ),
+    UserRole.DETECTIVE: PortalAccess(
+        role=UserRole.DETECTIVE,
+        portal_path="/detective",
+        allowed_features=[
+            "dashboard", "cases", "field", "evidence", "report",
+            "messages", "calendar", "earnings"
+        ],
+        restricted_features=["admin", "billing", "draft", "clients"]
+    )
+}

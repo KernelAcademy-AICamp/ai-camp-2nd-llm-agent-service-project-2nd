@@ -127,3 +127,113 @@ def require_lawyer_or_admin(current_user: User = Depends(get_current_user)) -> U
         raise PermissionError("Lawyer 또는 Admin 권한이 필요합니다.")
 
     return current_user
+
+
+def require_client(current_user: User = Depends(get_current_user)) -> User:
+    """
+    Require client role for access
+
+    Args:
+        current_user: Current authenticated user
+
+    Returns:
+        User object if user is client
+
+    Raises:
+        PermissionError: User is not a client
+    """
+    if current_user.role != UserRole.CLIENT:
+        raise PermissionError("Client 권한이 필요합니다.")
+
+    return current_user
+
+
+def require_detective(current_user: User = Depends(get_current_user)) -> User:
+    """
+    Require detective role for access
+
+    Args:
+        current_user: Current authenticated user
+
+    Returns:
+        User object if user is detective
+
+    Raises:
+        PermissionError: User is not a detective
+    """
+    if current_user.role != UserRole.DETECTIVE:
+        raise PermissionError("Detective 권한이 필요합니다.")
+
+    return current_user
+
+
+def require_lawyer(current_user: User = Depends(get_current_user)) -> User:
+    """
+    Require lawyer role for access (not admin)
+
+    Args:
+        current_user: Current authenticated user
+
+    Returns:
+        User object if user is lawyer
+
+    Raises:
+        PermissionError: User is not a lawyer
+    """
+    if current_user.role != UserRole.LAWYER:
+        raise PermissionError("Lawyer 권한이 필요합니다.")
+
+    return current_user
+
+
+def require_any_authenticated(current_user: User = Depends(get_current_user)) -> User:
+    """
+    Require any authenticated user (any role)
+
+    Args:
+        current_user: Current authenticated user
+
+    Returns:
+        User object
+    """
+    return current_user
+
+
+def require_internal_user(current_user: User = Depends(get_current_user)) -> User:
+    """
+    Require internal user role (lawyer, staff, admin)
+    Excludes external users (client, detective)
+
+    Args:
+        current_user: Current authenticated user
+
+    Returns:
+        User object if user is internal
+
+    Raises:
+        PermissionError: User is external (client or detective)
+    """
+    if current_user.role in [UserRole.CLIENT, UserRole.DETECTIVE]:
+        raise PermissionError("내부 사용자 권한이 필요합니다.")
+
+    return current_user
+
+
+def get_role_redirect_path(role: UserRole) -> str:
+    """
+    Get the default redirect path for a user role after login
+
+    Args:
+        role: User role
+
+    Returns:
+        Redirect path string
+    """
+    role_paths = {
+        UserRole.ADMIN: "/admin/dashboard",
+        UserRole.LAWYER: "/lawyer/dashboard",
+        UserRole.STAFF: "/lawyer/dashboard",  # Staff uses lawyer dashboard
+        UserRole.CLIENT: "/client/dashboard",
+        UserRole.DETECTIVE: "/detective/dashboard",
+    }
+    return role_paths.get(role, "/dashboard")

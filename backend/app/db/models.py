@@ -22,6 +22,8 @@ class UserRole(str, enum.Enum):
     LAWYER = "lawyer"
     STAFF = "staff"
     ADMIN = "admin"
+    CLIENT = "client"          # 의뢰인
+    DETECTIVE = "detective"    # 탐정/조사원
 
 
 class UserStatus(str, enum.Enum):
@@ -41,6 +43,33 @@ class CaseMemberRole(str, enum.Enum):
     OWNER = "owner"
     MEMBER = "member"
     VIEWER = "viewer"
+
+
+class CalendarEventType(str, enum.Enum):
+    """Calendar event type enum"""
+    COURT = "court"          # 재판/출석
+    MEETING = "meeting"      # 상담/회의
+    DEADLINE = "deadline"    # 마감
+    INTERNAL = "internal"    # 내부 업무
+    OTHER = "other"
+
+
+class InvestigationRecordType(str, enum.Enum):
+    """Investigation record type enum"""
+    LOCATION = "location"    # 위치 기록
+    PHOTO = "photo"          # 사진
+    VIDEO = "video"          # 영상
+    AUDIO = "audio"          # 음성 메모
+    MEMO = "memo"            # 텍스트 메모
+    EVIDENCE = "evidence"    # 증거 수집
+
+
+class InvoiceStatus(str, enum.Enum):
+    """Invoice status enum"""
+    PENDING = "pending"      # 대기중
+    PAID = "paid"            # 결제완료
+    OVERDUE = "overdue"      # 연체
+    CANCELLED = "cancelled"  # 취소
 
 
 # ============================================
@@ -159,3 +188,105 @@ class AuditLog(Base):
 
     def __repr__(self):
         return f"<AuditLog(id={self.id}, user_id={self.user_id}, action={self.action})>"
+
+
+class Message(Base):
+    """
+    Message model - real-time communication between users
+    """
+    __tablename__ = "messages"
+
+    id = Column(String, primary_key=True, default=lambda: f"msg_{uuid.uuid4().hex[:12]}")
+    case_id = Column(String, ForeignKey("cases.id"), nullable=False, index=True)
+    sender_id = Column(String, ForeignKey("users.id"), nullable=False, index=True)
+    recipient_id = Column(String, ForeignKey("users.id"), nullable=False, index=True)
+    content = Column(String, nullable=False)
+    attachments = Column(String, nullable=True)  # JSON string of attachment URLs
+    read_at = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
+
+    # Relationships
+    sender = relationship("User", foreign_keys=[sender_id])
+    recipient = relationship("User", foreign_keys=[recipient_id])
+
+    def __repr__(self):
+        return f"<Message(id={self.id}, sender_id={self.sender_id}, case_id={self.case_id})>"
+
+
+class CalendarEvent(Base):
+    """
+    Calendar event model - for scheduling court dates, meetings, deadlines
+    """
+    __tablename__ = "calendar_events"
+
+    id = Column(String, primary_key=True, default=lambda: f"event_{uuid.uuid4().hex[:12]}")
+    user_id = Column(String, ForeignKey("users.id"), nullable=False, index=True)
+    case_id = Column(String, ForeignKey("cases.id"), nullable=True, index=True)
+    title = Column(String, nullable=False)
+    description = Column(String, nullable=True)
+    event_type = Column(SQLEnum(CalendarEventType), nullable=False, default=CalendarEventType.OTHER)
+    start_time = Column(DateTime(timezone=True), nullable=False)
+    end_time = Column(DateTime(timezone=True), nullable=True)
+    location = Column(String, nullable=True)
+    reminder_minutes = Column(String, default="30")  # Minutes before event
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
+
+    # Relationships
+    user = relationship("User")
+    case = relationship("Case")
+
+    def __repr__(self):
+        return f"<CalendarEvent(id={self.id}, title={self.title}, type={self.event_type})>"
+
+
+class InvestigationRecord(Base):
+    """
+    Investigation record model - for detective field recordings
+    GPS tracking, photos, memos, evidence collection
+    """
+    __tablename__ = "investigation_records"
+
+    id = Column(String, primary_key=True, default=lambda: f"inv_{uuid.uuid4().hex[:12]}")
+    case_id = Column(String, ForeignKey("cases.id"), nullable=False, index=True)
+    detective_id = Column(String, ForeignKey("users.id"), nullable=False, index=True)
+    record_type = Column(SQLEnum(InvestigationRecordType), nullable=False)
+    content = Column(String, nullable=True)  # Text content or description
+    location_lat = Column(String, nullable=True)  # Latitude
+    location_lng = Column(String, nullable=True)  # Longitude
+    location_address = Column(String, nullable=True)
+    attachments = Column(String, nullable=True)  # JSON string of file URLs
+    recorded_at = Column(DateTime(timezone=True), nullable=False)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
+
+    # Relationships
+    case = relationship("Case")
+    detective = relationship("User")
+
+    def __repr__(self):
+        return f"<InvestigationRecord(id={self.id}, type={self.record_type}, case_id={self.case_id})>"
+
+
+class Invoice(Base):
+    """
+    Invoice model - billing and payment tracking
+    """
+    __tablename__ = "invoices"
+
+    id = Column(String, primary_key=True, default=lambda: f"inv_{uuid.uuid4().hex[:12]}")
+    case_id = Column(String, ForeignKey("cases.id"), nullable=False, index=True)
+    client_id = Column(String, ForeignKey("users.id"), nullable=False, index=True)
+    lawyer_id = Column(String, ForeignKey("users.id"), nullable=False, index=True)
+    amount = Column(String, nullable=False)  # Amount in KRW (stored as string for precision)
+    description = Column(String, nullable=True)
+    status = Column(SQLEnum(InvoiceStatus), nullable=False, default=InvoiceStatus.PENDING)
+    due_date = Column(DateTime(timezone=True), nullable=True)
+    paid_at = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
+
+    # Relationships
+    case = relationship("Case")
+    client = relationship("User", foreign_keys=[client_id])
+    lawyer = relationship("User", foreign_keys=[lawyer_id])
+
+    def __repr__(self):
+        return f"<Invoice(id={self.id}, amount={self.amount}, status={self.status})>"
