@@ -208,6 +208,59 @@ def put_evidence_metadata(evidence_data: Dict) -> Dict:
         raise
 
 
+def update_evidence_status(
+    evidence_id: str,
+    status: str,
+    error_message: str = None,
+    additional_fields: dict = None
+) -> bool:
+    """
+    Update evidence status in DynamoDB
+
+    Args:
+        evidence_id: Evidence ID (primary key)
+        status: New status (pending, uploaded, processing, completed, failed)
+        error_message: Optional error message (for failed status)
+        additional_fields: Optional additional fields to update
+
+    Returns:
+        True if update successful
+    """
+    dynamodb = _get_dynamodb_client()
+
+    update_expression = "SET #status = :status, updated_at = :updated_at"
+    expression_values = {
+        ':status': {'S': status},
+        ':updated_at': {'S': datetime.now(timezone.utc).isoformat()}
+    }
+    expression_names = {'#status': 'status'}
+
+    if error_message:
+        update_expression += ", error_message = :error_message"
+        expression_values[':error_message'] = {'S': error_message}
+
+    if additional_fields:
+        for key, value in additional_fields.items():
+            update_expression += f", {key} = :{key}"
+            expression_values[f':{key}'] = _serialize_value(value)
+
+    try:
+        dynamodb.update_item(
+            TableName=settings.DDB_EVIDENCE_TABLE,
+            Key={
+                'evidence_id': {'S': evidence_id}
+            },
+            UpdateExpression=update_expression,
+            ExpressionAttributeNames=expression_names,
+            ExpressionAttributeValues=expression_values
+        )
+        return True
+
+    except ClientError as e:
+        logger.error(f"DynamoDB update_item error for evidence {evidence_id}: {e}")
+        return False
+
+
 def delete_evidence_metadata(evidence_id: str, case_id: str = None) -> bool:
     """
     Delete evidence metadata from DynamoDB
