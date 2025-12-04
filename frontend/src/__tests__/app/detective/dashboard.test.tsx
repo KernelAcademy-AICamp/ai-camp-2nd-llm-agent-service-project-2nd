@@ -204,27 +204,27 @@ describe('Detective Dashboard Page', () => {
   });
 
   describe('Quick Actions', () => {
-    test('should render field record quick action', async () => {
+    test('should render cases list quick action', async () => {
       render(<DetectiveDashboardPage />);
 
       await waitFor(() => {
-        expect(screen.getByText('현장 기록')).toBeInTheDocument();
+        expect(screen.getByText('의뢰 목록')).toBeInTheDocument();
       });
     });
 
-    test('should render photo capture quick action', async () => {
+    test('should render earnings quick action', async () => {
       render(<DetectiveDashboardPage />);
 
       await waitFor(() => {
-        expect(screen.getByText('사진 촬영')).toBeInTheDocument();
+        expect(screen.getByText('수익 현황')).toBeInTheDocument();
       });
     });
 
-    test('should render report writing quick action', async () => {
+    test('should render messages quick action', async () => {
       render(<DetectiveDashboardPage />);
 
       await waitFor(() => {
-        expect(screen.getByText('보고서 작성')).toBeInTheDocument();
+        expect(screen.getByText('메시지')).toBeInTheDocument();
       });
     });
   });
@@ -248,12 +248,21 @@ describe('Detective Dashboard Page', () => {
       });
     });
 
-    test('should have link to field page', async () => {
+    test('should have link to earnings page', async () => {
       render(<DetectiveDashboardPage />);
 
       await waitFor(() => {
-        const links = document.querySelectorAll('a[href^="/detective/field"]');
-        expect(links.length).toBeGreaterThan(0);
+        const link = document.querySelector('a[href="/detective/earnings"]');
+        expect(link).toBeInTheDocument();
+      });
+    });
+
+    test('should have link to messages page', async () => {
+      render(<DetectiveDashboardPage />);
+
+      await waitFor(() => {
+        const link = document.querySelector('a[href="/detective/messages"]');
+        expect(link).toBeInTheDocument();
       });
     });
   });

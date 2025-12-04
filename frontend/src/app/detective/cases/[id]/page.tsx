@@ -207,16 +207,17 @@ export default function DetectiveCaseDetailPage() {
               </>
             )}
             {caseDetail.status === 'active' && (
-              <Link
-                href={`/detective/cases/${caseId}/field`}
+              <button
+                type="button"
                 className="px-4 py-2 bg-[var(--color-primary)] text-white rounded-lg
                   hover:bg-[var(--color-primary-hover)] min-h-[44px] flex items-center gap-2"
+                onClick={() => {/* TODO: Open evidence upload modal */}}
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                 </svg>
-                현장 기록 추가
-              </Link>
+                증거 업로드
+              </button>
             )}
           </div>
         </div>
@@ -245,7 +246,7 @@ export default function DetectiveCaseDetailPage() {
       {/* Records Section */}
       <div className="bg-white rounded-lg border border-[var(--color-border)]">
         <div className="p-4 border-b border-[var(--color-border)] flex items-center justify-between">
-          <h2 className="text-lg font-semibold">현장 기록</h2>
+          <h2 className="text-lg font-semibold">증거 목록</h2>
           <span className="text-sm text-[var(--color-text-secondary)]">
             총 {caseDetail.records.length}건
           </span>
@@ -266,14 +267,6 @@ export default function DetectiveCaseDetailPage() {
                       </span>
                     </div>
                     <p className="text-[var(--color-text-primary)]">{record.content}</p>
-                    {record.gps_lat && record.gps_lng && (
-                      <div className="flex items-center gap-1 mt-2 text-sm text-[var(--color-text-secondary)]">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                        </svg>
-                        <span>{record.gps_lat.toFixed(4)}, {record.gps_lng.toFixed(4)}</span>
-                      </div>
-                    )}
                   </div>
                   {record.photo_url && (
                     <img
@@ -288,17 +281,7 @@ export default function DetectiveCaseDetailPage() {
           </div>
         ) : (
           <div className="p-8 text-center text-[var(--color-text-secondary)]">
-            아직 등록된 현장 기록이 없습니다.
-            {caseDetail.status === 'active' && (
-              <div className="mt-4">
-                <Link
-                  href={`/detective/cases/${caseId}/field`}
-                  className="text-[var(--color-primary)] hover:underline"
-                >
-                  첫 번째 기록 추가하기
-                </Link>
-              </div>
-            )}
+            아직 등록된 증거가 없습니다.
           </div>
         )}
       </div>
@@ -310,16 +293,17 @@ export default function DetectiveCaseDetailPage() {
           <p className="text-[var(--color-text-secondary)] mb-4">
             조사가 완료되면 최종 보고서를 작성하여 제출해 주세요.
           </p>
-          <Link
-            href={`/detective/cases/${caseId}/field?mode=report`}
+          <button
+            type="button"
             className="inline-flex items-center gap-2 px-4 py-2 bg-[var(--color-secondary)] text-white rounded-lg
               hover:opacity-90 min-h-[44px]"
+            onClick={() => {/* TODO: Open report modal */}}
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
             보고서 작성
-          </Link>
+          </button>
         </div>
       )}
 
