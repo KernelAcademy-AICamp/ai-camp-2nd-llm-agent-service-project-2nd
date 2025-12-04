@@ -255,6 +255,57 @@ class ClientPortalService:
             expires_in=300,
         )
 
+    def confirm_evidence_upload(
+        self,
+        user_id: str,
+        case_id: str,
+        evidence_id: str,
+        uploaded: bool,
+    ) -> dict:
+        """
+        Confirm or cancel evidence upload.
+
+        Args:
+            user_id: ID of the user confirming the upload
+            case_id: ID of the case
+            evidence_id: ID of the evidence
+            uploaded: True if upload was successful, False to cancel
+
+        Returns:
+            dict with success status and message
+        """
+        evidence = self.db.query(Evidence).filter(Evidence.id == evidence_id).first()
+
+        if not evidence:
+            raise ValueError("Evidence not found")
+
+        if evidence.case_id != case_id:
+            raise ValueError("Evidence does not belong to this case")
+
+        if evidence.uploaded_by != user_id:
+            raise PermissionError("Not authorized to confirm this upload")
+
+        if uploaded:
+            evidence.status = "uploaded"
+            evidence.updated_at = datetime.utcnow()
+            self.db.commit()
+
+            return {
+                "success": True,
+                "message": "Evidence upload confirmed. Processing will begin shortly.",
+                "evidence_id": evidence_id,
+            }
+        else:
+            # Upload was cancelled, remove the pending record
+            self.db.delete(evidence)
+            self.db.commit()
+
+            return {
+                "success": True,
+                "message": "Upload cancelled",
+                "evidence_id": evidence_id,
+            }
+
     def log_evidence_upload(
         self,
         user_id: str,

@@ -183,44 +183,29 @@ async def confirm_evidence_upload(
     Call this after successfully uploading to S3 to mark
     the evidence as ready for processing.
     """
-    from app.db.models import Evidence
+    service = ClientPortalService(db)
 
-    evidence = db.query(Evidence).filter(Evidence.id == evidence_id).first()
-
-    if not evidence:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Evidence not found"
+    try:
+        result = service.confirm_evidence_upload(
+            user_id=user_id,
+            case_id=case_id,
+            evidence_id=evidence_id,
+            uploaded=request.uploaded,
         )
-
-    if evidence.case_id != case_id:
+        return EvidenceConfirmResponse(**result)
+    except ValueError as e:
+        error_msg = str(e).lower()
+        if "not found" in error_msg:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=str(e)
+            )
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Evidence does not belong to this case"
+            detail=str(e)
         )
-
-    if evidence.uploaded_by != user_id:
+    except PermissionError as e:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not authorized to confirm this upload"
-        )
-
-    if request.uploaded:
-        evidence.status = "uploaded"
-        db.commit()
-
-        return EvidenceConfirmResponse(
-            success=True,
-            message="Evidence upload confirmed. Processing will begin shortly.",
-            evidence_id=evidence_id,
-        )
-    else:
-        # Upload was cancelled, remove the pending record
-        db.delete(evidence)
-        db.commit()
-
-        return EvidenceConfirmResponse(
-            success=True,
-            message="Upload cancelled",
-            evidence_id=evidence_id,
+            detail=str(e)
         )
