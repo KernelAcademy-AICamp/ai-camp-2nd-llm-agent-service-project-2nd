@@ -15,7 +15,6 @@ Usage:
     # "배우자 외도 관련 대화"
 """
 
-import re
 import logging
 from dataclasses import dataclass
 from typing import List, Optional, Dict, Any

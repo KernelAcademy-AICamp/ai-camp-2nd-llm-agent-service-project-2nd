@@ -16,7 +16,6 @@ Usage:
 - 조언/판단 표현 금지
 """
 
-import os
 import logging
 from dataclasses import dataclass, field
 from datetime import datetime

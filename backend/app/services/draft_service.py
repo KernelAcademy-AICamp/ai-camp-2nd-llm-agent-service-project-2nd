@@ -26,7 +26,6 @@ from app.utils.qdrant import (
     search_evidence_by_semantic,
     search_legal_knowledge,
     get_template_schema_for_prompt,
-    get_template_example_for_prompt,
     get_template_by_type
 )
 from app.utils.openai_client import generate_chat_completion

@@ -24,7 +24,7 @@ def main():
         client = QdrantClient(url=url, api_key=api_key, timeout=30)
         collections = client.get_collections()
 
-        print(f'Connection: SUCCESS')
+        print('Connection: SUCCESS')
         print(f'Collections found: {len(collections.collections)}')
         print()
 
@@ -54,7 +54,7 @@ def main():
             print(f'  Error: {e}')
 
     except Exception as e:
-        print(f'Connection: FAILED')
+        print('Connection: FAILED')
         print(f'Error: {e}')
         return 1
 

@@ -12,8 +12,8 @@ LLM 미사용, 규칙 기반 분석
 """
 
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
-from typing import List, Dict, Optional
+from datetime import datetime
+from typing import List, Dict
 from collections import Counter
 from enum import Enum
 
