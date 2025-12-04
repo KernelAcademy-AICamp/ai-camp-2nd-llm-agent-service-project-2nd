@@ -331,6 +331,7 @@ export function EvidenceDataTable({ items }: EvidenceDataTableProps) {
                     {/* Type Icon - 클릭하면 원문 보기 */}
                     <td className="px-6 py-4 whitespace-nowrap">
                       <button
+                        type="button"
                         onClick={() => handleOpenContent(evidence)}
                         className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors"
                         title="원문 보기"
@@ -356,6 +357,7 @@ export function EvidenceDataTable({ items }: EvidenceDataTableProps) {
                     <td className="px-6 py-4">
                       {evidence.status === 'completed' && evidence.summary ? (
                         <button
+                          type="button"
                           onClick={() => handleOpenSummary(evidence)}
                           className="inline-flex items-center space-x-1.5 px-3 py-1.5 text-sm font-medium text-accent bg-accent/10 hover:bg-accent/20 rounded-lg transition-colors"
                         >
