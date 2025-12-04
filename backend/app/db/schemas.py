@@ -28,6 +28,10 @@ class SignupRequest(BaseModel):
     password: str = Field(..., min_length=8)
     name: str = Field(..., min_length=1, max_length=100)
     accept_terms: bool = Field(..., description="이용약관 동의 필수")
+    role: Optional[UserRole] = Field(
+        default=None,
+        description="User role (CLIENT, DETECTIVE only for self-signup; LAWYER, STAFF, ADMIN require invitation)"
+    )
 
 
 class UserOut(BaseModel):

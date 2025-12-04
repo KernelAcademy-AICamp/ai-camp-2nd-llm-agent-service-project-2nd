@@ -93,6 +93,7 @@ export function PortalSidebar({
   const pathname = usePathname();
 
   const isActive = (href: string) => {
+    if (!pathname) return false;
     if (href.endsWith('/dashboard')) {
       return pathname === href;
     }

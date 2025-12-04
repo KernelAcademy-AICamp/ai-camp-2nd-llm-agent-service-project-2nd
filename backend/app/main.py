@@ -24,7 +24,7 @@ from mangum import Mangum  # noqa: E402 - AWS Lambda handler
 from app.core.config import settings  # noqa: E402
 
 # Import API routers
-from app.api import auth, admin, cases, evidence  # noqa: E402
+from app.api import auth, admin, cases, evidence, lawyer_portal  # noqa: E402
 from app.middleware import (  # noqa: E402
     register_exception_handlers,
     SecurityHeadersMiddleware,
@@ -188,6 +188,9 @@ app.include_router(cases.router, prefix="/cases", tags=["Cases"])
 
 # 증거 라우터
 app.include_router(evidence.router, prefix="/evidence", tags=["Evidence"])
+
+# 변호사 포털 라우터 (003-role-based-ui Feature)
+app.include_router(lawyer_portal.router, prefix="/lawyer", tags=["Lawyer Portal"])
 
 # Note: Timeline router removed (002-evidence-timeline feature incomplete)
 

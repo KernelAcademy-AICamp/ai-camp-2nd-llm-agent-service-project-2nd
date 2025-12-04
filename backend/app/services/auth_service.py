@@ -91,12 +91,16 @@ class AuthService:
             user=user_out
         )
 
+    # Roles allowed for self-signup (without invitation)
+    SELF_SIGNUP_ROLES = {UserRole.LAWYER, UserRole.CLIENT, UserRole.DETECTIVE}
+
     def signup(
         self,
         email: str,
         password: str,
         name: str,
-        accept_terms: bool
+        accept_terms: bool,
+        role: Optional[UserRole] = None
     ) -> TokenResponse:
         """
         Register a new user and generate JWT token
@@ -106,28 +110,37 @@ class AuthService:
             password: Plain text password (will be hashed with bcrypt)
             name: User's name
             accept_terms: Terms acceptance flag
+            role: Optional user role (defaults to LAWYER if not provided)
 
         Returns:
             TokenResponse with access_token, token_type, expires_in, and user info
 
         Raises:
-            ValidationError: If accept_terms is not True
+            ValidationError: If accept_terms is not True or role is not allowed
             ConflictError: If email already exists
         """
         # Validate terms acceptance
         if not accept_terms:
             raise ValidationError("이용약관 동의가 필요합니다.")
 
+        # Validate role for self-signup
+        final_role = role if role else UserRole.LAWYER
+        if final_role not in self.SELF_SIGNUP_ROLES:
+            raise ValidationError(
+                f"자가 등록은 CLIENT, DETECTIVE, LAWYER 역할만 가능합니다. "
+                f"ADMIN/STAFF 역할은 초대를 통해서만 가능합니다."
+            )
+
         # Check for duplicate email
         if self.user_repo.exists(email):
             raise ConflictError("이미 등록된 이메일입니다.")
 
-        # Create user with LAWYER role (default for signup)
+        # Create user with specified role
         user = self.user_repo.create(
             email=email,
             password=password,
             name=name,
-            role=UserRole.LAWYER
+            role=final_role
         )
 
         # Commit transaction

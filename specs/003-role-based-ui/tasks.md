@@ -38,10 +38,10 @@
 
 **Purpose**: Project initialization and basic structure for role-based UI
 
-- [ ] T001 Create feature branch `003-role-based-ui` from dev
-- [ ] T002 [P] Install frontend dependencies (recharts, react-big-calendar, @kakao/kakao-maps-sdk) in frontend/package.json
-- [ ] T003 [P] Create Alembic migration for new tables (messages, calendar_events, investigation_records, invoices) in backend/alembic/versions/
-- [ ] T004 Run database migration and verify schema
+- [X] T001 Create feature branch `003-role-based-ui` from dev
+- [X] T002 [P] Install frontend dependencies (recharts, react-big-calendar, @kakao/kakao-maps-sdk) in frontend/package.json
+- [X] T003 [P] Create Alembic migration for new tables (messages, calendar_events, investigation_records, invoices) in backend/alembic/versions/
+- [X] T004 Run database migration and verify schema
 
 **Checkpoint**: Environment ready for development
 
@@ -53,12 +53,12 @@
 
 **CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T005 Add CLIENT and DETECTIVE to UserRole enum in backend/app/db/models.py
-- [ ] T006 [P] Create Message model in backend/app/db/models.py
-- [ ] T007 [P] Create CalendarEvent model in backend/app/db/models.py
-- [ ] T008 [P] Create InvestigationRecord model in backend/app/db/models.py
-- [ ] T009 [P] Create Invoice model in backend/app/db/models.py
-- [ ] T010 Update role permissions in backend/app/db/schemas.py to include CLIENT and DETECTIVE
+- [X] T005 Add CLIENT and DETECTIVE to UserRole enum in backend/app/db/models.py
+- [X] T006 [P] Create Message model in backend/app/db/models.py
+- [X] T007 [P] Create CalendarEvent model in backend/app/db/models.py
+- [X] T008 [P] Create InvestigationRecord model in backend/app/db/models.py
+- [X] T009 [P] Create Invoice model in backend/app/db/models.py
+- [X] T010 Update role permissions in backend/app/db/schemas.py to include CLIENT and DETECTIVE
 
 **Checkpoint**: Foundation ready - user story implementation can now begin
 
@@ -72,17 +72,17 @@
 
 ### Backend Implementation for User Story 1
 
-- [ ] T011 [US1] Update signup endpoint to accept CLIENT and DETECTIVE roles in backend/app/api/auth.py
-- [ ] T012 [US1] Create role validation helper function in backend/app/core/dependencies.py
-- [ ] T013 [US1] Add role-based permission checks to existing endpoints in backend/app/api/cases.py
+- [X] T011 [US1] Update signup endpoint to accept CLIENT and DETECTIVE roles in backend/app/api/auth.py
+- [X] T012 [US1] Create role validation helper function in backend/app/core/dependencies.py
+- [X] T013 [US1] Add role-based permission checks to existing endpoints in backend/app/api/cases.py
 
 ### Frontend Implementation for User Story 1
 
-- [ ] T014 [P] [US1] Create role redirect logic after login in frontend/src/app/(auth)/login/page.tsx
-- [ ] T015 [P] [US1] Create middleware for role-based routing in frontend/src/middleware.ts
-- [ ] T016 [US1] Create useRole hook for role checking in frontend/src/hooks/useRole.ts
-- [ ] T017 [US1] Update AuthContext to include role information in frontend/src/contexts/AuthContext.tsx
-- [ ] T018 [US1] Create RoleGuard component for protected routes in frontend/src/components/auth/RoleGuard.tsx
+- [X] T014 [P] [US1] Create role redirect logic after login in frontend/src/app/(auth)/login/page.tsx
+- [X] T015 [P] [US1] Create middleware for role-based routing in frontend/src/middleware.ts
+- [X] T016 [US1] Create useRole hook for role checking in frontend/src/hooks/useRole.ts
+- [X] T017 [US1] Update AuthContext to include role information in frontend/src/contexts/AuthContext.tsx
+- [X] T018 [US1] Create RoleGuard component for protected routes in frontend/src/components/auth/RoleGuard.tsx
 
 **Checkpoint**: User Story 1 complete - role-based authentication works
 
@@ -96,19 +96,19 @@
 
 ### Backend Implementation for User Story 2
 
-- [ ] T019 [US2] Create dashboard stats endpoint GET /lawyer/dashboard in backend/app/api/lawyer_portal.py
-- [ ] T020 [US2] Create LawyerDashboardService with stats calculation in backend/app/services/lawyer_dashboard_service.py
-- [ ] T021 [US2] Create dashboard schemas (StatsCard, RecentCase, etc.) in backend/app/schemas/lawyer_dashboard.py
+- [X] T019 [US2] Create dashboard stats endpoint GET /lawyer/dashboard in backend/app/api/lawyer_portal.py
+- [X] T020 [US2] Create LawyerDashboardService with stats calculation in backend/app/services/lawyer_dashboard_service.py
+- [X] T021 [US2] Create dashboard schemas (StatsCard, RecentCase, etc.) in backend/app/schemas/lawyer_dashboard.py
 
 ### Frontend Implementation for User Story 2
 
-- [ ] T022 [P] [US2] Create lawyer portal layout in frontend/src/app/lawyer/layout.tsx
+- [X] T022 [P] [US2] Create lawyer portal layout in frontend/src/app/lawyer/layout.tsx
 - [ ] T023 [P] [US2] Create LawyerNav component with menu items in frontend/src/components/lawyer/LawyerNav.tsx
 - [ ] T024 [P] [US2] Create StatsCard component in frontend/src/components/lawyer/StatsCard.tsx
 - [ ] T025 [P] [US2] Create CaseStatsChart component using Recharts in frontend/src/components/charts/CaseStatsChart.tsx
-- [ ] T026 [US2] Create lawyer dashboard page in frontend/src/app/lawyer/dashboard/page.tsx
+- [X] T026 [US2] Create lawyer dashboard page in frontend/src/app/lawyer/dashboard/page.tsx
 - [ ] T027 [US2] Create useLawyerDashboard hook in frontend/src/hooks/useLawyerDashboard.ts
-- [ ] T028 [US2] Register lawyer_portal router in backend/app/main.py
+- [X] T028 [US2] Register lawyer_portal router in backend/app/main.py
 
 **Checkpoint**: User Story 2 complete - lawyer dashboard displays statistics and recent activity
 
@@ -161,11 +161,11 @@
 
 ### Frontend Implementation for User Story 4
 
-- [ ] T048 [P] [US4] Create client portal layout in frontend/src/app/client/layout.tsx
+- [X] T048 [P] [US4] Create client portal layout in frontend/src/app/client/layout.tsx
 - [ ] T049 [P] [US4] Create ClientNav component in frontend/src/components/client/ClientNav.tsx
 - [ ] T050 [P] [US4] Create ProgressTracker component in frontend/src/components/client/ProgressTracker.tsx
 - [ ] T051 [P] [US4] Create EvidenceUploader component in frontend/src/components/client/EvidenceUploader.tsx
-- [ ] T052 [US4] Create client dashboard page in frontend/src/app/client/dashboard/page.tsx
+- [X] T052 [US4] Create client dashboard page in frontend/src/app/client/dashboard/page.tsx
 - [ ] T053 [US4] Create client case detail page in frontend/src/app/client/cases/[id]/page.tsx
 - [ ] T054 [US4] Create evidence submission page in frontend/src/app/client/cases/[id]/evidence/page.tsx
 
@@ -193,12 +193,12 @@
 
 ### Frontend Implementation for User Story 5
 
-- [ ] T063 [P] [US5] Create detective portal layout in frontend/src/app/detective/layout.tsx
+- [X] T063 [P] [US5] Create detective portal layout in frontend/src/app/detective/layout.tsx
 - [ ] T064 [P] [US5] Create DetectiveNav component in frontend/src/components/detective/DetectiveNav.tsx
 - [ ] T065 [P] [US5] Create GPSTracker component with Kakao Maps in frontend/src/components/detective/GPSTracker.tsx
 - [ ] T066 [P] [US5] Create FieldRecorder component in frontend/src/components/detective/FieldRecorder.tsx
 - [ ] T067 [P] [US5] Create ReportEditor component in frontend/src/components/detective/ReportEditor.tsx
-- [ ] T068 [US5] Create detective dashboard page in frontend/src/app/detective/dashboard/page.tsx
+- [X] T068 [US5] Create detective dashboard page in frontend/src/app/detective/dashboard/page.tsx
 - [ ] T069 [US5] Create investigation detail page in frontend/src/app/detective/cases/[id]/page.tsx
 - [ ] T070 [US5] Create field investigation page in frontend/src/app/detective/cases/[id]/field/page.tsx
 
