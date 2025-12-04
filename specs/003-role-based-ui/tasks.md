@@ -323,28 +323,28 @@
 
 > **TDD RED Phase**: These tests MUST fail before implementation
 
-- [ ] T125 [P] [US7] Contract test for GET /calendar/events with date range filter in backend/tests/contract/test_calendar_read.py
-- [ ] T126 [P] [US7] Contract test for POST, PUT, DELETE /calendar/events in backend/tests/contract/test_calendar_write.py
-- [ ] T127 [P] [US7] Integration test for Calendar component in frontend/src/__tests__/components/shared/Calendar.test.tsx
-- [ ] T128 [P] [US7] Integration test for useCalendar hook in frontend/src/__tests__/hooks/useCalendar.test.ts
+- [X] T125 [P] [US7] Contract test for GET /calendar/events with date range filter in backend/tests/contract/test_calendar_read.py
+- [X] T126 [P] [US7] Contract test for POST, PUT, DELETE /calendar/events in backend/tests/contract/test_calendar_write.py
+- [X] T127 [P] [US7] Integration test for Calendar component in frontend/src/__tests__/components/shared/Calendar.test.tsx
+- [X] T128 [P] [US7] Integration test for useCalendar hook in frontend/src/__tests__/hooks/useCalendar.test.ts
 
 ### Backend Implementation for User Story 7
 
-- [ ] T129 [US7] Create calendar router with CRUD endpoints in backend/app/api/calendar.py
-- [ ] T130 [US7] Create GET /calendar/events endpoint with date range filter in backend/app/api/calendar.py
-- [ ] T131 [US7] Create POST, PUT, DELETE /calendar/events endpoints in backend/app/api/calendar.py
-- [ ] T132 [US7] Create GET /calendar/upcoming endpoint (next 7 days) in backend/app/api/calendar.py
-- [ ] T133 [US7] Create GET /calendar/reminders endpoint in backend/app/api/calendar.py
-- [ ] T134 [US7] Create CalendarService with event type colors in backend/app/services/calendar_service.py
-- [ ] T135 [US7] Register calendar router in backend/app/main.py
-- [ ] T136 [US7] [AUDIT] Add audit logging for calendar CRUD operations (Constitution Principle I) in backend/app/api/calendar.py
+- [X] T129 [US7] Create calendar router with CRUD endpoints in backend/app/api/calendar.py
+- [X] T130 [US7] Create GET /calendar/events endpoint with date range filter in backend/app/api/calendar.py
+- [X] T131 [US7] Create POST, PUT, DELETE /calendar/events endpoints in backend/app/api/calendar.py
+- [X] T132 [US7] Create GET /calendar/upcoming endpoint (next 7 days) in backend/app/api/calendar.py
+- [X] T133 [US7] Create GET /calendar/reminders endpoint in backend/app/api/calendar.py
+- [X] T134 [US7] Create CalendarService with event type colors in backend/app/services/calendar_service.py
+- [X] T135 [US7] Register calendar router in backend/app/main.py
+- [X] T136 [US7] [AUDIT] Add audit logging for calendar CRUD operations (Constitution Principle I) in backend/app/api/calendar.py
 
 ### Frontend Implementation for User Story 7
 
-- [ ] T137 [P] [US7] Create Calendar component using react-big-calendar with Korean locale in frontend/src/components/shared/Calendar.tsx
-- [ ] T138 [P] [US7] Create EventForm component for creating/editing events in frontend/src/components/shared/EventForm.tsx
-- [ ] T139 [US7] Create calendar page in frontend/src/app/lawyer/calendar/page.tsx
-- [ ] T140 [US7] Create useCalendar hook with SWR in frontend/src/hooks/useCalendar.ts
+- [X] T137 [P] [US7] Create Calendar component using react-big-calendar with Korean locale in frontend/src/components/shared/Calendar.tsx
+- [X] T138 [P] [US7] Create EventForm component for creating/editing events in frontend/src/components/shared/EventForm.tsx
+- [X] T139 [US7] Create calendar page in frontend/src/app/lawyer/calendar/page.tsx
+- [X] T140 [US7] Create useCalendar hook with SWR in frontend/src/hooks/useCalendar.ts
 
 **Checkpoint**: User Story 7 complete - calendar management works (all tests GREEN)
 
