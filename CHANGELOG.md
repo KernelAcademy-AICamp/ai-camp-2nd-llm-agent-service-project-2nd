@@ -10,6 +10,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+
+#### 003-role-based-ui Feature (Complete)
+- **역할 시스템 확장**: CLIENT, DETECTIVE 역할 추가
+- **변호사 포털**: 대시보드, 케이스 관리, 필터링, 벌크 액션
+- **의뢰인 포털**: 케이스 진행 상황, 증거 제출, 진행 단계 시각화
+- **탐정 포털**: 의뢰 관리, 조사 기록, 보고서 제출, 수익 확인
+- **실시간 메시징**: WebSocket 기반 크로스롤 메시지, 읽음 확인, 타이핑 표시
+- **캘린더 시스템**: 케이스 연동 일정, 월/주/일 뷰, 리마인더
+- **청구 시스템**: 청구서 생성, 결제 추적, 의뢰인 결제 페이지
+- **반응형 UI**: 모바일 드로어, 햄버거 메뉴, 반응형 그리드
+
+#### Infrastructure
 - AI Worker: Qdrant 벡터 저장소 통합 예정 (#21)
 
 ### Changed
