@@ -158,21 +158,21 @@
 
 ### Backend Implementation for User Story 3
 
-- [ ] T043 [US3] Create case list endpoint with filters GET /lawyer/cases in backend/app/api/lawyer_portal.py
-- [ ] T044 [US3] Add bulk action endpoint POST /lawyer/cases/bulk-action in backend/app/api/lawyer_portal.py
-- [ ] T045 [US3] Create CaseListService with filtering logic in backend/app/services/case_list_service.py
-- [ ] T046 [US3] Create case list schemas (CaseFilter, CaseListItem, BulkAction) in backend/app/schemas/case_list.py
+- [X] T043 [US3] Create case list endpoint with filters GET /lawyer/cases in backend/app/api/lawyer_portal.py
+- [X] T044 [US3] Add bulk action endpoint POST /lawyer/cases/bulk-action in backend/app/api/lawyer_portal.py
+- [X] T045 [US3] Create CaseListService with filtering logic in backend/app/services/case_list_service.py
+- [X] T046 [US3] Create case list schemas (CaseFilter, CaseListItem, BulkAction) in backend/app/schemas/case_list.py
 
 ### Frontend Implementation for User Story 3
 
-- [ ] T047 [P] [US3] Create CaseCard component in frontend/src/components/lawyer/CaseCard.tsx
-- [ ] T048 [P] [US3] Create CaseTable component with sorting in frontend/src/components/lawyer/CaseTable.tsx
-- [ ] T049 [P] [US3] Create CaseFilter component in frontend/src/components/lawyer/CaseFilter.tsx
-- [ ] T050 [P] [US3] Create BulkActionBar component in frontend/src/components/lawyer/BulkActionBar.tsx
-- [ ] T051 [US3] Create case list page in frontend/src/app/lawyer/cases/page.tsx
-- [ ] T052 [US3] Create case detail page in frontend/src/app/lawyer/cases/[id]/page.tsx
-- [ ] T053 [US3] Create useCaseList hook with filtering in frontend/src/hooks/useCaseList.ts
-- [ ] T054 [US3] Integrate evidence list and AI summary display in case detail page
+- [X] T047 [P] [US3] Create CaseCard component in frontend/src/components/lawyer/CaseCard.tsx
+- [X] T048 [P] [US3] Create CaseTable component with sorting in frontend/src/components/lawyer/CaseTable.tsx
+- [X] T049 [P] [US3] Create CaseFilter component in frontend/src/components/lawyer/CaseFilter.tsx
+- [X] T050 [P] [US3] Create BulkActionBar component in frontend/src/components/lawyer/BulkActionBar.tsx
+- [X] T051 [US3] Create case list page in frontend/src/app/lawyer/cases/page.tsx
+- [X] T052 [US3] Create case detail page in frontend/src/app/lawyer/cases/[id]/page.tsx
+- [X] T053 [US3] Create useCaseList hook with filtering in frontend/src/hooks/useCaseList.ts
+- [X] T054 [US3] Integrate evidence list and AI summary display in case detail page
 
 **Checkpoint**: User Story 3 complete - lawyers can manage cases with full filtering and bulk actions (all tests GREEN)
 
