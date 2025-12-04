@@ -3,7 +3,7 @@ SQLAlchemy ORM Models for LEH Backend
 Database tables: users, cases, case_members, audit_logs
 """
 
-from sqlalchemy import Column, String, DateTime, Enum as SQLEnum, ForeignKey
+from sqlalchemy import Column, String, DateTime, Enum as SQLEnum, ForeignKey, Integer, Boolean, Text, JSON
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from datetime import datetime, timezone
@@ -45,6 +45,35 @@ class CaseMemberRole(str, enum.Enum):
     VIEWER = "viewer"
 
 
+class DocumentType(str, enum.Enum):
+    """Legal document type enum (민법 840조 관련)"""
+    COMPLAINT = "complaint"      # 소장
+    MOTION = "motion"            # 신청서
+    BRIEF = "brief"              # 준비서면
+    RESPONSE = "response"        # 답변서
+
+
+class DraftStatus(str, enum.Enum):
+    """Draft document status enum"""
+    DRAFT = "draft"              # Initial AI-generated
+    REVIEWED = "reviewed"        # Lawyer has reviewed/edited
+    EXPORTED = "exported"        # Has been exported at least once
+
+
+class ExportFormat(str, enum.Enum):
+    """Export file format enum"""
+    DOCX = "docx"
+    PDF = "pdf"
+
+
+class ExportJobStatus(str, enum.Enum):
+    """Export job status enum"""
+    PENDING = "pending"
+    PROCESSING = "processing"
+    COMPLETED = "completed"
+    FAILED = "failed"
+
+
 class CalendarEventType(str, enum.Enum):
     """Calendar event type enum"""
     COURT = "court"          # 재판/출석
@@ -70,6 +99,32 @@ class InvoiceStatus(str, enum.Enum):
     PAID = "paid"            # 결제완료
     OVERDUE = "overdue"      # 연체
     CANCELLED = "cancelled"  # 취소
+
+
+class PropertyType(str, enum.Enum):
+    """Property type enum for asset division"""
+    REAL_ESTATE = "real_estate"    # 부동산
+    SAVINGS = "savings"            # 예금/적금
+    STOCKS = "stocks"              # 주식/펀드
+    RETIREMENT = "retirement"      # 퇴직금/연금
+    VEHICLE = "vehicle"            # 자동차
+    INSURANCE = "insurance"        # 보험
+    DEBT = "debt"                  # 부채
+    OTHER = "other"                # 기타
+
+
+class PropertyOwner(str, enum.Enum):
+    """Property owner enum"""
+    PLAINTIFF = "plaintiff"        # 원고(의뢰인)
+    DEFENDANT = "defendant"        # 피고(상대방)
+    JOINT = "joint"                # 공동 소유
+
+
+class ConfidenceLevel(str, enum.Enum):
+    """Prediction confidence level"""
+    HIGH = "high"
+    MEDIUM = "medium"
+    LOW = "low"
 
 
 # ============================================
@@ -182,12 +237,91 @@ class AuditLog(Base):
 
     id = Column(String, primary_key=True, default=lambda: f"audit_{uuid.uuid4().hex[:12]}")
     user_id = Column(String, ForeignKey("users.id"), nullable=False)
-    action = Column(String, nullable=False)  # e.g., "VIEW_EVIDENCE", "CREATE_CASE"
+    action = Column(String, nullable=False)  # e.g., "VIEW_EVIDENCE", "CREATE_CASE", "EXPORT_DRAFT"
     object_id = Column(String, nullable=True)  # evidence_id or case_id
     timestamp = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
 
     def __repr__(self):
         return f"<AuditLog(id={self.id}, user_id={self.user_id}, action={self.action})>"
+
+
+class DraftDocument(Base):
+    """
+    Draft document model - AI-generated legal document drafts
+    Linked to a case, can be edited and exported
+    """
+    __tablename__ = "draft_documents"
+
+    id = Column(String, primary_key=True, default=lambda: f"draft_{uuid.uuid4().hex[:12]}")
+    case_id = Column(String, ForeignKey("cases.id", ondelete="CASCADE"), nullable=False, index=True)
+    title = Column(String(255), nullable=False)
+    document_type = Column(SQLEnum(DocumentType), nullable=False, default=DocumentType.BRIEF)
+    content = Column(JSON, nullable=False)  # Structured content with sections
+    version = Column(Integer, nullable=False, default=1)
+    status = Column(SQLEnum(DraftStatus), nullable=False, default=DraftStatus.DRAFT, index=True)
+    created_by = Column(String, ForeignKey("users.id"), nullable=False)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
+
+    # Relationships
+    case = relationship("Case", backref="draft_documents")
+    creator = relationship("User", foreign_keys=[created_by])
+    export_jobs = relationship("ExportJob", back_populates="draft", cascade="all, delete-orphan")
+
+    def __repr__(self):
+        return f"<DraftDocument(id={self.id}, title={self.title}, status={self.status})>"
+
+
+class ExportJob(Base):
+    """
+    Export job model - tracks document export operations
+    Used for audit trail and async export handling
+    """
+    __tablename__ = "export_jobs"
+
+    id = Column(String, primary_key=True, default=lambda: f"export_{uuid.uuid4().hex[:12]}")
+    draft_id = Column(String, ForeignKey("draft_documents.id", ondelete="CASCADE"), nullable=False, index=True)
+    case_id = Column(String, ForeignKey("cases.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = Column(String, ForeignKey("users.id"), nullable=False, index=True)
+    format = Column(SQLEnum(ExportFormat), nullable=False)
+    status = Column(SQLEnum(ExportJobStatus), nullable=False, default=ExportJobStatus.PENDING, index=True)
+    file_key = Column(String(500), nullable=True)  # S3 key for generated file
+    file_size = Column(Integer, nullable=True)  # File size in bytes
+    page_count = Column(Integer, nullable=True)  # Number of pages
+    error_message = Column(Text, nullable=True)  # Error details if failed
+    started_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
+    completed_at = Column(DateTime(timezone=True), nullable=True)
+    expires_at = Column(DateTime(timezone=True), nullable=True)  # When S3 file expires
+
+    # Relationships
+    draft = relationship("DraftDocument", back_populates="export_jobs")
+    case = relationship("Case", backref="export_jobs")
+    user = relationship("User", foreign_keys=[user_id])
+
+    def __repr__(self):
+        return f"<ExportJob(id={self.id}, format={self.format}, status={self.status})>"
+
+
+class DocumentTemplate(Base):
+    """
+    Document template model - pre-configured legal document formatting templates
+    """
+    __tablename__ = "document_templates"
+
+    id = Column(String, primary_key=True, default=lambda: f"template_{uuid.uuid4().hex[:12]}")
+    name = Column(String(100), unique=True, nullable=False)
+    document_type = Column(SQLEnum(DocumentType), nullable=False)
+    description = Column(Text, nullable=True)
+    html_template = Column(Text, nullable=False)  # Jinja2 HTML template for PDF
+    css_styles = Column(Text, nullable=False)  # CSS for PDF formatting
+    docx_template_key = Column(String(500), nullable=True)  # S3 key for Word template
+    margins = Column(JSON, nullable=False, default=lambda: {"top": 25, "bottom": 25, "left": 20, "right": 20, "unit": "mm"})
+    is_active = Column(Boolean, nullable=False, default=True)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
+
+    def __repr__(self):
+        return f"<DocumentTemplate(id={self.id}, name={self.name}, document_type={self.document_type})>"
 
 
 class Message(Base):
@@ -290,3 +424,67 @@ class Invoice(Base):
 
     def __repr__(self):
         return f"<Invoice(id={self.id}, amount={self.amount}, status={self.status})>"
+
+
+class CaseProperty(Base):
+    """
+    Case property model - assets and debts for property division calculation
+    재산분할 계산을 위한 사건별 재산/부채 정보
+    """
+    __tablename__ = "case_properties"
+
+    id = Column(String, primary_key=True, default=lambda: f"prop_{uuid.uuid4().hex[:12]}")
+    case_id = Column(String, ForeignKey("cases.id", ondelete="CASCADE"), nullable=False, index=True)
+    property_type = Column(SQLEnum(PropertyType), nullable=False)
+    description = Column(String(255), nullable=True)
+    estimated_value = Column(Integer, nullable=False)  # 원 단위 (BigInt for large values)
+    owner = Column(SQLEnum(PropertyOwner), nullable=False, default=PropertyOwner.JOINT)
+    is_premarital = Column(Boolean, default=False)  # 혼전 재산 여부 (분할 제외 가능)
+    acquisition_date = Column(DateTime(timezone=True), nullable=True)  # 취득일
+    notes = Column(Text, nullable=True)  # 추가 메모
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
+
+    # Relationships
+    case = relationship("Case", backref="properties")
+
+    def __repr__(self):
+        return f"<CaseProperty(id={self.id}, type={self.property_type}, value={self.estimated_value})>"
+
+
+class DivisionPrediction(Base):
+    """
+    Division prediction model - AI-generated property division predictions
+    AI 기반 재산분할 예측 결과 저장
+    """
+    __tablename__ = "division_predictions"
+
+    id = Column(String, primary_key=True, default=lambda: f"pred_{uuid.uuid4().hex[:12]}")
+    case_id = Column(String, ForeignKey("cases.id", ondelete="CASCADE"), nullable=False, index=True)
+
+    # 총 재산 정보
+    total_property_value = Column(Integer, nullable=False)  # 총 재산액 (원)
+    total_debt_value = Column(Integer, default=0)  # 총 부채액 (원)
+    net_value = Column(Integer, nullable=False)  # 순자산 (재산 - 부채)
+
+    # 분할 비율
+    plaintiff_ratio = Column(Integer, nullable=False)  # 원고 비율 (0-100)
+    defendant_ratio = Column(Integer, nullable=False)  # 피고 비율 (0-100)
+    plaintiff_amount = Column(Integer, nullable=False)  # 원고 예상 수령액
+    defendant_amount = Column(Integer, nullable=False)  # 피고 예상 수령액
+
+    # 분석 결과
+    evidence_impacts = Column(JSON, nullable=True)  # 증거별 영향도 리스트
+    similar_cases = Column(JSON, nullable=True)  # 유사 판례 리스트
+    confidence_level = Column(SQLEnum(ConfidenceLevel), nullable=False, default=ConfidenceLevel.MEDIUM)
+
+    # 메타
+    version = Column(Integer, default=1)  # 예측 버전 (재계산 시 증가)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
+
+    # Relationships
+    case = relationship("Case", backref="predictions")
+
+    def __repr__(self):
+        return f"<DivisionPrediction(id={self.id}, ratio={self.plaintiff_ratio}:{self.defendant_ratio})>"
