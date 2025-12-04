@@ -19,7 +19,7 @@ import {
 } from '@/lib/api/evidence';
 import { getCase, Case } from '@/lib/api/cases';
 import { generateDraftPreview, DraftCitation as ApiDraftCitation } from '@/lib/api/draft';
-import { mapApiEvidenceListToEvidence } from '@/lib/utils/evidenceMapper';
+import { mapApiEvidenceToEvidence, mapApiEvidenceListToEvidence } from '@/lib/utils/evidenceMapper';
 
 /**
  * Convert API draft citation to component DraftCitation type
@@ -126,7 +126,7 @@ export default function CaseDetailClient({ id }: CaseDetailClientProps) {
         try {
             const result = await getEvidence(caseId);
             if (result.data) {
-                const mapped = result.data.evidence.map(e => mapApiEvidenceToEvidence(e, caseId));
+                const mapped = result.data.evidence.map(e => mapApiEvidenceToEvidence(e));
                 setEvidenceList(mapped);
             }
             // On error, just show empty list (no evidence yet)
@@ -157,7 +157,7 @@ export default function CaseDetailClient({ id }: CaseDetailClientProps) {
             try {
                 const result = await getEvidence(caseId);
                 if (result.data) {
-                    const newList = result.data.evidence.map(e => mapApiEvidenceToEvidence(e, caseId));
+                    const newList = result.data.evidence.map(e => mapApiEvidenceToEvidence(e));
 
                     // Only update if there are actual status changes
                     setEvidenceList(prevList => {
