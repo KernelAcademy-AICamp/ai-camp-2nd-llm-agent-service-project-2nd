@@ -31,14 +31,14 @@ export default function TimelinePage({ params }: TimelinePageProps) {
         const filter: TimelineFilter = {
             limit: 50,
             offset: 0,
-            sortOrder: (searchParams.get('sort') as 'asc' | 'desc') || 'asc',
+            sortOrder: (searchParams?.get('sort') as 'asc' | 'desc') || 'asc',
         };
 
-        const dateStart = searchParams.get('date_start');
-        const dateEnd = searchParams.get('date_end');
-        const labels = searchParams.get('labels');
-        const speakers = searchParams.get('speakers');
-        const keyOnly = searchParams.get('key_only');
+        const dateStart = searchParams?.get('date_start');
+        const dateEnd = searchParams?.get('date_end');
+        const labels = searchParams?.get('labels');
+        const speakers = searchParams?.get('speakers');
+        const keyOnly = searchParams?.get('key_only');
 
         if (dateStart) filter.dateStart = dateStart;
         if (dateEnd) filter.dateEnd = dateEnd;
