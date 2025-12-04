@@ -56,7 +56,7 @@ class JobService:
         if not case:
             raise NotFoundError(f"Case {case_id} not found")
 
-        if not self.case_member_repo.is_member(case_id, user_id):
+        if not self.case_member_repo.has_access(case_id, user_id):
             raise PermissionError("User does not have access to this case")
 
         # Serialize parameters to JSON
@@ -125,7 +125,7 @@ class JobService:
         if not case:
             raise NotFoundError(f"Case {case_id} not found")
 
-        if not self.case_member_repo.is_member(case_id, user_id):
+        if not self.case_member_repo.has_access(case_id, user_id):
             raise PermissionError("User does not have access to this case")
 
         # Convert string filters to enums

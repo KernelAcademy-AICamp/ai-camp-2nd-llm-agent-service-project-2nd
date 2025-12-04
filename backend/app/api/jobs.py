@@ -24,7 +24,7 @@ from app.db.schemas import (
     JobProgressUpdate
 )
 from app.services.job_service import JobService
-from app.core.dependencies import get_current_user_id
+from app.core.dependencies import get_current_user_id, verify_internal_api_key
 
 
 router = APIRouter()
@@ -233,6 +233,7 @@ def get_job_output(
 def job_callback(
     job_id: str,
     update: JobStatusUpdate,
+    _: bool = Depends(verify_internal_api_key),
     db: Session = Depends(get_db)
 ):
     """
@@ -249,9 +250,12 @@ def job_callback(
     - error_details: Error details (for failed jobs)
     - lambda_request_id: Lambda request ID for correlation
 
+    **Security:**
+    - Requires X-Internal-API-Key header with valid INTERNAL_API_KEY
+    - In development with empty INTERNAL_API_KEY, auth is skipped
+
     **Notes:**
     - Called by AI Worker Lambda function
-    - Should be protected by API key or internal auth in production
     """
     job_service = JobService(db)
     job = job_service.update_job_status(
@@ -268,6 +272,7 @@ def job_callback(
 def update_job_progress(
     job_id: str,
     update: JobProgressUpdate,
+    _: bool = Depends(verify_internal_api_key),
     db: Session = Depends(get_db)
 ):
     """
@@ -280,6 +285,10 @@ def update_job_progress(
 
     **Request Body:**
     - progress: Progress percentage (0-100)
+
+    **Security:**
+    - Requires X-Internal-API-Key header with valid INTERNAL_API_KEY
+    - In development with empty INTERNAL_API_KEY, auth is skipped
 
     **Notes:**
     - Called by AI Worker Lambda function

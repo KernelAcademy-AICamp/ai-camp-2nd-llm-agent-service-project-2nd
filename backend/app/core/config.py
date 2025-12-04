@@ -182,6 +182,11 @@ class Settings(BaseSettings):
     FEATURE_ENABLE_TIMELINE_VIEW: bool = Field(default=True, env="FEATURE_ENABLE_TIMELINE_VIEW")
 
     # ============================================
+    # Internal API Security
+    # ============================================
+    INTERNAL_API_KEY: str = Field(default="", env="INTERNAL_API_KEY")  # For AI Worker callbacks
+
+    # ============================================
     # Logging / Monitoring
     # ============================================
     LOG_FORMAT: str = Field(default="json", env="LOG_FORMAT")  # json | text

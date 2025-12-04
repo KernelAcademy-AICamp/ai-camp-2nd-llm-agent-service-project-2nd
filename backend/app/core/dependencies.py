@@ -14,12 +14,13 @@ from app.db.session import get_db  # Re-export for convenience
 from app.middleware import AuthenticationError, PermissionError
 from app.db.models import User, UserRole
 from app.repositories.user_repository import UserRepository
+from app.core.config import settings
 
 # Re-export get_db for modules that import from dependencies
 __all__ = ["get_db", "get_current_user_id", "get_current_user", "require_admin",
            "require_lawyer_or_admin", "require_client", "require_detective",
            "require_lawyer", "require_any_authenticated", "require_internal_user",
-           "require_role", "get_role_redirect_path"]
+           "require_role", "get_role_redirect_path", "verify_internal_api_key"]
 
 
 def get_current_user_id(
@@ -280,3 +281,39 @@ def get_role_redirect_path(role: UserRole) -> str:
         UserRole.DETECTIVE: "/detective/dashboard",
     }
     return role_paths.get(role, "/dashboard")
+
+
+def verify_internal_api_key(
+    x_internal_api_key: Optional[str] = Header(None, alias="X-Internal-API-Key")
+) -> bool:
+    """
+    Verify internal API key for internal/callback endpoints
+
+    This is used for AI Worker Lambda callbacks that don't have user authentication.
+    The API key should be set in INTERNAL_API_KEY environment variable.
+
+    Args:
+        x_internal_api_key: API key from X-Internal-API-Key header
+
+    Returns:
+        True if valid
+
+    Raises:
+        AuthenticationError: Invalid or missing API key
+
+    Security Note:
+        - API key should be a strong random string (minimum 32 characters)
+        - In production, ensure INTERNAL_API_KEY is set and secure
+        - In development/testing, empty key will skip validation
+    """
+    # In development/testing with empty key, allow all (for easier local testing)
+    if not settings.INTERNAL_API_KEY:
+        return True
+
+    if not x_internal_api_key:
+        raise AuthenticationError("Internal API key required")
+
+    if x_internal_api_key != settings.INTERNAL_API_KEY:
+        raise AuthenticationError("Invalid internal API key")
+
+    return True
