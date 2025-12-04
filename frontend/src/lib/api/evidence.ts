@@ -197,3 +197,42 @@ export async function deleteEvidence(
     method: 'DELETE',
   });
 }
+
+export interface RetryResponse {
+  evidence_id: string;
+  job_id: string;
+  status: string;
+  message: string;
+}
+
+/**
+ * Retry processing for failed evidence
+ * Re-queues the evidence for AI Worker processing
+ */
+export async function retryEvidence(
+  evidenceId: string
+): Promise<ApiResponse<RetryResponse>> {
+  return apiRequest<RetryResponse>(`/evidence/${evidenceId}/retry`, {
+    method: 'POST',
+  });
+}
+
+export interface EvidenceStatusResponse {
+  evidence_id: string;
+  status: Evidence['status'];
+  progress?: number;
+  error_message?: string;
+  retry_count?: number;
+  max_retries?: number;
+}
+
+/**
+ * Get the current processing status of evidence
+ */
+export async function getEvidenceStatus(
+  evidenceId: string
+): Promise<ApiResponse<EvidenceStatusResponse>> {
+  return apiRequest<EvidenceStatusResponse>(`/evidence/${evidenceId}/status`, {
+    method: 'GET',
+  });
+}

@@ -10,13 +10,13 @@
 
 import { useState } from 'react';
 import { flexRender } from '@tanstack/react-table';
-import { ArrowUpDown, MoreVertical, Filter, Sparkles, X, FileText, Loader2 } from 'lucide-react';
+import { ArrowUpDown, MoreVertical, Filter, Sparkles, X, FileText, Loader2, RefreshCw } from 'lucide-react';
 import { Evidence } from '@/types/evidence';
 import { useEvidenceTable } from '@/hooks/useEvidenceTable';
 import { EvidenceTypeIcon } from './EvidenceTypeIcon';
 import { EvidenceStatusBadge } from './EvidenceStatusBadge';
 import { DataTablePagination } from './DataTablePagination';
-import { getEvidenceDetail } from '@/lib/api/evidence';
+import { getEvidenceDetail, retryEvidence } from '@/lib/api/evidence';
 
 /**
  * AI Summary Modal Component
@@ -159,9 +159,10 @@ function ContentModal({
 
 interface EvidenceDataTableProps {
   items: Evidence[];
+  onRetry?: (evidenceId: string) => void;
 }
 
-export function EvidenceDataTable({ items }: EvidenceDataTableProps) {
+export function EvidenceDataTable({ items, onRetry }: EvidenceDataTableProps) {
   const [typeFilter, setTypeFilterValue] = useState<string>('all');
   const [dateFilter, setDateFilterValue] = useState<string>('all');
   const [selectedEvidence, setSelectedEvidence] = useState<Evidence | null>(null);
@@ -169,8 +170,25 @@ export function EvidenceDataTable({ items }: EvidenceDataTableProps) {
   const [isContentModalOpen, setIsContentModalOpen] = useState(false);
   const [evidenceContent, setEvidenceContent] = useState<string | null>(null);
   const [isLoadingContent, setIsLoadingContent] = useState(false);
+  const [retryingIds, setRetryingIds] = useState<Set<string>>(new Set());
 
   const { table, setTypeFilter, setDateFilter } = useEvidenceTable(items);
+
+  const handleRetry = async (evidenceId: string) => {
+    setRetryingIds((prev) => new Set(prev).add(evidenceId));
+    try {
+      await retryEvidence(evidenceId);
+      onRetry?.(evidenceId);
+    } catch (err) {
+      console.error('Failed to retry evidence:', err);
+    } finally {
+      setRetryingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(evidenceId);
+        return next;
+      });
+    }
+  };
 
   const handleOpenSummary = (evidence: Evidence) => {
     setSelectedEvidence(evidence);
@@ -378,7 +396,21 @@ export function EvidenceDataTable({ items }: EvidenceDataTableProps) {
 
                     {/* Status Badge */}
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <EvidenceStatusBadge status={evidence.status} />
+                      <div className="flex items-center gap-2">
+                        <EvidenceStatusBadge status={evidence.status} />
+                        {evidence.status === 'failed' && (
+                          <button
+                            type="button"
+                            onClick={() => handleRetry(evidence.id)}
+                            disabled={retryingIds.has(evidence.id)}
+                            className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-md transition-colors disabled:opacity-50"
+                            title="재시도"
+                          >
+                            <RefreshCw className={`w-3 h-3 ${retryingIds.has(evidence.id) ? 'animate-spin' : ''}`} />
+                            {retryingIds.has(evidence.id) ? '재시도 중...' : '재시도'}
+                          </button>
+                        )}
+                      </div>
                     </td>
 
                     {/* Actions */}
