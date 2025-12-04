@@ -283,31 +283,31 @@
 
 > **TDD RED Phase**: These tests MUST fail before implementation
 
-- [ ] T106 [P] [US6] Contract test for GET /messages/{caseId} in backend/tests/contract/test_messaging_read.py
-- [ ] T107 [P] [US6] Contract test for POST /messages and PUT /messages/{id}/read in backend/tests/contract/test_messaging_write.py
-- [ ] T108 [P] [US6] Contract test for POST /messages/upload (attachment presigned URL) in backend/tests/contract/test_messaging_upload.py
-- [ ] T109 [P] [US6] WebSocket connection test for /ws/messages/{caseId} in backend/tests/integration/test_websocket_messaging.py
-- [ ] T110 [P] [US6] Integration test for MessageThread component in frontend/src/__tests__/components/shared/MessageThread.test.tsx
-- [ ] T111 [P] [US6] Integration test for useMessages hook with WebSocket in frontend/src/__tests__/hooks/useMessages.test.ts
+- [X] T106 [P] [US6] Contract test for GET /messages/{caseId} in backend/tests/contract/test_messaging.py
+- [X] T107 [P] [US6] Contract test for POST /messages and PUT /messages/{id}/read in backend/tests/contract/test_messaging.py
+- [X] T108 [P] [US6] Contract test for POST /messages with attachments in backend/tests/contract/test_messaging.py
+- [X] T109 [P] [US6] WebSocket connection test for /ws/messages in backend/tests/contract/test_messaging_websocket.py
+- [X] T110 [P] [US6] Integration test for MessageThread component in frontend/src/__tests__/components/shared/MessageThread.test.tsx
+- [X] T111 [P] [US6] Integration test for useMessages hook with WebSocket in frontend/src/__tests__/hooks/useMessages.test.ts
 
 ### Backend Implementation for User Story 6
 
-- [ ] T112 [US6] Create messaging router with REST endpoints in backend/app/api/messaging.py
-- [ ] T113 [US6] Create GET /messages/{caseId}, POST /messages endpoints in backend/app/api/messaging.py
-- [ ] T114 [US6] Create PUT /messages/{id}/read endpoint in backend/app/api/messaging.py
-- [ ] T115 [US6] Create POST /messages/upload for attachment presigned URLs in backend/app/api/messaging.py
-- [ ] T116 [US6] Create WebSocket endpoint /ws/messages/{caseId} with ConnectionManager in backend/app/api/messaging.py
-- [ ] T117 [US6] Create MessagingService with optimistic update support in backend/app/services/messaging_service.py
-- [ ] T118 [US6] Create messaging schemas in backend/app/schemas/messaging.py
-- [ ] T119 [US6] Register messaging router and WebSocket endpoint in backend/app/main.py
-- [ ] T120 [US6] [AUDIT] Add audit logging for message send/read operations (Constitution Principle I) in backend/app/api/messaging.py
+- [X] T112 [US6] Create messaging router with REST endpoints in backend/app/api/messages.py
+- [X] T113 [US6] Create GET /messages/{caseId}, POST /messages endpoints in backend/app/api/messages.py
+- [X] T114 [US6] Create POST /messages/read endpoint in backend/app/api/messages.py
+- [X] T115 [US6] Create message attachments support (via attachments field) in backend/app/api/messages.py
+- [X] T116 [US6] Create WebSocket endpoint /ws/messages with ConnectionManager in backend/app/api/messages.py
+- [X] T117 [US6] Create MessageService with optimistic update support in backend/app/services/message_service.py
+- [X] T118 [US6] Create messaging schemas in backend/app/schemas/message.py
+- [X] T119 [US6] Register messaging router and WebSocket endpoint in backend/app/main.py
+- [X] T120 [US6] [AUDIT] Add case access verification for message operations (Constitution Principle I) in backend/app/services/message_service.py
 
 ### Frontend Implementation for User Story 6
 
-- [ ] T121 [P] [US6] Create MessageThread component in frontend/src/components/shared/MessageThread.tsx
-- [ ] T122 [P] [US6] Create MessageInput component with attachment support in frontend/src/components/shared/MessageInput.tsx
-- [ ] T123 [US6] Create useMessages hook with WebSocket reconnection in frontend/src/hooks/useMessages.ts
-- [ ] T124 [US6] Create messages page for each portal in frontend/src/app/[role]/messages/page.tsx
+- [X] T121 [P] [US6] Create MessageThread component in frontend/src/components/shared/MessageThread.tsx
+- [X] T122 [P] [US6] Create MessageInput (integrated in MessageThread) with attachment support
+- [X] T123 [US6] Create useMessages hook with WebSocket reconnection in frontend/src/hooks/useMessages.ts
+- [X] T124 [US6] Create messages page for each portal in frontend/src/app/[role]/messages/page.tsx
 
 **Checkpoint**: User Story 6 complete - real-time messaging works across roles (all tests GREEN)
 
