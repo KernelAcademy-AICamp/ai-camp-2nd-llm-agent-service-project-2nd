@@ -8,11 +8,12 @@ POST /lawyer/cases/bulk-action - Bulk actions on cases
 GET /lawyer/analytics - Extended analytics
 """
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
+from typing import List, Optional
 
 from app.db.session import get_db
-from app.db.models import User
+from app.db.models import User, CaseStatus
 from app.core.dependencies import require_internal_user
 from app.services.lawyer_dashboard_service import LawyerDashboardService
 from app.schemas.lawyer_dashboard import (

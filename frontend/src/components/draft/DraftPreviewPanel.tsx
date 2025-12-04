@@ -19,12 +19,10 @@ import {
     MessageSquare,
     GitBranch,
     Users,
-    CheckCircle,
-    AlertCircle,
 } from 'lucide-react';
 import DOMPurify from 'dompurify';
 import { DraftCitation } from '@/types/draft';
-import { DraftDownloadFormat, DownloadResult } from '@/services/documentService';
+import { DraftDownloadFormat } from '@/services/documentService';
 import EvidenceTraceabilityPanel from './EvidenceTraceabilityPanel';
 import {
     DraftVersionSnapshot,
@@ -42,16 +40,9 @@ interface DraftPreviewPanelProps {
     isGenerating: boolean;
     hasExistingDraft: boolean;
     onGenerate: () => void;
-    onDownload?: (data: { format: DraftDownloadFormat; content: string }) => Promise<DownloadResult> | void;
+    onDownload?: (data: { format: DraftDownloadFormat; content: string }) => void;
     onManualSave?: (content: string) => Promise<void> | void;
 }
-
-interface ExportToast {
-    type: 'success' | 'error';
-    message: string;
-    filename?: string;
-}
-
 
 const AUTOSAVE_INTERVAL_MS = 5 * 60 * 1000;
 const HISTORY_LIMIT = 10;
@@ -176,9 +167,6 @@ export default function DraftPreviewPanel({
     const [changeLog, setChangeLog] = useState<DraftChangeLogEntry[]>([]);
     const [isTrackChangesEnabled, setIsTrackChangesEnabled] = useState(false);
     const [collabStatus, setCollabStatus] = useState<string | null>(null);
-    const [isExporting, setIsExporting] = useState(false);
-    const [exportingFormat, setExportingFormat] = useState<DraftDownloadFormat | null>(null);
-    const [exportToast, setExportToast] = useState<ExportToast | null>(null);
     const editorRef = useRef<HTMLDivElement>(null);
     const autosaveTimerRef = useRef<IntervalHandle | null>(null);
     const collabSyncTimerRef = useRef<TimeoutHandle | null>(null);
@@ -397,42 +385,9 @@ export default function DraftPreviewPanel({
         document.execCommand(command, false, undefined);
     };
 
-    const handleDownload = async (format: DraftDownloadFormat) => {
+    const handleDownload = (format: DraftDownloadFormat) => {
         if (!onDownload) return;
-
-        setIsExporting(true);
-        setExportingFormat(format);
-        setExportToast(null);
-
-        try {
-            const result = await onDownload({ format, content: editorHtml });
-
-            if (result) {
-                if (result.success) {
-                    setExportToast({
-                        type: 'success',
-                        message: `${format.toUpperCase()} 파일이 다운로드되었습니다.`,
-                        filename: result.filename,
-                    });
-                } else {
-                    setExportToast({
-                        type: 'error',
-                        message: result.error || '다운로드에 실패했습니다.',
-                    });
-                }
-            }
-        } catch (error) {
-            setExportToast({
-                type: 'error',
-                message: error instanceof Error ? error.message : '다운로드 중 오류가 발생했습니다.',
-            });
-        } finally {
-            setIsExporting(false);
-            setExportingFormat(null);
-
-            // Auto-dismiss toast after 5 seconds
-            setTimeout(() => setExportToast(null), 5000);
-        }
+        onDownload({ format, content: editorHtml });
     };
 
     const handleEditorClick = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -777,40 +732,17 @@ export default function DraftPreviewPanel({
                         <button
                             type="button"
                             onClick={() => handleDownload('docx')}
-                            disabled={isExporting}
-                            className="inline-flex items-center gap-1 text-xs font-medium text-secondary hover:text-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="inline-flex items-center gap-1 text-xs font-medium text-secondary hover:text-accent transition-colors"
                         >
-                            {isExporting && exportingFormat === 'docx' ? (
-                                <Loader2 className="w-4 h-4 animate-spin" />
-                            ) : (
-                                <Download className="w-4 h-4" />
-                            )}
+                            <Download className="w-4 h-4" />
                             DOCX
                         </button>
                         <button
                             type="button"
-                            onClick={() => handleDownload('pdf')}
-                            disabled={isExporting}
-                            className="inline-flex items-center gap-1 text-xs font-medium text-secondary hover:text-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            {isExporting && exportingFormat === 'pdf' ? (
-                                <Loader2 className="w-4 h-4 animate-spin" />
-                            ) : (
-                                <Download className="w-4 h-4" />
-                            )}
-                            PDF
-                        </button>
-                        <button
-                            type="button"
                             onClick={() => handleDownload('hwp')}
-                            disabled={isExporting}
-                            className="inline-flex items-center gap-1 text-xs font-medium text-secondary hover:text-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="inline-flex items-center gap-1 text-xs font-medium text-secondary hover:text-accent transition-colors"
                         >
-                            {isExporting && exportingFormat === 'hwp' ? (
-                                <Loader2 className="w-4 h-4 animate-spin" />
-                            ) : (
-                                <Download className="w-4 h-4" />
-                            )}
+                            <Download className="w-4 h-4" />
                             HWP
                         </button>
                     </div>
@@ -1035,39 +967,6 @@ export default function DraftPreviewPanel({
                             ))}
                         </div>
                     </div>
-                </div>
-            )}
-
-            {/* Export Toast Notification */}
-            {exportToast && (
-                <div
-                    className={`fixed bottom-6 right-6 z-50 flex items-center gap-3 rounded-xl px-4 py-3 shadow-lg transition-all duration-300 ${
-                        exportToast.type === 'success'
-                            ? 'bg-green-50 border border-green-200 text-green-800'
-                            : 'bg-red-50 border border-red-200 text-red-800'
-                    }`}
-                    role="alert"
-                    aria-live="polite"
-                >
-                    {exportToast.type === 'success' ? (
-                        <CheckCircle className="w-5 h-5 text-green-600" />
-                    ) : (
-                        <AlertCircle className="w-5 h-5 text-red-600" />
-                    )}
-                    <div className="flex flex-col">
-                        <span className="text-sm font-medium">{exportToast.message}</span>
-                        {exportToast.filename && (
-                            <span className="text-xs opacity-75">{exportToast.filename}</span>
-                        )}
-                    </div>
-                    <button
-                        type="button"
-                        onClick={() => setExportToast(null)}
-                        className="ml-2 rounded-full p-1 hover:bg-black/5 transition-colors"
-                        aria-label="알림 닫기"
-                    >
-                        <X className="w-4 h-4" />
-                    </button>
                 </div>
             )}
         </section>

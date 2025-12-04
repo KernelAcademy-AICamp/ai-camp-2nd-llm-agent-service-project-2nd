@@ -1,0 +1,609 @@
+openapi: 3.1.0
+info:
+  title: Detective Portal API
+  description: API endpoints for detective/investigator portal (탐정 포털)
+  version: 1.0.0
+  contact:
+    name: Team H·P·L
+
+servers:
+  - url: /api/v1
+    description: API Server
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: Detective Dashboard
+    description: Detective dashboard and overview
+  - name: Investigations
+    description: Case investigation management
+  - name: Field Records
+    description: Field investigation recording
+  - name: Reports
+    description: Investigation report submission
+  - name: Earnings
+    description: Detective earnings tracking
+
+paths:
+  /detective/dashboard:
+    get:
+      tags: [Detective Dashboard]
+      summary: Get detective dashboard data
+      operationId: getDetectiveDashboard
+      responses:
+        '200':
+          description: Dashboard data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DetectiveDashboard'
+
+  /detective/cases:
+    get:
+      tags: [Investigations]
+      summary: List assigned investigations
+      operationId: listDetectiveCases
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, accepted, in_progress, completed, all]
+            default: all
+      responses:
+        '200':
+          description: List of assigned cases
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/InvestigationListItem'
+
+  /detective/cases/{caseId}:
+    get:
+      tags: [Investigations]
+      summary: Get investigation detail
+      operationId: getInvestigationDetail
+      parameters:
+        - $ref: '#/components/parameters/CaseId'
+      responses:
+        '200':
+          description: Investigation detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvestigationDetail'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /detective/cases/{caseId}/accept:
+    post:
+      tags: [Investigations]
+      summary: Accept investigation assignment
+      operationId: acceptInvestigation
+      parameters:
+        - $ref: '#/components/parameters/CaseId'
+      responses:
+        '200':
+          description: Assignment accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvestigationDetail'
+        '400':
+          description: Already accepted or completed
+
+  /detective/cases/{caseId}/reject:
+    post:
+      tags: [Investigations]
+      summary: Reject investigation assignment
+      operationId: rejectInvestigation
+      parameters:
+        - $ref: '#/components/parameters/CaseId'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+                  maxLength: 500
+      responses:
+        '200':
+          description: Assignment rejected
+
+  /detective/cases/{caseId}/records:
+    get:
+      tags: [Field Records]
+      summary: List field records for investigation
+      operationId: listFieldRecords
+      parameters:
+        - $ref: '#/components/parameters/CaseId'
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [location, photo, video, memo, audio, all]
+            default: all
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+      responses:
+        '200':
+          description: List of field records
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FieldRecord'
+
+    post:
+      tags: [Field Records]
+      summary: Add field record
+      operationId: addFieldRecord
+      parameters:
+        - $ref: '#/components/parameters/CaseId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FieldRecordCreate'
+      responses:
+        '201':
+          description: Field record created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FieldRecord'
+
+  /detective/cases/{caseId}/records/{recordId}:
+    put:
+      tags: [Field Records]
+      summary: Update field record
+      operationId: updateFieldRecord
+      parameters:
+        - $ref: '#/components/parameters/CaseId'
+        - name: recordId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FieldRecordUpdate'
+      responses:
+        '200':
+          description: Record updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FieldRecord'
+
+  /detective/cases/{caseId}/report:
+    get:
+      tags: [Reports]
+      summary: Get current report draft
+      operationId: getReportDraft
+      parameters:
+        - $ref: '#/components/parameters/CaseId'
+      responses:
+        '200':
+          description: Report draft
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvestigationReport'
+        '404':
+          description: No report draft exists
+
+    post:
+      tags: [Reports]
+      summary: Submit investigation report
+      operationId: submitReport
+      parameters:
+        - $ref: '#/components/parameters/CaseId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReportSubmit'
+      responses:
+        '201':
+          description: Report submitted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvestigationReport'
+
+    put:
+      tags: [Reports]
+      summary: Save report draft
+      operationId: saveReportDraft
+      parameters:
+        - $ref: '#/components/parameters/CaseId'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReportDraft'
+      responses:
+        '200':
+          description: Draft saved
+
+  /detective/earnings:
+    get:
+      tags: [Earnings]
+      summary: Get earnings summary
+      operationId: getEarnings
+      parameters:
+        - name: period
+          in: query
+          schema:
+            type: string
+            enum: [month, quarter, year, all]
+            default: month
+      responses:
+        '200':
+          description: Earnings summary
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EarningsSummary'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    CaseId:
+      name: caseId
+      in: path
+      required: true
+      schema:
+        type: string
+
+  responses:
+    Forbidden:
+      description: Access denied
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        detail:
+          type: string
+        status_code:
+          type: integer
+
+    DetectiveDashboard:
+      type: object
+      properties:
+        pending_requests:
+          type: integer
+          description: New investigation requests
+        active_investigations:
+          type: integer
+        completed_this_month:
+          type: integer
+        total_earnings_month:
+          type: number
+          format: decimal
+        recent_records:
+          type: array
+          items:
+            $ref: '#/components/schemas/FieldRecordPreview'
+        upcoming_deadlines:
+          type: array
+          items:
+            $ref: '#/components/schemas/DeadlineItem'
+
+    InvestigationListItem:
+      type: object
+      properties:
+        id:
+          type: string
+        case_title:
+          type: string
+        lawyer_name:
+          type: string
+        status:
+          type: string
+          enum: [pending, accepted, in_progress, completed]
+        deadline:
+          type: string
+          format: date
+        fee:
+          type: number
+          format: decimal
+        record_count:
+          type: integer
+        assigned_at:
+          type: string
+          format: date-time
+
+    InvestigationDetail:
+      type: object
+      properties:
+        id:
+          type: string
+        case_title:
+          type: string
+        description:
+          type: string
+        lawyer:
+          $ref: '#/components/schemas/LawyerContact'
+        status:
+          type: string
+        deadline:
+          type: string
+          format: date
+        fee:
+          type: number
+          format: decimal
+        target_info:
+          type: string
+          description: Investigation target details
+        locations_of_interest:
+          type: array
+          items:
+            $ref: '#/components/schemas/LocationInfo'
+        record_count:
+          type: integer
+        report_submitted:
+          type: boolean
+
+    LawyerContact:
+      type: object
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+
+    LocationInfo:
+      type: object
+      properties:
+        name:
+          type: string
+        address:
+          type: string
+        lat:
+          type: number
+          format: double
+        lng:
+          type: number
+          format: double
+        notes:
+          type: string
+
+    FieldRecord:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        record_type:
+          type: string
+          enum: [location, photo, video, memo, audio]
+        content:
+          type: string
+        location:
+          $ref: '#/components/schemas/GPSLocation'
+        attachments:
+          type: array
+          items:
+            $ref: '#/components/schemas/Attachment'
+        recorded_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+
+    FieldRecordPreview:
+      type: object
+      properties:
+        id:
+          type: string
+        record_type:
+          type: string
+        case_title:
+          type: string
+        recorded_at:
+          type: string
+          format: date-time
+
+    FieldRecordCreate:
+      type: object
+      required: [record_type, recorded_at]
+      properties:
+        record_type:
+          type: string
+          enum: [location, photo, video, memo, audio]
+        content:
+          type: string
+          maxLength: 5000
+        location_lat:
+          type: number
+          format: double
+        location_lng:
+          type: number
+          format: double
+        location_address:
+          type: string
+        attachment_ids:
+          type: array
+          items:
+            type: string
+        recorded_at:
+          type: string
+          format: date-time
+
+    FieldRecordUpdate:
+      type: object
+      properties:
+        content:
+          type: string
+        location_address:
+          type: string
+
+    GPSLocation:
+      type: object
+      properties:
+        lat:
+          type: number
+          format: double
+        lng:
+          type: number
+          format: double
+        address:
+          type: string
+        accuracy:
+          type: number
+          description: GPS accuracy in meters
+
+    Attachment:
+      type: object
+      properties:
+        id:
+          type: string
+        filename:
+          type: string
+        size:
+          type: integer
+        mime_type:
+          type: string
+        thumbnail_url:
+          type: string
+          format: uri
+        download_url:
+          type: string
+          format: uri
+
+    InvestigationReport:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        case_id:
+          type: string
+        status:
+          type: string
+          enum: [draft, submitted, approved, rejected]
+        title:
+          type: string
+        summary:
+          type: string
+        findings:
+          type: string
+        conclusion:
+          type: string
+        attached_records:
+          type: array
+          items:
+            type: string
+            description: Field record IDs
+        submitted_at:
+          type: string
+          format: date-time
+
+    ReportDraft:
+      type: object
+      properties:
+        title:
+          type: string
+        summary:
+          type: string
+        findings:
+          type: string
+        conclusion:
+          type: string
+        attached_record_ids:
+          type: array
+          items:
+            type: string
+
+    ReportSubmit:
+      type: object
+      required: [title, summary, findings, conclusion]
+      properties:
+        title:
+          type: string
+          maxLength: 255
+        summary:
+          type: string
+          maxLength: 1000
+        findings:
+          type: string
+        conclusion:
+          type: string
+        attached_record_ids:
+          type: array
+          items:
+            type: string
+
+    DeadlineItem:
+      type: object
+      properties:
+        case_id:
+          type: string
+        case_title:
+          type: string
+        deadline:
+          type: string
+          format: date
+        days_remaining:
+          type: integer
+
+    EarningsSummary:
+      type: object
+      properties:
+        period:
+          type: string
+        total_earned:
+          type: number
+          format: decimal
+        pending_payment:
+          type: number
+          format: decimal
+        completed_cases:
+          type: integer
+        earnings_by_month:
+          type: array
+          items:
+            type: object
+            properties:
+              month:
+                type: string
+              amount:
+                type: number
+                format: decimal

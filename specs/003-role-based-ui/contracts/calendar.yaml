@@ -1,0 +1,361 @@
+openapi: 3.1.0
+info:
+  title: Calendar API
+  description: Calendar management API for lawyers and detectives
+  version: 1.0.0
+  contact:
+    name: Team H·P·L
+
+servers:
+  - url: /api/v1
+    description: API Server
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: Events
+    description: Calendar event management
+
+paths:
+  /calendar/events:
+    get:
+      tags: [Events]
+      summary: Get calendar events
+      operationId: getCalendarEvents
+      parameters:
+        - name: start
+          in: query
+          required: true
+          description: Start of date range (ISO 8601)
+          schema:
+            type: string
+            format: date-time
+        - name: end
+          in: query
+          required: true
+          description: End of date range (ISO 8601)
+          schema:
+            type: string
+            format: date-time
+        - name: case_id
+          in: query
+          description: Filter by case
+          schema:
+            type: string
+        - name: event_type
+          in: query
+          description: Filter by event type
+          schema:
+            type: string
+            enum: [court, meeting, deadline, reminder, investigation]
+      responses:
+        '200':
+          description: List of events
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CalendarEvent'
+
+    post:
+      tags: [Events]
+      summary: Create calendar event
+      operationId: createCalendarEvent
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CalendarEventCreate'
+      responses:
+        '201':
+          description: Event created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CalendarEvent'
+        '400':
+          description: Invalid request
+
+  /calendar/events/{eventId}:
+    get:
+      tags: [Events]
+      summary: Get event details
+      operationId: getCalendarEvent
+      parameters:
+        - $ref: '#/components/parameters/EventId'
+      responses:
+        '200':
+          description: Event details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CalendarEvent'
+        '404':
+          description: Event not found
+
+    put:
+      tags: [Events]
+      summary: Update calendar event
+      operationId: updateCalendarEvent
+      parameters:
+        - $ref: '#/components/parameters/EventId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CalendarEventUpdate'
+      responses:
+        '200':
+          description: Event updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CalendarEvent'
+        '403':
+          description: Not event owner
+        '404':
+          description: Event not found
+
+    delete:
+      tags: [Events]
+      summary: Delete calendar event
+      operationId: deleteCalendarEvent
+      parameters:
+        - $ref: '#/components/parameters/EventId'
+      responses:
+        '204':
+          description: Event deleted
+        '403':
+          description: Not event owner
+        '404':
+          description: Event not found
+
+  /calendar/upcoming:
+    get:
+      tags: [Events]
+      summary: Get upcoming events (next 7 days)
+      operationId: getUpcomingEvents
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+            maximum: 50
+      responses:
+        '200':
+          description: Upcoming events
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CalendarEventSummary'
+
+  /calendar/reminders:
+    get:
+      tags: [Events]
+      summary: Get events with upcoming reminders
+      operationId: getUpcomingReminders
+      description: Returns events where reminder time is within the next hour
+      responses:
+        '200':
+          description: Events with upcoming reminders
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ReminderItem'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    EventId:
+      name: eventId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+  schemas:
+    CalendarEvent:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+        case_id:
+          type: string
+          nullable: true
+        case_title:
+          type: string
+          nullable: true
+        title:
+          type: string
+        description:
+          type: string
+          nullable: true
+        event_type:
+          type: string
+          enum: [court, meeting, deadline, reminder, investigation]
+        color:
+          type: string
+          description: Hex color code based on event_type
+        start_time:
+          type: string
+          format: date-time
+        end_time:
+          type: string
+          format: date-time
+          nullable: true
+        all_day:
+          type: boolean
+          description: True if end_time is null
+        location:
+          type: string
+          nullable: true
+        reminder_minutes:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+
+    CalendarEventSummary:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        event_type:
+          type: string
+        color:
+          type: string
+        start_time:
+          type: string
+          format: date-time
+        case_title:
+          type: string
+          nullable: true
+
+    CalendarEventCreate:
+      type: object
+      required: [title, event_type, start_time]
+      properties:
+        case_id:
+          type: string
+          description: Link event to a case (optional)
+        title:
+          type: string
+          minLength: 1
+          maxLength: 255
+        description:
+          type: string
+          maxLength: 2000
+        event_type:
+          type: string
+          enum: [court, meeting, deadline, reminder, investigation]
+        start_time:
+          type: string
+          format: date-time
+        end_time:
+          type: string
+          format: date-time
+          description: If null, treated as all-day event
+        location:
+          type: string
+          maxLength: 255
+        reminder_minutes:
+          type: integer
+          minimum: 0
+          maximum: 10080
+          default: 30
+          description: Minutes before event to send reminder (max 1 week)
+
+    CalendarEventUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+          maxLength: 2000
+        event_type:
+          type: string
+          enum: [court, meeting, deadline, reminder, investigation]
+        start_time:
+          type: string
+          format: date-time
+        end_time:
+          type: string
+          format: date-time
+        location:
+          type: string
+          maxLength: 255
+        reminder_minutes:
+          type: integer
+          minimum: 0
+          maximum: 10080
+
+    ReminderItem:
+      type: object
+      properties:
+        event_id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        event_type:
+          type: string
+        start_time:
+          type: string
+          format: date-time
+        reminder_time:
+          type: string
+          format: date-time
+        minutes_until_event:
+          type: integer
+        case_title:
+          type: string
+          nullable: true
+
+    # Event type color mapping (for frontend reference)
+    EventTypeColors:
+      type: object
+      description: Color mapping for event types (reference only)
+      properties:
+        court:
+          type: string
+          example: "#ef4444"
+          description: Red
+        meeting:
+          type: string
+          example: "#3b82f6"
+          description: Blue
+        deadline:
+          type: string
+          example: "#f59e0b"
+          description: Amber
+        reminder:
+          type: string
+          example: "#10b981"
+          description: Green
+        investigation:
+          type: string
+          example: "#8b5cf6"
+          description: Purple

@@ -127,8 +127,8 @@ class AuthService:
         final_role = role if role else UserRole.LAWYER
         if final_role not in self.SELF_SIGNUP_ROLES:
             raise ValidationError(
-                "자가 등록은 CLIENT, DETECTIVE, LAWYER 역할만 가능합니다. "
-                "ADMIN/STAFF 역할은 초대를 통해서만 가능합니다."
+                f"자가 등록은 CLIENT, DETECTIVE, LAWYER 역할만 가능합니다. "
+                f"ADMIN/STAFF 역할은 초대를 통해서만 가능합니다."
             )
 
         # Check for duplicate email
