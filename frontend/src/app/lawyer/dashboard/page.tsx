@@ -51,7 +51,7 @@ function RecentCaseItem({
 }: {
   id: string;
   title: string;
-  client_name: string;
+  client_name?: string;
   status: string;
   updated_at: string;
   onClick: () => void;
@@ -93,7 +93,7 @@ function RecentCaseItem({
     >
       <div className="flex-1 min-w-0">
         <p className="font-medium text-gray-900 truncate">{title}</p>
-        <p className="text-sm text-gray-500">{client_name}</p>
+        <p className="text-sm text-gray-500">{client_name || '-'}</p>
       </div>
       <div className="flex items-center gap-3">
         <span className={`px-2 py-1 text-xs font-medium rounded-full ${statusStyles[status] || statusStyles.active}`}>
