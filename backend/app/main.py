@@ -24,7 +24,7 @@ from mangum import Mangum  # noqa: E402 - AWS Lambda handler
 from app.core.config import settings  # noqa: E402
 
 # Import API routers
-from app.api import auth, admin, cases, evidence, timeline  # noqa: E402
+from app.api import auth, admin, cases, evidence  # noqa: E402
 from app.middleware import (  # noqa: E402
     register_exception_handlers,
     SecurityHeadersMiddleware,
@@ -188,9 +188,6 @@ app.include_router(cases.router, prefix="/cases", tags=["Cases"])
 
 # 증거 라우터
 app.include_router(evidence.router, prefix="/evidence", tags=["Evidence"])
-
-# 타임라인 라우터 (증거 타임라인 조회)
-app.include_router(timeline.router, prefix="/cases", tags=["Timeline"])
 
 # Note: Draft endpoints are integrated into cases router (POST /cases/{case_id}/draft-preview)
 # Note: RAG search is integrated into draft generation service (draft_service.py)
