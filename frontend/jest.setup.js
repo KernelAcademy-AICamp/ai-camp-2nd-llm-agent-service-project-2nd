@@ -1,5 +1,32 @@
 import '@testing-library/jest-dom';
 
+// Polyfills for Next.js middleware testing
+import { TextEncoder, TextDecoder } from 'util';
+
+global.TextEncoder = TextEncoder;
+global.TextDecoder = TextDecoder;
+
+// Mock Response and Request for middleware tests
+if (typeof Response === 'undefined') {
+  global.Response = class Response {
+    constructor(body, init) {
+      this.body = body;
+      this.status = init?.status || 200;
+      this.headers = new Map(Object.entries(init?.headers || {}));
+    }
+  };
+}
+
+if (typeof Request === 'undefined') {
+  global.Request = class Request {
+    constructor(url, init) {
+      this.url = url;
+      this.method = init?.method || 'GET';
+      this.headers = new Map(Object.entries(init?.headers || {}));
+    }
+  };
+}
+
 // Use mocked evidence API across tests to avoid network calls from CaseDetail flows
 jest.mock('@/lib/api/evidence', () => {
   const mockEvidenceList = [

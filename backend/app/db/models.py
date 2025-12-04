@@ -35,6 +35,8 @@ class UserStatus(str, enum.Enum):
 class CaseStatus(str, enum.Enum):
     """Case status enum"""
     ACTIVE = "active"
+    OPEN = "open"              # 진행 중 (open and active)
+    IN_PROGRESS = "in_progress"  # 검토 대기 (being actively worked)
     CLOSED = "closed"
 
 
@@ -70,6 +72,27 @@ class InvoiceStatus(str, enum.Enum):
     PAID = "paid"            # 결제완료
     OVERDUE = "overdue"      # 연체
     CANCELLED = "cancelled"  # 취소
+
+
+class JobType(str, enum.Enum):
+    """Job type enum for async processing"""
+    OCR = "ocr"                      # Image/PDF text extraction
+    STT = "stt"                      # Audio transcription
+    VISION_ANALYSIS = "vision"       # GPT-4o image understanding
+    DRAFT_GENERATION = "draft"       # RAG + GPT-4o legal document
+    EVIDENCE_ANALYSIS = "analysis"   # Evidence re-analysis
+    PDF_EXPORT = "pdf_export"        # Export draft to PDF
+    DOCX_EXPORT = "docx_export"      # Export draft to DOCX
+
+
+class JobStatus(str, enum.Enum):
+    """Job status enum"""
+    QUEUED = "queued"          # Waiting to be processed
+    PROCESSING = "processing"  # Currently running
+    COMPLETED = "completed"    # Success
+    FAILED = "failed"          # Error occurred
+    RETRY = "retry"            # Waiting to retry
+    CANCELLED = "cancelled"    # User cancelled
 
 
 # ============================================
@@ -290,3 +313,47 @@ class Invoice(Base):
 
     def __repr__(self):
         return f"<Invoice(id={self.id}, amount={self.amount}, status={self.status})>"
+
+
+class Job(Base):
+    """
+    Job model - tracks async processing tasks (OCR, STT, draft generation, etc.)
+    """
+    __tablename__ = "jobs"
+
+    id = Column(String, primary_key=True, default=lambda: f"job_{uuid.uuid4().hex[:12]}")
+    case_id = Column(String, ForeignKey("cases.id"), nullable=False, index=True)
+    user_id = Column(String, ForeignKey("users.id"), nullable=False, index=True)
+    job_type = Column(SQLEnum(JobType), nullable=False)
+    status = Column(SQLEnum(JobStatus), nullable=False, default=JobStatus.QUEUED)
+
+    # Related resources
+    evidence_id = Column(String, nullable=True, index=True)  # For evidence-related jobs
+
+    # Job data (stored as JSON strings)
+    input_data = Column(String, nullable=True)   # JSON: {s3_key, file_type, parameters, ...}
+    output_data = Column(String, nullable=True)  # JSON: Result from AI processing
+    error_details = Column(String, nullable=True)  # JSON: {error_code, message, traceback, ...}
+
+    # Progress tracking
+    progress = Column(String, default="0")  # 0-100 for long-running jobs
+
+    # Retry tracking
+    retry_count = Column(String, default="0")
+    max_retries = Column(String, default="3")
+
+    # AWS Lambda correlation
+    lambda_request_id = Column(String, nullable=True)  # For CloudWatch logs correlation
+
+    # Timestamps
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
+    started_at = Column(DateTime(timezone=True), nullable=True)
+    completed_at = Column(DateTime(timezone=True), nullable=True)
+
+    # Relationships
+    case = relationship("Case")
+    user = relationship("User")
+
+    def __repr__(self):
+        return f"<Job(id={self.id}, type={self.job_type}, status={self.status})>"

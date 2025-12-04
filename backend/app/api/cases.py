@@ -76,7 +76,7 @@ def create_case(
 
 @router.get("", response_model=List[CaseOut])
 def list_cases(
-    user_id: str = Depends(get_current_user_id),
+    current_user: User = Depends(require_internal_user),
     db: Session = Depends(get_db)
 ):
     """
@@ -88,9 +88,14 @@ def list_cases(
 
     **Authentication:**
     - Requires valid JWT token
+    - Only internal users (lawyer, staff, admin) can access this endpoint
+
+    **Role Restrictions:**
+    - LAWYER, STAFF, ADMIN: Can list cases
+    - CLIENT, DETECTIVE: Must use their portal-specific endpoints (403 Forbidden)
     """
     case_service = CaseService(db)
-    return case_service.get_cases_for_user(user_id)
+    return case_service.get_cases_for_user(current_user.id)
 
 
 @router.get("/{case_id}", response_model=CaseOut)

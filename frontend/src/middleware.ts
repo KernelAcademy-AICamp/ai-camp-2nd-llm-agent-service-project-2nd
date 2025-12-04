@@ -51,11 +51,12 @@ const STATIC_PATTERNS = [
 ];
 
 // Role-to-portal mapping for access control
+// Note: admin can access ALL portals
 const PORTAL_ROLES: Record<string, UserRole[]> = {
   '/admin': ['admin'],
   '/lawyer': ['lawyer', 'staff', 'admin'],
-  '/client': ['client'],
-  '/detective': ['detective'],
+  '/client': ['client', 'admin'],
+  '/detective': ['detective', 'admin'],
 };
 
 /**
