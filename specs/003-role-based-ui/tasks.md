@@ -153,8 +153,8 @@
 
 - [X] T039 [P] [US3] Contract test for GET /lawyer/cases with filters in backend/tests/contract/test_lawyer_cases.py
 - [X] T040 [P] [US3] Contract test for POST /lawyer/cases/bulk-action in backend/tests/contract/test_bulk_actions.py
-- [ ] T041 [P] [US3] Integration test for CaseTable with sorting in frontend/src/__tests__/components/lawyer/CaseTable.test.tsx
-- [ ] T042 [P] [US3] Integration test for case list page filtering in frontend/src/__tests__/app/lawyer/cases.test.tsx
+- [X] T041 [P] [US3] Integration test for CaseTable with sorting in frontend/src/__tests__/components/lawyer/CaseTable.test.tsx
+- [X] T042 [P] [US3] Integration test for case list page filtering in frontend/src/__tests__/app/lawyer/cases.test.tsx
 
 ### Backend Implementation for User Story 3
 
