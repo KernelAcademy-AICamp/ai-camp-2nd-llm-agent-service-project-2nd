@@ -81,12 +81,12 @@
 
 > **TDD RED Phase**: These tests MUST fail before implementation
 
-- [ ] T011 [P] [US1] Contract test for role validation helper in backend/tests/contract/test_role_validation.py
-- [ ] T012 [P] [US1] Contract test for signup endpoint with CLIENT/DETECTIVE roles in backend/tests/contract/test_auth_roles.py
-- [ ] T013 [P] [US1] Contract test for role-based permission checks in backend/tests/contract/test_case_permissions.py
-- [ ] T014 [P] [US1] Integration test for role-based routing middleware in frontend/src/__tests__/middleware.test.ts
-- [ ] T015 [P] [US1] Integration test for useRole hook in frontend/src/__tests__/hooks/useRole.test.ts
-- [ ] T016 [P] [US1] Integration test for RoleGuard component in frontend/src/__tests__/components/RoleGuard.test.tsx
+- [X] T011 [P] [US1] Contract test for role validation helper in backend/tests/contract/test_role_validation.py
+- [X] T012 [P] [US1] Contract test for signup endpoint with CLIENT/DETECTIVE roles in backend/tests/contract/test_auth_roles.py
+- [X] T013 [P] [US1] Contract test for role-based permission checks in backend/tests/contract/test_case_permissions.py
+- [X] T014 [P] [US1] Integration test for role-based routing middleware in frontend/src/__tests__/middleware.test.ts
+- [X] T015 [P] [US1] Integration test for useRole hook in frontend/src/__tests__/hooks/useRole.test.ts
+- [X] T016 [P] [US1] Integration test for RoleGuard component in frontend/src/__tests__/components/RoleGuard.test.tsx
 
 ### Backend Implementation for User Story 1
 
@@ -116,9 +116,9 @@
 
 > **TDD RED Phase**: These tests MUST fail before implementation
 
-- [ ] T025 [P] [US2] Contract test for GET /lawyer/dashboard endpoint in backend/tests/contract/test_lawyer_dashboard.py
+- [X] T025 [P] [US2] Contract test for GET /lawyer/dashboard endpoint in backend/tests/contract/test_lawyer_dashboard.py
 - [ ] T026 [P] [US2] Contract test for dashboard stats calculation in backend/tests/unit/test_lawyer_dashboard_service.py
-- [ ] T027 [P] [US2] Integration test for lawyer dashboard page rendering in frontend/src/__tests__/app/lawyer/dashboard.test.tsx
+- [X] T027 [P] [US2] Integration test for lawyer dashboard page rendering in frontend/src/__tests__/app/lawyer/dashboard.test.tsx
 - [ ] T028 [P] [US2] Integration test for StatsCard component in frontend/src/__tests__/components/lawyer/StatsCard.test.tsx
 
 ### Backend Implementation for User Story 2
@@ -130,11 +130,11 @@
 ### Frontend Implementation for User Story 2
 
 - [X] T032 [P] [US2] Create lawyer portal layout in frontend/src/app/lawyer/layout.tsx
-- [ ] T033 [P] [US2] Create LawyerNav component with menu items in frontend/src/components/lawyer/LawyerNav.tsx
-- [ ] T034 [P] [US2] Create StatsCard component in frontend/src/components/lawyer/StatsCard.tsx
-- [ ] T035 [P] [US2] Create CaseStatsChart component using Recharts in frontend/src/components/charts/CaseStatsChart.tsx
+- [X] T033 [P] [US2] Create LawyerNav component with menu items in frontend/src/components/lawyer/LawyerNav.tsx
+- [X] T034 [P] [US2] Create StatsCard component in frontend/src/components/lawyer/StatsCard.tsx
+- [X] T035 [P] [US2] Create CaseStatsChart component using Recharts in frontend/src/components/charts/CaseStatsChart.tsx
 - [X] T036 [US2] Create lawyer dashboard page in frontend/src/app/lawyer/dashboard/page.tsx
-- [ ] T037 [US2] Create useLawyerDashboard hook in frontend/src/hooks/useLawyerDashboard.ts
+- [X] T037 [US2] Create useLawyerDashboard hook in frontend/src/hooks/useLawyerDashboard.ts
 - [X] T038 [US2] Register lawyer_portal router in backend/app/main.py
 
 **Checkpoint**: User Story 2 complete - lawyer dashboard displays statistics and recent activity (all tests GREEN)
@@ -151,8 +151,8 @@
 
 > **TDD RED Phase**: These tests MUST fail before implementation
 
-- [ ] T039 [P] [US3] Contract test for GET /lawyer/cases with filters in backend/tests/contract/test_lawyer_cases.py
-- [ ] T040 [P] [US3] Contract test for POST /lawyer/cases/bulk-action in backend/tests/contract/test_bulk_actions.py
+- [X] T039 [P] [US3] Contract test for GET /lawyer/cases with filters in backend/tests/contract/test_lawyer_cases.py
+- [X] T040 [P] [US3] Contract test for POST /lawyer/cases/bulk-action in backend/tests/contract/test_bulk_actions.py
 - [ ] T041 [P] [US3] Integration test for CaseTable with sorting in frontend/src/__tests__/components/lawyer/CaseTable.test.tsx
 - [ ] T042 [P] [US3] Integration test for case list page filtering in frontend/src/__tests__/app/lawyer/cases.test.tsx
 
