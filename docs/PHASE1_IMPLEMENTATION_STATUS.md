@@ -6,153 +6,137 @@
 
 ---
 
+## 구현 상태: ✅ 완료
+
+Phase 1 재산분할 실시간 시각화 기능이 Backend/Frontend 모두 구현 완료되었습니다.
+
+---
+
+## 커밋 이력
+
+| 순서 | 커밋 | 설명 |
+|------|------|------|
+| 1 | `827ad38` | Backend: DB 모델 (CaseProperty, DivisionPrediction) |
+| 2 | `5dd1a37` | Backend: 재산 CRUD API |
+| 3 | `fff0335` | Backend: 예측 API (AI Worker 연동) |
+| 4 | `a4264e6` | Frontend: UI 컴포넌트 전체 |
+
+---
+
 ## 구현 완료 항목
 
 ### Backend (완료)
 
-| 항목 | 커밋 | 설명 |
+| 항목 | 파일 | 설명 |
 |------|------|------|
-| DB 모델 | `827ad38` | CaseProperty, DivisionPrediction 모델 |
-| 재산 CRUD API | `5dd1a37` | 재산 정보 관리 엔드포인트 |
-| 예측 API | `fff0335` | AI Worker 연동 예측 API |
+| DB 모델 | `models.py` | PropertyType, PropertyOwner, ConfidenceLevel enums |
+| | | CaseProperty, DivisionPrediction models |
+| Schemas | `schemas.py` | Pydantic 스키마 |
+| Repository | `property_repository.py` | 재산 CRUD |
+| | `prediction_repository.py` | 예측 저장/조회 |
+| Service | `property_service.py` | 비즈니스 로직 |
+| | `prediction_service.py` | AI Worker 연동 |
+| API | `properties.py` | REST 엔드포인트 |
 
-### Frontend (진행중)
+### Frontend (완료)
 
-| 항목 | 상태 | 설명 |
+| 항목 | 파일 | 설명 |
 |------|------|------|
-| 타입 정의 (`property.ts`) | ✅ 완료 | Backend 스키마와 일치 |
-| PropertyDivisionDashboard | ⏳ 대기 | 메인 대시보드 컴포넌트 |
-| DivisionGauge | ⏳ 대기 | 애니메이션 게이지 |
-| PropertyInputForm | ⏳ 대기 | 재산 입력 폼 |
+| 타입 정의 | `property.ts` | TypeScript 타입 + 한글 라벨 |
+| API 클라이언트 | `properties.ts` | CRUD + Prediction API |
+| 메인 대시보드 | `PropertyDivisionDashboard.tsx` | 전체 UI 컨테이너 |
+| 게이지 | `DivisionGauge.tsx` | 애니메이션 분할 비율 표시 |
+| 입력 폼 | `PropertyInputForm.tsx` | 재산 추가 모달 |
+| Export | `index.ts` | 컴포넌트 export |
 
 ---
 
-## 구현된 파일 상세
-
-### Backend 파일
+## 구현된 파일 구조
 
 ```
 backend/app/
 ├── db/
-│   ├── models.py              # + PropertyType, PropertyOwner, ConfidenceLevel enums
-│   │                          # + CaseProperty, DivisionPrediction models
-│   └── schemas.py             # + Property/Prediction Pydantic schemas
+│   ├── models.py              # + enums + CaseProperty + DivisionPrediction
+│   └── schemas.py             # + Property/Prediction 스키마
 ├── repositories/
-│   ├── property_repository.py # 신규: 재산 CRUD
-│   └── prediction_repository.py # 신규: 예측 저장/조회
+│   ├── property_repository.py # CRUD + summary
+│   └── prediction_repository.py # 버전 관리 예측 저장
 ├── services/
-│   ├── property_service.py    # 신규: 재산 비즈니스 로직
-│   └── prediction_service.py  # 신규: AI Worker ImpactAnalyzer 연동
+│   ├── property_service.py    # 접근 제어 포함
+│   └── prediction_service.py  # ImpactAnalyzer 연동
 ├── api/
-│   └── properties.py          # 신규: 재산 API 라우터
-└── main.py                    # + properties 라우터 등록
-```
+│   └── properties.py          # 8개 엔드포인트
+└── main.py                    # 라우터 등록
 
-### Frontend 파일
-
-```
 frontend/src/
-└── types/
-    └── property.ts            # 신규: 타입 정의 + 한글 라벨
+├── types/
+│   └── property.ts            # 타입 + 라벨 상수
+├── lib/api/
+│   └── properties.ts          # API 클라이언트
+└── components/property-division/
+    ├── index.ts               # exports
+    ├── PropertyDivisionDashboard.tsx  # 468 lines
+    ├── DivisionGauge.tsx      # 137 lines
+    └── PropertyInputForm.tsx  # 246 lines
 ```
 
 ---
 
-## API 명세
+## API 엔드포인트
 
-### 재산 관리 API
+### 재산 관리
 
 | Method | Endpoint | 설명 |
 |--------|----------|------|
 | `POST` | `/cases/{case_id}/properties` | 재산 추가 |
-| `GET` | `/cases/{case_id}/properties` | 재산 목록 |
+| `GET` | `/cases/{case_id}/properties` | 재산 목록 (total_assets, total_debts, net_value 포함) |
 | `GET` | `/cases/{case_id}/properties/{id}` | 단일 조회 |
 | `PATCH` | `/cases/{case_id}/properties/{id}` | 재산 수정 |
 | `DELETE` | `/cases/{case_id}/properties/{id}` | 재산 삭제 |
 | `GET` | `/cases/{case_id}/properties/summary` | 요약 통계 |
 
-### 예측 API
+### 예측
 
 | Method | Endpoint | 설명 |
 |--------|----------|------|
-| `GET` | `/cases/{case_id}/division-prediction` | 최신 예측 |
-| `POST` | `/cases/{case_id}/division-prediction` | 새 예측 생성 |
+| `GET` | `/cases/{case_id}/division-prediction` | 최신 예측 조회 |
+| `POST` | `/cases/{case_id}/division-prediction` | 새 예측 생성 (AI Worker 호출) |
 
 ---
 
-## DB 모델
+## Frontend 기능
 
-### CaseProperty
+### PropertyDivisionDashboard
+- 요약 카드 (총 자산, 총 부채, 순재산)
+- 재산 목록 CRUD
+- 예측 게이지 표시
+- 증거 영향도 섹션 (접기/펼치기)
+- 유사 판례 섹션 (접기/펼치기)
 
-```python
-class PropertyType(str, Enum):
-    REAL_ESTATE = "real_estate"  # 부동산
-    SAVINGS = "savings"          # 예금/적금
-    STOCKS = "stocks"            # 주식/펀드
-    RETIREMENT = "retirement"    # 퇴직금/연금
-    VEHICLE = "vehicle"          # 차량
-    INSURANCE = "insurance"      # 보험
-    DEBT = "debt"                # 부채
-    OTHER = "other"              # 기타
+### DivisionGauge
+- 원고/피고 비율 애니메이션 바
+- 금액 표시 (억원/만원 자동 변환)
+- 신뢰도 레벨 표시
 
-class PropertyOwner(str, Enum):
-    PLAINTIFF = "plaintiff"      # 원고
-    DEFENDANT = "defendant"      # 피고
-    JOINT = "joint"              # 공동
-
-class CaseProperty:
-    id: str (UUID)
-    case_id: str (FK -> cases.id)
-    property_type: PropertyType
-    description: str (optional)
-    estimated_value: int (원)
-    owner: PropertyOwner
-    is_premarital: bool
-    acquisition_date: date (optional)
-    notes: str (optional)
-```
-
-### DivisionPrediction
-
-```python
-class ConfidenceLevel(str, Enum):
-    LOW = "low"
-    MEDIUM = "medium"
-    HIGH = "high"
-
-class DivisionPrediction:
-    id: str (UUID)
-    case_id: str (FK -> cases.id)
-    total_property_value: int
-    total_debt_value: int
-    net_value: int
-    plaintiff_ratio: int (0-100)
-    defendant_ratio: int (0-100)
-    plaintiff_amount: int
-    defendant_amount: int
-    evidence_impacts: JSON
-    similar_cases: JSON
-    confidence_level: ConfidenceLevel
-    version: int
-```
+### PropertyInputForm
+- 재산 유형 선택 (아이콘)
+- 소유자 선택 (원고/피고/공동)
+- 금액 입력 (콤마 포맷팅)
+- 혼전 재산 체크박스
+- 설명/메모 입력
 
 ---
 
-## 다음 작업
+## 남은 작업
 
-1. **Frontend 컴포넌트 개발**
-   - PropertyDivisionDashboard (메인 컨테이너)
-   - DivisionGauge (Framer Motion 애니메이션)
-   - PropertyInputForm (재산 입력)
-   - PropertyList (재산 목록)
-   - EvidenceImpactList (증거 영향도)
+1. **SSE 실시간 스트림** (선택)
+   - `/cases/{id}/division-prediction/stream`
+   - 실시간 예측 업데이트
 
-2. **SSE 실시간 스트림**
-   - `/cases/{id}/division-prediction/stream` 엔드포인트
-   - useDivisionStream 훅
-
-3. **E2E 연동 테스트**
+2. **E2E 연동 테스트**
+   - Backend-Frontend 통합 테스트
+   - AI Worker 연동 확인
 
 ---
 
-**Last Updated:** 2025-12-04
+**Last Updated:** 2025-12-04 17:45
