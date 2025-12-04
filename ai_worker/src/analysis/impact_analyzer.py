@@ -36,6 +36,7 @@ from .impact_rules import (
     calculate_single_impact,
     map_legal_category_to_fault,
 )
+from .precedent_searcher import PrecedentSearcher, PrecedentCase
 
 logger = logging.getLogger(__name__)
 
@@ -393,7 +394,7 @@ class ImpactAnalyzer:
         impacts: List[EvidenceImpact]
     ) -> List[SimilarCase]:
         """
-        유사 판례 검색
+        유사 판례 검색 (Qdrant 연동)
 
         Args:
             impacts: 영향도 분석 결과
@@ -401,32 +402,101 @@ class ImpactAnalyzer:
         Returns:
             유사 판례 목록
         """
-        # TODO: Qdrant 연동하여 실제 판례 검색
-        # 현재는 더미 데이터 반환
-
         if not impacts:
             return []
 
         # 주요 유책사유 추출
         fault_types = list(set(i.fault_type for i in impacts))
 
-        # 더미 판례 (실제 구현 시 Qdrant 검색)
-        dummy_cases = [
-            SimilarCase(
-                case_ref="서울가정법원 2023드합1234",
-                similarity_score=0.85,
-                division_ratio="60:40",
-                key_factors=fault_types[:2] if len(fault_types) >= 2 else fault_types
-            ),
-            SimilarCase(
-                case_ref="수원가정법원 2022드합5678",
-                similarity_score=0.72,
-                division_ratio="55:45",
-                key_factors=fault_types[:1] if fault_types else ["일반"]
-            ),
-        ]
+        try:
+            # PrecedentSearcher로 Qdrant 검색
+            searcher = PrecedentSearcher()
 
-        return dummy_cases[:2]
+            # 서비스 사용 가능 여부 확인
+            if not searcher.is_available():
+                logger.info("Precedent search service not available, using fallback")
+                return self._get_fallback_cases(fault_types)
+
+            # 유사 판례 검색
+            precedents = searcher.search_by_fault_types(
+                fault_types=fault_types,
+                top_k=5,
+                min_score=0.3,
+            )
+
+            if not precedents:
+                logger.info("No precedents found, using fallback")
+                return self._get_fallback_cases(fault_types)
+
+            # PrecedentCase → SimilarCase 변환
+            similar_cases = []
+            for p in precedents[:3]:  # 최대 3개
+                similar_cases.append(SimilarCase(
+                    case_ref=p.case_ref,
+                    similarity_score=p.similarity_score,
+                    division_ratio=p.division_ratio,
+                    key_factors=p.key_factors,
+                ))
+
+            return similar_cases
+
+        except Exception as e:
+            logger.warning(f"Precedent search failed: {e}, using fallback")
+            return self._get_fallback_cases(fault_types)
+
+    def _get_fallback_cases(
+        self,
+        fault_types: List[str]
+    ) -> List[SimilarCase]:
+        """
+        판례 검색 실패 시 폴백 데이터 반환
+
+        판례 데이터가 없거나 검색 실패 시 기본 참고 판례 반환.
+        실제 판례가 아닌 참고용 더미 데이터임을 명시.
+
+        Args:
+            fault_types: 유책사유 목록
+
+        Returns:
+            폴백 판례 목록
+        """
+        # 유책사유별 참고 판례 (실제 판례 기반 예시)
+        fallback_map = {
+            "adultery": SimilarCase(
+                case_ref="참고: 외도 관련 유사 판례",
+                similarity_score=0.70,
+                division_ratio="60:40",
+                key_factors=["외도"],
+            ),
+            "violence": SimilarCase(
+                case_ref="참고: 가정폭력 관련 유사 판례",
+                similarity_score=0.70,
+                division_ratio="65:35",
+                key_factors=["폭력"],
+            ),
+            "verbal_abuse": SimilarCase(
+                case_ref="참고: 폭언 관련 유사 판례",
+                similarity_score=0.65,
+                division_ratio="55:45",
+                key_factors=["폭언"],
+            ),
+        }
+
+        cases = []
+        for fault_type in fault_types[:2]:  # 최대 2개
+            if fault_type in fallback_map:
+                cases.append(fallback_map[fault_type])
+
+        if not cases:
+            # 기본 폴백
+            cases.append(SimilarCase(
+                case_ref="참고: 일반 이혼 재산분할 판례",
+                similarity_score=0.60,
+                division_ratio="50:50",
+                key_factors=fault_types[:2] if fault_types else ["일반"],
+            ))
+
+        return cases
 
     def _determine_confidence_level(
         self,

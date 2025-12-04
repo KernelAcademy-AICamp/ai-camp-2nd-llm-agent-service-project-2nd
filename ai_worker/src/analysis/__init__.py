@@ -59,6 +59,11 @@ from src.analysis.impact_analyzer import (
     DivisionPrediction,
     analyze_case_impact,
 )
+from src.analysis.precedent_searcher import (
+    PrecedentSearcher,
+    PrecedentCase,
+    search_similar_cases,
+)
 
 __all__ = [
     # Evidence Scorer
@@ -133,4 +138,9 @@ __all__ = [
     "SimilarCase",
     "DivisionPrediction",
     "analyze_case_impact",
+
+    # Precedent Searcher (유사 판례 검색)
+    "PrecedentSearcher",
+    "PrecedentCase",
+    "search_similar_cases",
 ]

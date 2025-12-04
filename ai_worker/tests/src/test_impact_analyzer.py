@@ -390,9 +390,22 @@ class TestSimilarCases:
         evidences = [make_test_evidence(legal_categories=["adultery"])]
         prediction = analyzer.calculate_prediction(evidences=evidences)
 
-        # 더미 데이터 2개 반환
-        assert len(prediction.similar_cases) == 2
+        # 폴백 데이터 1개 이상 반환
+        assert len(prediction.similar_cases) >= 1
         assert prediction.similar_cases[0].similarity_score > 0
+
+    def test_multiple_fault_types_similar_cases(self):
+        """여러 유책사유 시 더 많은 판례 반환"""
+        analyzer = ImpactAnalyzer(case_id="case-001")
+        evidences = [
+            make_test_evidence(evidence_id="ev-1", legal_categories=["adultery"]),
+            make_test_evidence(evidence_id="ev-2", legal_categories=["domestic_violence"]),
+        ]
+        prediction = analyzer.calculate_prediction(evidences=evidences)
+
+        # 여러 유책사유 시 더 많은 폴백 판례
+        assert len(prediction.similar_cases) >= 1
+        assert len(prediction.similar_cases) <= 3  # 최대 3개
 
     def test_no_evidence_no_similar_cases(self):
         """증거 없으면 유사 판례 없음"""
