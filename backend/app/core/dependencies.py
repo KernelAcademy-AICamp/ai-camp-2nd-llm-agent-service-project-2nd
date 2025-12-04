@@ -254,6 +254,10 @@ def require_role(allowed_roles: list[str]):
 
     allowed_role_enums = [role_mapping.get(r.lower()) for r in allowed_roles if role_mapping.get(r.lower())]
 
+    # Admin always has access to all endpoints
+    if UserRole.ADMIN not in allowed_role_enums:
+        allowed_role_enums.append(UserRole.ADMIN)
+
     def role_checker(current_user: User = Depends(get_current_user)) -> str:
         if current_user.role not in allowed_role_enums:
             role_names = ", ".join(allowed_roles)

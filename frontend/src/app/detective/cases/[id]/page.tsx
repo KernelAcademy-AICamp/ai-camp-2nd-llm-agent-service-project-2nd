@@ -22,7 +22,7 @@ import {
 export default function DetectiveCaseDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const caseId = params.id as string;
+  const caseId = params?.id as string;
 
   const [caseDetail, setCaseDetail] = useState<CaseDetailData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -40,7 +40,7 @@ export default function DetectiveCaseDetailPage() {
 
       if (apiError) {
         setError(apiError);
-      } else {
+      } else if (data) {
         setCaseDetail(data);
       }
 
@@ -113,7 +113,7 @@ export default function DetectiveCaseDetailPage() {
     return labels[type] || type;
   };
 
-  const formatDate = (dateString: string | null) => {
+  const formatDate = (dateString: string | null | undefined) => {
     if (!dateString) return '-';
     return new Date(dateString).toLocaleDateString('ko-KR', {
       year: 'numeric',

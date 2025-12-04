@@ -53,12 +53,14 @@ export default function DetectiveCasesPage() {
       active: 'bg-blue-100 text-blue-700',
       review: 'bg-purple-100 text-purple-700',
       completed: 'bg-green-100 text-green-700',
+      rejected: 'bg-red-100 text-red-700',
     };
     const labels: Record<InvestigationStatus, string> = {
       pending: '대기중',
       active: '진행중',
       review: '검토중',
       completed: '완료',
+      rejected: '거절됨',
     };
 
     return (
@@ -68,7 +70,7 @@ export default function DetectiveCasesPage() {
     );
   };
 
-  const formatDate = (dateString: string | null) => {
+  const formatDate = (dateString: string | null | undefined) => {
     if (!dateString) return '-';
     return new Date(dateString).toLocaleDateString('ko-KR', {
       year: 'numeric',

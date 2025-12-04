@@ -15,11 +15,13 @@ import type {
   EarningsResponse,
   AcceptRejectResponse,
   FieldRecord,
+  Transaction,
 } from '@/types/detective-portal';
 
 // Re-export types for convenience
-export type { FieldRecord };
+export type { FieldRecord, Transaction, ReportRequest };
 export type CaseDetailData = DetectiveCaseDetailResponse;
+export type EarningsData = EarningsResponse;
 
 /**
  * Get detective dashboard data

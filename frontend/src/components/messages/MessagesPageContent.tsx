@@ -14,6 +14,7 @@ import { ConversationList } from './ConversationList';
 import { MessageList } from './MessageList';
 import { MessageInput } from './MessageInput';
 import { useConversations, useMessages, type ConversationSummary } from '@/hooks/useMessages';
+import type { TypingIndicator } from '@/types/message';
 
 interface MessagesPageContentProps {
   portalType: 'lawyer' | 'client' | 'detective';
@@ -63,7 +64,9 @@ export function MessagesPageContent({
 
   // Computed values for UI compatibility
   const wsStatus = isConnected ? 'connected' : 'disconnected';
-  const typingUsers = isTyping ? [recipientId] : [];
+  const typingUsers: TypingIndicator[] = isTyping
+    ? [{ userId: recipientId, caseId, timestamp: Date.now() }]
+    : [];
   const sendTyping = sendTypingIndicator;
 
   // Handle conversation selection
@@ -92,9 +95,14 @@ export function MessagesPageContent({
   const handleSendMessage = useCallback(
     async (content: string, attachments?: string[]) => {
       if (!selectedConversation) return;
-      await sendMessage(content, attachments);
+      await sendMessageApi({
+        case_id: selectedConversation.case_id,
+        recipient_id: selectedConversation.other_user.id,
+        content,
+        attachments,
+      });
     },
-    [selectedConversation, sendMessage]
+    [selectedConversation, sendMessageApi]
   );
 
   // Initialize from URL params

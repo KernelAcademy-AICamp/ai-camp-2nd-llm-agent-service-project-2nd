@@ -23,13 +23,13 @@ export default function DetectiveEarningsPage() {
       setLoading(true);
       setError(null);
 
-      const { data, error: apiError } = await getDetectiveEarnings({
-        period: filterPeriod || undefined,
-      });
+      const { data, error: apiError } = await getDetectiveEarnings(
+        filterPeriod || undefined
+      );
 
       if (apiError) {
         setError(apiError);
-      } else {
+      } else if (data) {
         setEarnings(data);
       }
 
@@ -46,7 +46,7 @@ export default function DetectiveEarningsPage() {
     }).format(amount);
   };
 
-  const formatDate = (dateString: string | null) => {
+  const formatDate = (dateString: string | null | undefined) => {
     if (!dateString) return '-';
     return new Date(dateString).toLocaleDateString('ko-KR', {
       year: 'numeric',

@@ -400,7 +400,7 @@ class ClientPortalService:
     def _get_case_lawyer(self, case: Case) -> Optional[User]:
         """Get the lawyer assigned to a case"""
         # First check owner
-        owner = self.db.query(User).filter(User.id == case.owner_id).first()
+        owner = self.db.query(User).filter(User.id == case.created_by).first()
         if owner and owner.role == "lawyer":
             return owner
 
@@ -450,11 +450,11 @@ class ClientPortalService:
 
     def _get_recent_activities(self, case_id: str, limit: int = 5) -> List[RecentActivity]:
         """Get recent activities for a case"""
-        # Get from audit logs
+        # Get from audit logs - object_id stores JSON with case info
         logs = (
             self.db.query(AuditLog)
-            .filter(AuditLog.resource_id == case_id)
-            .order_by(AuditLog.created_at.desc())
+            .filter(AuditLog.object_id.contains(case_id))
+            .order_by(AuditLog.timestamp.desc())
             .limit(limit)
             .all()
         )
@@ -466,10 +466,10 @@ class ClientPortalService:
                 RecentActivity(
                     id=str(log.id),
                     title=self._get_activity_title(log.action),
-                    description=log.details.get("description", "") if log.details else "",
+                    description="",  # AuditLog object_id stores JSON, details not available
                     activity_type=activity_type,
-                    timestamp=log.created_at,
-                    time_ago=self._time_ago(log.created_at),
+                    timestamp=log.timestamp,
+                    time_ago=self._time_ago(log.timestamp),
                 )
             )
 
