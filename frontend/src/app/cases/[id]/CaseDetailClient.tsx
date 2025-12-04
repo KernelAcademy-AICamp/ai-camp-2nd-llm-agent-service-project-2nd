@@ -117,6 +117,79 @@ export default function CaseDetailClient({ id }: CaseDetailClientProps) {
         fetchCaseData();
     }, [caseId]);
 
+    // Fetch evidence list from API
+    const fetchEvidenceList = useCallback(async () => {
+        if (!caseId) return;
+
+        setIsLoadingEvidence(true);
+
+        try {
+            const result = await getEvidence(caseId);
+            if (result.data) {
+                const mapped = result.data.evidence.map(e => mapApiEvidenceToEvidence(e, caseId));
+                setEvidenceList(mapped);
+            }
+            // On error, just show empty list (no evidence yet)
+        } catch (err) {
+            console.error('Failed to fetch evidence:', err);
+            // On error, keep empty list - user sees "no evidence" instead of error
+        } finally {
+            setIsLoadingEvidence(false);
+        }
+    }, [caseId]);
+
+    // Load evidence when caseId changes
+    useEffect(() => {
+        fetchEvidenceList();
+    }, [fetchEvidenceList]);
+
+    // Auto-polling: silently check for status updates without full re-render
+    useEffect(() => {
+        // Check if there are any evidence items still processing
+        const hasProcessingItems = evidenceList.some(
+            e => e.status === 'processing' || e.status === 'queued' || e.status === 'uploading'
+        );
+
+        if (!hasProcessingItems || !caseId) return;
+
+        // Poll every 5 seconds while there are processing items
+        const pollInterval = setInterval(async () => {
+            try {
+                const result = await getEvidence(caseId);
+                if (result.data) {
+                    const newList = result.data.evidence.map(e => mapApiEvidenceToEvidence(e, caseId));
+
+                    // Only update if there are actual status changes
+                    setEvidenceList(prevList => {
+                        // Check if any item's status has changed
+                        let hasChanges = false;
+                        const updatedList = prevList.map(prevItem => {
+                            const newItem = newList.find(n => n.id === prevItem.id);
+                            if (newItem && (newItem.status !== prevItem.status || newItem.summary !== prevItem.summary)) {
+                                hasChanges = true;
+                                return newItem;
+                            }
+                            return prevItem;
+                        });
+
+                        // Also check for new items
+                        const newItems = newList.filter(n => !prevList.some(p => p.id === n.id));
+                        if (newItems.length > 0) {
+                            hasChanges = true;
+                        }
+
+                        // Only trigger re-render if something changed
+                        return hasChanges ? [...updatedList, ...newItems] : prevList;
+                    });
+                }
+            } catch (err) {
+                // Silently ignore polling errors
+            }
+        }, 5000);
+
+        return () => clearInterval(pollInterval);
+    }, [evidenceList, caseId]);
+
     const handleUpload = useCallback(async (files: File[]) => {
         if (files.length === 0 || !caseId) return;
 
