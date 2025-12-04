@@ -49,6 +49,12 @@ from src.analysis.summarizer import EvidenceSummarizer
 from src.utils.logging_filter import SensitiveDataFilter
 from src.utils.embeddings import get_embedding_with_fallback  # Embedding utility with fallback
 from src.utils.hash import calculate_file_hash  # Hash utility for idempotency
+from src.utils.observability import (
+    JobTracker,
+    ProcessingStage,
+    ErrorType,
+    classify_exception
+)
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -124,86 +130,113 @@ def route_and_process(bucket_name: str, object_key: str) -> Dict[str, Any]:
         4. Store vectors + metadata → Qdrant (VectorStore)
         5. Run analysis → Article 840 Tagger
     """
+    # Initialize job tracker for observability
+    tracker = JobTracker.from_s3_event(bucket_name, object_key)
+    tracker.log(f"Starting job for s3://{bucket_name}/{object_key}")
+
     try:
         # 파일 확장자 추출
         file_path = Path(object_key)
         file_extension = file_path.suffix
+        tracker.set_file_info(file_type=file_extension.lstrip('.'))
 
-        logger.info(f"Processing file: {object_key} (extension: {file_extension})")
+        tracker.log(f"Processing file: {object_key}", extension=file_extension)
 
         # 적절한 파서 선택
         parser = route_parser(file_extension)
         if not parser:
+            tracker.record_error(
+                ErrorType.VALIDATION_ERROR,
+                f"Unsupported file type: {file_extension}"
+            )
             return {
                 "status": "skipped",
                 "reason": f"Unsupported file type: {file_extension}",
-                "file": object_key
+                "file": object_key,
+                "job_id": tracker.context.job_id
             }
 
         # S3에서 파일 다운로드
-        s3_client = boto3.client('s3')
-        local_path = f"/tmp/{file_path.name}"
+        with tracker.stage(ProcessingStage.DOWNLOAD) as stage:
+            s3_client = boto3.client('s3')
+            local_path = f"/tmp/{file_path.name}"
 
-        # 임시 디렉토리가 없으면 생성
-        os.makedirs(os.path.dirname(local_path), exist_ok=True)
+            # 임시 디렉토리가 없으면 생성
+            os.makedirs(os.path.dirname(local_path), exist_ok=True)
 
-        s3_client.download_file(bucket_name, object_key, local_path)
-        logger.info(f"Downloaded {object_key} to {local_path}")
+            s3_client.download_file(bucket_name, object_key, local_path)
+            stage.add_metadata(local_path=local_path)
 
         # ============================================
         # Idempotency Check - Calculate hash and check duplicates
         # ============================================
-        file_hash = calculate_file_hash(local_path)
-        logger.info(f"Calculated file hash: {file_hash[:16]}...")
+        with tracker.stage(ProcessingStage.HASH) as stage:
+            file_hash = calculate_file_hash(local_path)
+            tracker.set_file_info(file_type=file_extension.lstrip('.'), file_hash=file_hash)
+            stage.log(f"Calculated file hash: {file_hash[:16]}...")
+            stage.add_metadata(hash_prefix=file_hash[:16])
 
         # Initialize metadata store for idempotency checks
         metadata_store = MetadataStore()
 
         # Check 1: Has this evidence_id already been processed?
         backend_evidence_id = _extract_evidence_id_from_s3_key(object_key)
+        if backend_evidence_id:
+            tracker.set_evidence_id(backend_evidence_id)
         if backend_evidence_id and metadata_store.check_evidence_processed(backend_evidence_id):
-            logger.info(f"Evidence {backend_evidence_id} already processed, skipping")
+            tracker.record_error(ErrorType.DUPLICATE, f"Evidence {backend_evidence_id} already processed")
+            tracker.log_summary()
             return {
                 "status": "skipped",
                 "reason": "already_processed",
                 "evidence_id": backend_evidence_id,
-                "file": object_key
+                "file": object_key,
+                "job_id": tracker.context.job_id
             }
 
         # Check 2: Has a file with this hash already been processed?
         existing_by_hash = metadata_store.check_hash_exists(file_hash)
         if existing_by_hash:
-            logger.info(f"Duplicate file detected (hash match: {existing_by_hash.get('evidence_id')}), skipping")
+            tracker.record_error(ErrorType.DUPLICATE, f"Duplicate hash: {existing_by_hash.get('evidence_id')}")
+            tracker.log_summary()
             return {
                 "status": "skipped",
                 "reason": "duplicate_hash",
                 "existing_evidence_id": existing_by_hash.get('evidence_id'),
                 "file_hash": file_hash[:16],
-                "file": object_key
+                "file": object_key,
+                "job_id": tracker.context.job_id
             }
 
         # Check 3: Has this S3 key already been processed?
         existing_by_s3_key = metadata_store.check_s3_key_exists(object_key)
         if existing_by_s3_key and existing_by_s3_key.get('status') == 'processed':
-            logger.info(f"S3 key already processed ({existing_by_s3_key.get('evidence_id')}), skipping")
+            tracker.record_error(ErrorType.DUPLICATE, f"S3 key already processed: {existing_by_s3_key.get('evidence_id')}")
+            tracker.log_summary()
             return {
                 "status": "skipped",
                 "reason": "already_processed_s3_key",
                 "existing_evidence_id": existing_by_s3_key.get('evidence_id'),
-                "file": object_key
+                "file": object_key,
+                "job_id": tracker.context.job_id
             }
 
         # ============================================
         # Parsing - File is new, proceed with processing
         # ============================================
-
-        # 파서 실행
-        parsed_result = parser.parse(local_path)
-        logger.info(f"Parsed {object_key} with {parser.__class__.__name__}")
+        with tracker.stage(ProcessingStage.PARSE) as stage:
+            # 파서 실행
+            parsed_result = parser.parse(local_path)
+            stage.log(f"Parsed with {parser.__class__.__name__}")
+            stage.add_metadata(
+                parser_type=parser.__class__.__name__,
+                message_count=len(parsed_result) if parsed_result else 0
+            )
 
         # case_id 추출 (object_key에서 첫 번째 디렉토리 또는 bucket_name)
         # 예: cases/{case_id}/raw/ev_xxx_file.txt → case_id 추출
         case_id = _extract_case_id(object_key, bucket_name)
+        tracker.set_case_id(case_id)
 
         # evidence_id 추출 (Backend 레코드 업데이트용)
         # 예: cases/{case_id}/raw/ev_abc123_file.txt → ev_abc123
@@ -224,71 +257,102 @@ def route_and_process(bucket_name: str, object_key: str) -> Dict[str, Any]:
         chunk_ids = []
         tags_list = []
         all_categories = set()
+        fallback_embedding_count = 0
 
-        for idx, message in enumerate(parsed_result):
-            chunk_id = f"chunk_{uuid.uuid4().hex[:12]}"
-            content = message.content
-            timestamp = message.timestamp.isoformat() if message.timestamp else datetime.now(timezone.utc).isoformat()
-
-            # 1. Article 840 태깅 (먼저 실행하여 메타데이터 확보)
-            tagging_result = tagger.tag(message)
-            categories = [cat.value for cat in tagging_result.categories]
-            confidence = tagging_result.confidence
-            tags_list.append({
-                "categories": categories,
-                "confidence": confidence,
-                "matched_keywords": tagging_result.matched_keywords
-            })
-            all_categories.update(categories)
-
-            # 2. Embedding 생성 (with fallback - never fails)
-            embedding, is_real_embedding = get_embedding_with_fallback(content)
-            if not is_real_embedding:
-                logger.info(f"Using fallback embedding for chunk {idx}")
-
-            # 3. 메타데이터 추출 (파서에서 제공하는 정보 활용)
-            metadata = message.metadata if hasattr(message, 'metadata') else {}
-            line_number = metadata.get("line_number")
-            page_number = metadata.get("page_number")
-            segment_start = metadata.get("segment_start_sec")
-            segment_end = metadata.get("segment_end_sec")
-
-            # 4. Qdrant에 벡터 + 풍부한 메타데이터 저장
-            # Collection name: case_rag_{case_id} (Backend와 동일한 형식)
-            collection_name = f"case_rag_{case_id}"
-            vector_store.add_chunk_with_metadata(
-                chunk_id=chunk_id,
-                file_id=file_id,
-                case_id=case_id,
-                content=content,
-                embedding=embedding,
-                timestamp=timestamp,
-                sender=message.sender,
-                score=None,
-                collection_name=collection_name,
-                # Extended metadata
-                file_name=file_path.name,
-                file_type=source_type,
-                legal_categories=categories if categories else None,
-                confidence_level=confidence if confidence else None,
-                line_number=line_number,
-                page_number=page_number,
-                segment_start_sec=segment_start,
-                segment_end_sec=segment_end,
-                is_fallback_embedding=not is_real_embedding
+        # ANALYZE stage - Article 840 태깅
+        with tracker.stage(ProcessingStage.ANALYZE) as analyze_stage:
+            for idx, message in enumerate(parsed_result):
+                tagging_result = tagger.tag(message)
+                categories = [cat.value for cat in tagging_result.categories]
+                confidence = tagging_result.confidence
+                tags_list.append({
+                    "categories": categories,
+                    "confidence": confidence,
+                    "matched_keywords": tagging_result.matched_keywords
+                })
+                all_categories.update(categories)
+            analyze_stage.add_metadata(
+                messages_analyzed=len(parsed_result),
+                categories_detected=list(all_categories)
             )
-            chunk_ids.append(chunk_id)
 
-        logger.info(f"Indexed {len(chunk_ids)} chunks to Qdrant with full metadata")
+        # EMBED stage - Embedding 생성
+        embeddings_data = []
+        with tracker.stage(ProcessingStage.EMBED) as embed_stage:
+            for idx, message in enumerate(parsed_result):
+                content = message.content
+                embedding, is_real_embedding = get_embedding_with_fallback(content)
+                if not is_real_embedding:
+                    fallback_embedding_count += 1
+                embeddings_data.append({
+                    "message": message,
+                    "embedding": embedding,
+                    "is_real": is_real_embedding,
+                    "tags": tags_list[idx]
+                })
+            embed_stage.add_metadata(
+                embeddings_generated=len(embeddings_data),
+                fallback_count=fallback_embedding_count
+            )
+            if fallback_embedding_count > 0:
+                embed_stage.log(f"Using fallback embeddings for {fallback_embedding_count} chunks", level="warning")
 
-        # AI 요약 생성 (GPT-4 기반)
+        # STORE stage - Qdrant 저장
+        with tracker.stage(ProcessingStage.STORE) as store_stage:
+            for idx, data in enumerate(embeddings_data):
+                message = data["message"]
+                embedding = data["embedding"]
+                is_real_embedding = data["is_real"]
+                tags = data["tags"]
+
+                chunk_id = f"chunk_{uuid.uuid4().hex[:12]}"
+                content = message.content
+                timestamp = message.timestamp.isoformat() if message.timestamp else datetime.now(timezone.utc).isoformat()
+                categories = tags["categories"]
+                confidence = tags["confidence"]
+
+                # 메타데이터 추출 (파서에서 제공하는 정보 활용)
+                metadata = message.metadata if hasattr(message, 'metadata') else {}
+                line_number = metadata.get("line_number")
+                page_number = metadata.get("page_number")
+                segment_start = metadata.get("segment_start_sec")
+                segment_end = metadata.get("segment_end_sec")
+
+                # Qdrant에 벡터 + 풍부한 메타데이터 저장
+                # Collection name: case_rag_{case_id} (Backend와 동일한 형식)
+                collection_name = f"case_rag_{case_id}"
+                vector_store.add_chunk_with_metadata(
+                    chunk_id=chunk_id,
+                    file_id=file_id,
+                    case_id=case_id,
+                    content=content,
+                    embedding=embedding,
+                    timestamp=timestamp,
+                    sender=message.sender,
+                    score=None,
+                    collection_name=collection_name,
+                    # Extended metadata
+                    file_name=file_path.name,
+                    file_type=source_type,
+                    legal_categories=categories if categories else None,
+                    confidence_level=confidence if confidence else None,
+                    line_number=line_number,
+                    page_number=page_number,
+                    segment_start_sec=segment_start,
+                    segment_end_sec=segment_end,
+                    is_fallback_embedding=not is_real_embedding
+                )
+                chunk_ids.append(chunk_id)
+            store_stage.add_metadata(chunks_indexed=len(chunk_ids))
+
+        # AI 요약 생성 (GPT-4 기반) - Part of ANALYZE stage
         try:
             summary_result = summarizer.summarize_evidence(parsed_result, max_words=100)
             ai_summary = summary_result.summary
-            logger.info(f"AI Summary generated: {ai_summary[:100]}...")
+            tracker.log(f"AI Summary generated: {ai_summary[:50]}...")
         except Exception as e:
             # 요약 실패 시 fallback
-            logger.warning(f"AI summarization failed, using fallback: {e}")
+            tracker.record_error(ErrorType.API_ERROR, f"AI summarization failed: {e}", exception=e)
             ai_summary = f"총 {len(parsed_result)}개 메시지 분석 완료. 감지된 태그: {', '.join(all_categories) if all_categories else '없음'}"
 
         # Article 840 태그 집계
@@ -332,14 +396,16 @@ def route_and_process(bucket_name: str, object_key: str) -> Dict[str, Any]:
                 skip_if_processed=True  # Idempotency: skip if already processed
             )
             if updated:
-                logger.info(f"Updated Backend evidence: {backend_evidence_id} → processed (case_id={case_id})")
+                tracker.log(f"Updated Backend evidence: {backend_evidence_id} → processed")
             else:
-                logger.info(f"Evidence {backend_evidence_id} was already processed (concurrent execution)")
+                tracker.record_error(ErrorType.DUPLICATE, f"Evidence {backend_evidence_id} already processed (concurrent)")
+                tracker.log_summary()
                 return {
                     "status": "skipped",
                     "reason": "concurrent_processed",
                     "evidence_id": backend_evidence_id,
-                    "file": object_key
+                    "file": object_key,
+                    "job_id": tracker.context.job_id
                 }
         else:
             # Fallback: 새 레코드 생성 (기존 방식)
@@ -355,15 +421,26 @@ def route_and_process(bucket_name: str, object_key: str) -> Dict[str, Any]:
             )
             try:
                 metadata_store.save_file_if_not_exists(evidence_file, file_hash)
-                logger.info(f"Created new evidence record: {file_id}")
+                tracker.log(f"Created new evidence record: {file_id}")
             except DuplicateError:
-                logger.info(f"Evidence {file_id} already exists (concurrent execution)")
+                tracker.record_error(ErrorType.DUPLICATE, f"Evidence {file_id} already exists (concurrent)")
+                tracker.log_summary()
                 return {
                     "status": "skipped",
                     "reason": "concurrent_created",
                     "evidence_id": file_id,
-                    "file": object_key
+                    "file": object_key,
+                    "job_id": tracker.context.job_id
                 }
+
+        # Mark job as complete
+        tracker.context.current_stage = ProcessingStage.COMPLETE
+        tracker.add_metadata(
+            chunks_indexed=len(chunk_ids),
+            categories=list(all_categories),
+            summary_length=len(ai_summary)
+        )
+        tracker.log_summary()
 
         return {
             "status": "processed",
@@ -376,15 +453,22 @@ def route_and_process(bucket_name: str, object_key: str) -> Dict[str, Any]:
             "file_hash": file_hash,  # Include hash for idempotency tracking
             "chunks_indexed": len(chunk_ids),
             "tags": tags_list,
-            "ai_summary": ai_summary
+            "ai_summary": ai_summary,
+            "job_id": tracker.context.job_id,
+            "job_summary": tracker.get_summary()
         }
 
     except Exception as e:
-        logger.error(f"Error processing {object_key}: {str(e)}", exc_info=True)
+        error_type = classify_exception(e)
+        tracker.record_error(error_type, str(e), exception=e)
+        tracker.log_summary()
         return {
             "status": "error",
             "file": object_key,
-            "error": str(e)
+            "error": str(e),
+            "error_type": error_type.value,
+            "job_id": tracker.context.job_id,
+            "job_summary": tracker.get_summary()
         }
 
 
