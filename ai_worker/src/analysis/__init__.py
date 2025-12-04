@@ -64,6 +64,12 @@ from src.analysis.precedent_searcher import (
     PrecedentCase,
     search_similar_cases,
 )
+from src.analysis.event_summarizer import (
+    EventSummarizer,
+    EventSummary,
+    SummaryType,
+    summarize_event,
+)
 
 __all__ = [
     # Evidence Scorer
@@ -143,4 +149,10 @@ __all__ = [
     "PrecedentSearcher",
     "PrecedentCase",
     "search_similar_cases",
+
+    # Event Summarizer (이벤트 요약)
+    "EventSummarizer",
+    "EventSummary",
+    "SummaryType",
+    "summarize_event",
 ]
