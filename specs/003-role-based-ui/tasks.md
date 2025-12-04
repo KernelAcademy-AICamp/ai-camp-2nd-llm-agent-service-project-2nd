@@ -360,25 +360,25 @@
 
 > **TDD RED Phase**: These tests MUST fail before implementation
 
-- [ ] T141 [P] [US8] Contract test for invoice CRUD and payment endpoints in backend/tests/contract/test_billing.py
-- [ ] T142 [P] [US8] Integration test for InvoiceList and InvoiceForm components in frontend/src/__tests__/components/lawyer/Invoice.test.tsx
+- [X] T141 [P] [US8] Contract test for invoice CRUD and payment endpoints in backend/tests/contract/test_billing.py
+- [X] T142 [P] [US8] Integration test for InvoiceList and InvoiceForm components in frontend/src/__tests__/components/lawyer/billing/
 
 ### Backend Implementation for User Story 8
 
-- [ ] T143 [US8] Create billing router in backend/app/api/billing.py
-- [ ] T144 [US8] Create invoice CRUD endpoints in backend/app/api/billing.py
-- [ ] T145 [US8] Create payment initiation endpoint POST /client/billing/{id}/pay in backend/app/api/billing.py
-- [ ] T146 [US8] Create BillingService with invoice number generation in backend/app/services/billing_service.py
-- [ ] T147 [US8] Create billing schemas in backend/app/schemas/billing.py
-- [ ] T148 [US8] [AUDIT] Add audit logging for invoice creation and payment (Constitution Principle I) in backend/app/api/billing.py
+- [X] T143 [US8] Create billing router in backend/app/api/billing.py
+- [X] T144 [US8] Create invoice CRUD endpoints in backend/app/api/billing.py
+- [X] T145 [US8] Create payment initiation endpoint POST /client/billing/{id}/pay in backend/app/api/billing.py
+- [X] T146 [US8] Create BillingService with invoice number generation in backend/app/services/billing_service.py
+- [X] T147 [US8] Create billing schemas (using existing frontend/src/types/billing.ts)
+- [X] T148 [US8] [AUDIT] Add audit logging for invoice creation and payment (Constitution Principle I) in backend/app/api/billing.py
 
 ### Frontend Implementation for User Story 8
 
-- [ ] T149 [P] [US8] Create InvoiceList component in frontend/src/components/lawyer/InvoiceList.tsx
-- [ ] T150 [P] [US8] Create InvoiceForm component in frontend/src/components/lawyer/InvoiceForm.tsx
-- [ ] T151 [US8] Create billing page in frontend/src/app/lawyer/billing/page.tsx
-- [ ] T152 [US8] Create client billing page in frontend/src/app/client/billing/page.tsx
-- [ ] T153 [US8] Create useBilling hook in frontend/src/hooks/useBilling.ts
+- [X] T149 [P] [US8] Create InvoiceList component in frontend/src/components/lawyer/InvoiceList.tsx
+- [X] T150 [P] [US8] Create InvoiceForm component in frontend/src/components/lawyer/InvoiceForm.tsx
+- [X] T151 [US8] Create billing page in frontend/src/app/lawyer/billing/page.tsx
+- [X] T152 [US8] Create client billing page in frontend/src/app/client/billing/page.tsx
+- [X] T153 [US8] Create useBilling hook in frontend/src/hooks/useBilling.ts
 
 **Checkpoint**: User Story 8 complete - basic billing works (all tests GREEN)
 
