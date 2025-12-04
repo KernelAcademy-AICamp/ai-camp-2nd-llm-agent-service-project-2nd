@@ -388,11 +388,11 @@
 
 **Purpose**: Performance optimization and edge case handling
 
-- [ ] T154 [P] Add loading skeletons for all dashboard pages
-- [ ] T155 [P] Add error boundaries for each portal
-- [ ] T156 [P] Implement responsive design for mobile views
-- [ ] T157 Add notification bell component with real-time updates in frontend/src/components/shared/NotificationBell.tsx
-- [ ] T158 Create empty state components for lists
+- [X] T154 [P] Add loading skeletons for all dashboard pages (frontend/src/components/shared/LoadingSkeletons.tsx)
+- [X] T155 [P] Add error boundaries for each portal (frontend/src/components/shared/ErrorBoundary.tsx + error.tsx files)
+- [ ] T156 [P] Implement responsive design for mobile views (tailwind responsive classes in use)
+- [X] T157 Add notification bell component with real-time updates in frontend/src/components/shared/NotificationBell.tsx
+- [X] T158 Create empty state components for lists (frontend/src/components/shared/EmptyStates.tsx)
 - [ ] T159 Run quickstart.md validation (all setup steps work)
 - [ ] T160 Run manual testing across all three portals and document issues
 - [ ] T161 Validate contract compliance (OpenAPI specs match implementation)
