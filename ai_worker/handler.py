@@ -55,6 +55,12 @@ from src.utils.observability import (
     ErrorType,
     classify_exception
 )
+from src.utils.cost_guard import (
+    CostGuard,
+    FileSizeExceeded,
+    CostLimitExceeded,
+    get_file_type_from_extension
+)
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -166,6 +172,37 @@ def route_and_process(bucket_name: str, object_key: str) -> Dict[str, Any]:
 
             s3_client.download_file(bucket_name, object_key, local_path)
             stage.add_metadata(local_path=local_path)
+
+        # ============================================
+        # Cost Guard - Validate file size and check rate limits
+        # ============================================
+        cost_guard = CostGuard()
+        file_type_str = get_file_type_from_extension(file_extension)
+
+        try:
+            # Validate file size
+            is_valid, file_details = cost_guard.validate_file(local_path, file_type_str)
+            tracker.log(
+                f"File validated: {file_details['file_size_mb']:.2f}MB ({file_type_str})",
+                file_size_mb=file_details['file_size_mb'],
+                requires_chunking=file_details.get('requires_chunking', False)
+            )
+            tracker.add_metadata(file_details=file_details)
+
+        except FileSizeExceeded as e:
+            tracker.record_error(
+                ErrorType.VALIDATION_ERROR,
+                f"File size exceeded: {e.file_size_mb:.2f}MB > {e.max_size_mb}MB limit"
+            )
+            tracker.log_summary()
+            return {
+                "status": "rejected",
+                "reason": "file_size_exceeded",
+                "file": object_key,
+                "file_size_mb": e.file_size_mb,
+                "max_size_mb": e.max_size_mb,
+                "job_id": tracker.context.job_id
+            }
 
         # ============================================
         # Idempotency Check - Calculate hash and check duplicates

@@ -18,6 +18,18 @@ from .observability import (
     log_job_event,
     classify_exception
 )
+from .cost_guard import (
+    FileType,
+    FileLimits,
+    FILE_LIMITS,
+    MODEL_COSTS,
+    CostLimitExceeded,
+    FileSizeExceeded,
+    UsageRecord,
+    CostLimits,
+    CostGuard,
+    get_file_type_from_extension
+)
 
 __all__ = [
     # Logging filter
@@ -36,5 +48,16 @@ __all__ = [
     'StageTracker',
     'JobTracker',
     'log_job_event',
-    'classify_exception'
+    'classify_exception',
+    # Cost control
+    'FileType',
+    'FileLimits',
+    'FILE_LIMITS',
+    'MODEL_COSTS',
+    'CostLimitExceeded',
+    'FileSizeExceeded',
+    'UsageRecord',
+    'CostLimits',
+    'CostGuard',
+    'get_file_type_from_extension'
 ]
