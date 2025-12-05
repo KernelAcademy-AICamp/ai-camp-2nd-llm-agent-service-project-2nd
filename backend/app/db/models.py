@@ -129,6 +129,7 @@ class User(Base):
 class Case(Base):
     """
     Case model - divorce cases
+    Supports soft delete via deleted_at field
     """
     __tablename__ = "cases"
 
@@ -140,13 +141,19 @@ class Case(Base):
     created_by = Column(String, ForeignKey("users.id"), nullable=False)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
     updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
+    deleted_at = Column(DateTime(timezone=True), nullable=True, index=True)  # Soft delete timestamp
 
     # Relationships
     owner = relationship("User", back_populates="created_cases", foreign_keys=[created_by])
     members = relationship("CaseMember", back_populates="case")
 
+    @property
+    def is_deleted(self) -> bool:
+        """Check if case is soft deleted"""
+        return self.deleted_at is not None
+
     def __repr__(self):
-        return f"<Case(id={self.id}, title={self.title}, status={self.status})>"
+        return f"<Case(id={self.id}, title={self.title}, status={self.status}, deleted={self.is_deleted})>"
 
 
 class CaseMember(Base):

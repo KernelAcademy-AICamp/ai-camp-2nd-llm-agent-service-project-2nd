@@ -46,38 +46,44 @@ class CaseRepository:
 
         return case
 
-    def get_by_id(self, case_id: str) -> Optional[Case]:
+    def get_by_id(self, case_id: str, include_deleted: bool = False) -> Optional[Case]:
         """
         Get case by ID
 
         Args:
             case_id: Case ID
+            include_deleted: If True, include soft-deleted cases
 
         Returns:
             Case instance if found, None otherwise
         """
-        return self.session.query(Case).filter(Case.id == case_id).first()
+        query = self.session.query(Case).filter(Case.id == case_id)
+        if not include_deleted:
+            query = query.filter(Case.deleted_at.is_(None))
+        return query.first()
 
-    def get_all_for_user(self, user_id: str) -> List[Case]:
+    def get_all_for_user(self, user_id: str, include_deleted: bool = False) -> List[Case]:
         """
         Get all cases accessible by user (via case_members)
 
         Args:
             user_id: User ID
+            include_deleted: If True, include soft-deleted cases
 
         Returns:
             List of Case instances
         """
         # Join with case_members to filter by user access
-        cases = (
+        query = (
             self.session.query(Case)
             .join(CaseMember, Case.id == CaseMember.case_id)
             .filter(CaseMember.user_id == user_id)
-            .filter(Case.status != "closed")  # Exclude closed cases
-            .all()
         )
 
-        return cases
+        if not include_deleted:
+            query = query.filter(Case.deleted_at.is_(None))
+
+        return query.all()
 
     def update(self, case: Case) -> Case:
         """
@@ -95,7 +101,7 @@ class CaseRepository:
 
     def soft_delete(self, case_id: str) -> bool:
         """
-        Soft delete case (set status to closed)
+        Soft delete case (set deleted_at timestamp and status to closed)
 
         Args:
             case_id: Case ID
@@ -108,5 +114,45 @@ class CaseRepository:
             return False
 
         case.status = "closed"
+        case.deleted_at = datetime.now(timezone.utc)
         self.session.flush()
         return True
+
+    def hard_delete(self, case_id: str) -> bool:
+        """
+        Hard delete case (permanently remove from database)
+        WARNING: This is irreversible. Use soft_delete for normal operations.
+
+        Args:
+            case_id: Case ID
+
+        Returns:
+            True if deleted, False if not found
+        """
+        case = self.get_by_id(case_id)
+        if not case:
+            return False
+
+        self.session.delete(case)
+        self.session.flush()
+        return True
+
+    def get_deleted_cases_older_than(self, days: int) -> List[Case]:
+        """
+        Get soft-deleted cases older than specified days
+        Useful for scheduled cleanup jobs
+
+        Args:
+            days: Number of days since deletion
+
+        Returns:
+            List of Case instances eligible for hard deletion
+        """
+        from datetime import timedelta
+        cutoff_date = datetime.now(timezone.utc) - timedelta(days=days)
+        return (
+            self.session.query(Case)
+            .filter(Case.deleted_at.isnot(None))
+            .filter(Case.deleted_at < cutoff_date)
+            .all()
+        )

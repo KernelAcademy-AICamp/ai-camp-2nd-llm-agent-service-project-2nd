@@ -1,0 +1,30 @@
+{
+    "Rules": [
+        {
+            "ID": "MoveDeletedCasesToGlacier",
+            "Status": "Enabled",
+            "Filter": {
+                "Prefix": "deleted/"
+            },
+            "Transitions": [
+                {
+                    "Days": 365,
+                    "StorageClass": "GLACIER"
+                }
+            ],
+            "Expiration": {
+                "Days": 3650
+            }
+        },
+        {
+            "ID": "CleanupIncompleteMultipartUploads",
+            "Status": "Enabled",
+            "Filter": {
+                "Prefix": ""
+            },
+            "AbortIncompleteMultipartUpload": {
+                "DaysAfterInitiation": 7
+            }
+        }
+    ]
+}
