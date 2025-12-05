@@ -1,8 +1,8 @@
 ## [L-work-v2] 작업 보고
 - **시간**: 2025-12-05
 - **브랜치**: `L-work-v2` (upstream/dev 기반)
-- **상태**: ✅ Track A + Track B + Track C 완료
-- **작업 내용**: 인물 관계도 + 재산분할 UI + Backend Properties API 구현
+- **상태**: ✅ Track A + Track B + Track C + Phase 2 완료
+- **작업 내용**: 인물 관계도 + 재산분할 UI + Backend Properties API + 타임라인 컴포넌트 구현
 
 ---
 
@@ -49,6 +49,16 @@
 | C-3 | `properties.py` | ✅ 완료 | Properties CRUD + DivisionPrediction API 라우터 생성 |
 | C-4 | `main.py` | ✅ 완료 | /cases/{case_id}/properties 라우터 등록 |
 
+#### Phase 2: 타임라인 컴포넌트
+
+| 단계 | 파일 | 상태 | 설명 |
+|------|------|------|------|
+| 2-1 | `types/timeline.ts` | ✅ 완료 | TimelineEvent, TimelineResult 타입 정의 |
+| 2-2 | `lib/api/timeline.ts` | ✅ 완료 | 타임라인 API 클라이언트 |
+| 2-3 | `components/timeline/TimelineEventCard.tsx` | ✅ 완료 | 이벤트 카드 컴포넌트 |
+| 2-4 | `components/timeline/TimelineView.tsx` | ✅ 완료 | 메인 타임라인 뷰 |
+| 2-5 | `components/timeline/index.ts` | ✅ 완료 | 배럴 익스포트 |
+
 #### 생성된 파일 목록
 
 ```
@@ -74,11 +84,19 @@ frontend/src/
 │   ├── PersonNode.tsx               # ✅ Track A
 │   ├── RelationshipEdge.tsx         # ✅ Track A
 │   └── RelationshipLegend.tsx       # ✅ Track A
-└── components/property-division/
-    ├── index.ts                     # ✅ Track B
-    ├── PropertyDivisionDashboard.tsx # ✅ Track B
-    ├── DivisionGauge.tsx            # ✅ Track B
-    └── EvidenceImpactList.tsx       # ✅ Track B
+├── components/property-division/
+│   ├── index.ts                     # ✅ Track B
+│   ├── PropertyDivisionDashboard.tsx # ✅ Track B
+│   ├── DivisionGauge.tsx            # ✅ Track B
+│   └── EvidenceImpactList.tsx       # ✅ Track B
+├── components/timeline/
+│   ├── index.ts                     # ✅ Phase 2
+│   ├── TimelineView.tsx             # ✅ Phase 2
+│   └── TimelineEventCard.tsx        # ✅ Phase 2
+├── types/
+│   └── timeline.ts                  # ✅ Phase 2
+└── lib/api/
+    └── timeline.ts                  # ✅ Phase 2
 
 backend/app/
 ├── db/
