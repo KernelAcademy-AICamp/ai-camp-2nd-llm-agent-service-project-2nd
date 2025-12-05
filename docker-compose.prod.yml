@@ -1,0 +1,78 @@
+# docker-compose.prod.yml - Production Environment
+# Usage: docker compose -f docker-compose.prod.yml up -d
+#
+# Note: In production, we use AWS Lambda for backend/ai_worker.
+# This file is for self-hosted production deployments only.
+
+version: "3.9"
+
+services:
+  # PostgreSQL Database - Production
+  postgres:
+    image: postgres:15-alpine
+    container_name: leh-postgres-prod
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data_prod:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+
+  # Backend API (FastAPI) - Production
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.lambda
+    container_name: leh-backend-prod
+    restart: always
+    env_file:
+      - .env.prod
+    environment:
+      POSTGRES_HOST: postgres
+      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      DEBUG: "false"
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+    # No volume mounts in production (no hot reload)
+
+  # AI Worker - Production
+  ai_worker:
+    build:
+      context: ./ai_worker
+      dockerfile: Dockerfile
+    container_name: leh-ai-worker-prod
+    restart: always
+    depends_on:
+      - backend
+    env_file:
+      - .env.prod
+    environment:
+      WORKER_ENV: production
+      DEBUG: "false"
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+    # No volume mounts in production
+
+volumes:
+  postgres_data_prod:

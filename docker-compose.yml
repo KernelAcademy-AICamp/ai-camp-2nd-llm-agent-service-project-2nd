@@ -1,11 +1,15 @@
+# docker-compose.yml - Development Environment
+# Usage: docker compose up -d
+# For production: docker compose -f docker-compose.prod.yml up -d
+
 version: "3.9"
 
 services:
   # PostgreSQL Database
   postgres:
     image: postgres:15-alpine
-    container_name: leh-postgres
-    restart: always
+    container_name: leh-postgres-dev
+    restart: unless-stopped
     environment:
       POSTGRES_USER: leh_user
       POSTGRES_PASSWORD: leh_password
@@ -13,41 +17,50 @@ services:
     ports:
       - "5434:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data_dev:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U leh_user -d leh_db"]
       interval: 5s
       timeout: 5s
       retries: 5
 
-  # Backend API (FastAPI)
+  # Backend API (FastAPI) - Development with hot reload
   backend:
-    build: ./backend
-    container_name: leh-backend
-    restart: always
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: leh-backend-dev
+    restart: unless-stopped
     env_file:
       - .env
     environment:
-      # Docker 내부 통신용 호스트 설정
       POSTGRES_HOST: postgres
       DATABASE_URL: postgresql+psycopg2://leh_user:leh_password@postgres:5432/leh_db
+      DEBUG: "true"
     ports:
       - "8000:8000"
+    volumes:
+      - ./backend:/app  # Hot reload for development
     depends_on:
       postgres:
         condition: service_healthy
 
-  # AI Worker (로컬 테스트용)
+  # AI Worker (Development)
   ai_worker:
-    build: ./ai_worker
-    container_name: leh-ai-worker
-    restart: always
+    build:
+      context: ./ai_worker
+      dockerfile: Dockerfile
+    container_name: leh-ai-worker-dev
+    restart: unless-stopped
     depends_on:
       - backend
     env_file:
       - .env
     environment:
       WORKER_ENV: local
+      DEBUG: "true"
+    volumes:
+      - ./ai_worker:/app  # Hot reload for development
 
 volumes:
-  postgres_data:
+  postgres_data_dev:
