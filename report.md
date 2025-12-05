@@ -1,7 +1,7 @@
 ## [L-work-v2] 작업 보고
 - **시간**: 2025-12-05
 - **브랜치**: `L-work-v2` (upstream/dev 기반)
-- **상태**: 🚧 Track A 진행 중
+- **상태**: ✅ Track A 완료
 - **작업 내용**: 인물 관계도 + 재산분할 UI 구현 (TDD 방식)
 
 ---
@@ -15,36 +15,35 @@
 | A-1.1 | React Flow 설치 | ✅ 완료 (이미 설치됨 v11.11.4) | - |
 | A-1.2 | `types/relationship.ts` | ✅ 완료 (16 tests) | `feat(behavior): add relationship type definitions with tests` |
 | A-1.3 | `lib/api/relationship.ts` | ✅ 완료 (7 tests) | `feat(behavior): add relationship API client with tests` |
-| A-2.1 | `app/lawyer/cases/[id]/relationship/page.tsx` | ⏳ 대기 | `feat(behavior): add relationship page route` |
-| A-2.2 | `RelationshipClient.tsx` | ⏳ 대기 | `feat(behavior): add RelationshipClient component with tests` |
-| A-2.3 | `RelationshipFlow.tsx` | ⏳ 대기 | `feat(behavior): add RelationshipFlow component with tests` |
-| A-3.1 | `PersonNode.tsx` | ⏳ 대기 | `feat(behavior): add PersonNode custom component with tests` |
-| A-3.2 | `RelationshipEdge.tsx` | ⏳ 대기 | `feat(behavior): add RelationshipEdge custom component with tests` |
-| A-4 | Modal, Legend | ⏳ 대기 | 개별 커밋 |
-| A-5 | `index.ts` (배럴) | ⏳ 대기 | `chore(structure): add relationship component barrel exports` |
+| A-2.1 | `app/cases/[id]/relationship/page.tsx` | ✅ 완료 | `feat(behavior): add relationship page route` |
+| A-2.2 | `RelationshipClient.tsx` | ✅ 완료 | `feat(behavior): add RelationshipClient component` |
+| A-2.3 | `RelationshipFlow.tsx` | ✅ 완료 | `feat(behavior): add RelationshipFlow component` |
+| A-3.1 | `PersonNode.tsx` | ✅ 완료 | `feat(behavior): add PersonNode custom component` |
+| A-3.2 | `RelationshipEdge.tsx` | ✅ 완료 | `feat(behavior): add RelationshipEdge custom component` |
+| A-4 | `RelationshipLegend.tsx` | ✅ 완료 | `feat(behavior): add RelationshipLegend component` |
+| A-5 | `index.ts` (배럴) | ✅ 완료 | `chore(structure): add relationship component barrel exports` |
 
-#### 생성 예정 파일 목록
+#### 생성된 파일 목록
 
 ```
 frontend/src/
 ├── types/
-│   ├── relationship.ts              # [신규]
+│   ├── relationship.ts              # ✅ 생성완료
 │   └── __tests__/
-│       └── relationship.test.ts     # [신규]
+│       └── relationship.test.ts     # ✅ 생성완료 (16 tests)
 ├── lib/api/
-│   ├── relationship.ts              # [신규]
+│   ├── relationship.ts              # ✅ 생성완료
 │   └── __tests__/
-│       └── relationship.test.ts     # [신규]
-├── app/lawyer/cases/[id]/relationship/
-│   ├── page.tsx                     # [신규]
-│   └── RelationshipClient.tsx       # [신규]
+│       └── relationship.test.ts     # ✅ 생성완료 (7 tests)
+├── app/cases/[id]/relationship/
+│   ├── page.tsx                     # ✅ 생성완료
+│   └── RelationshipClient.tsx       # ✅ 생성완료
 └── components/relationship/
-    ├── index.ts                     # [신규]
-    ├── RelationshipFlow.tsx         # [신규]
-    ├── PersonNode.tsx               # [신규]
-    ├── RelationshipEdge.tsx         # [신규]
-    ├── PersonDetailModal.tsx        # [신규]
-    └── RelationshipLegend.tsx       # [신규]
+    ├── index.ts                     # ✅ 생성완료
+    ├── RelationshipFlow.tsx         # ✅ 생성완료
+    ├── PersonNode.tsx               # ✅ 생성완료
+    ├── RelationshipEdge.tsx         # ✅ 생성완료
+    └── RelationshipLegend.tsx       # ✅ 생성완료
 ```
 
 ---
@@ -62,6 +61,33 @@ frontend/src/
    - 파일: `frontend/src/lib/api/relationship.ts`, `frontend/src/lib/api/__tests__/relationship.test.ts`
    - 커밋 메시지: `feat(behavior): add relationship API client with tests`
    - 테스트: 7개 통과
+
+3. **✅ 커밋 준비 완료**: Track A 전체 (권장: 단일 커밋)
+   - 파일:
+     - `frontend/src/types/relationship.ts`
+     - `frontend/src/types/__tests__/relationship.test.ts`
+     - `frontend/src/lib/api/relationship.ts`
+     - `frontend/src/lib/api/__tests__/relationship.test.ts`
+     - `frontend/src/app/cases/[id]/relationship/page.tsx`
+     - `frontend/src/app/cases/[id]/relationship/RelationshipClient.tsx`
+     - `frontend/src/components/relationship/index.ts`
+     - `frontend/src/components/relationship/RelationshipFlow.tsx`
+     - `frontend/src/components/relationship/PersonNode.tsx`
+     - `frontend/src/components/relationship/RelationshipEdge.tsx`
+     - `frontend/src/components/relationship/RelationshipLegend.tsx`
+   - 커밋 메시지:
+     ```
+     feat(frontend): implement relationship graph visualization with React Flow
+
+     - Add relationship type definitions (PersonNode, RelationshipEdge, RelationshipGraph)
+     - Add relationship API client for /l-demo/analyze/relationships
+     - Add /cases/[id]/relationship route with RelationshipClient
+     - Add RelationshipFlow component using React Flow
+     - Add custom PersonNode and RelationshipEdge components
+     - Add RelationshipLegend with role/relationship color mappings
+     - Include 23 passing tests (16 type tests, 7 API tests)
+     ```
+   - 테스트: 23개 통과
 
 ---
 
