@@ -1,3 +1,72 @@
+## [L-work-v2] 작업 보고
+- **시간**: 2025-12-05
+- **브랜치**: `L-work-v2` (upstream/dev 기반)
+- **상태**: 🚧 Track A 진행 중
+- **작업 내용**: 인물 관계도 + 재산분할 UI 구현 (TDD 방식)
+
+---
+
+### 🆕 최신 상태 (2025-12-05)
+
+#### Track A: 인물 관계도 (React Flow)
+
+| 단계 | 파일 | 상태 | 커밋 메시지 |
+|------|------|------|------------|
+| A-1.1 | React Flow 설치 | ✅ 완료 (이미 설치됨 v11.11.4) | - |
+| A-1.2 | `types/relationship.ts` | ✅ 완료 (16 tests) | `feat(behavior): add relationship type definitions with tests` |
+| A-1.3 | `lib/api/relationship.ts` | ✅ 완료 (7 tests) | `feat(behavior): add relationship API client with tests` |
+| A-2.1 | `app/lawyer/cases/[id]/relationship/page.tsx` | ⏳ 대기 | `feat(behavior): add relationship page route` |
+| A-2.2 | `RelationshipClient.tsx` | ⏳ 대기 | `feat(behavior): add RelationshipClient component with tests` |
+| A-2.3 | `RelationshipFlow.tsx` | ⏳ 대기 | `feat(behavior): add RelationshipFlow component with tests` |
+| A-3.1 | `PersonNode.tsx` | ⏳ 대기 | `feat(behavior): add PersonNode custom component with tests` |
+| A-3.2 | `RelationshipEdge.tsx` | ⏳ 대기 | `feat(behavior): add RelationshipEdge custom component with tests` |
+| A-4 | Modal, Legend | ⏳ 대기 | 개별 커밋 |
+| A-5 | `index.ts` (배럴) | ⏳ 대기 | `chore(structure): add relationship component barrel exports` |
+
+#### 생성 예정 파일 목록
+
+```
+frontend/src/
+├── types/
+│   ├── relationship.ts              # [신규]
+│   └── __tests__/
+│       └── relationship.test.ts     # [신규]
+├── lib/api/
+│   ├── relationship.ts              # [신규]
+│   └── __tests__/
+│       └── relationship.test.ts     # [신규]
+├── app/lawyer/cases/[id]/relationship/
+│   ├── page.tsx                     # [신규]
+│   └── RelationshipClient.tsx       # [신규]
+└── components/relationship/
+    ├── index.ts                     # [신규]
+    ├── RelationshipFlow.tsx         # [신규]
+    ├── PersonNode.tsx               # [신규]
+    ├── RelationshipEdge.tsx         # [신규]
+    ├── PersonDetailModal.tsx        # [신규]
+    └── RelationshipLegend.tsx       # [신규]
+```
+
+---
+
+### 📝 커밋 대기열
+
+커밋이 필요한 작업 완료 시 아래에 기록합니다:
+
+1. **✅ 커밋 준비 완료**: A-1.2 타입 정의
+   - 파일: `frontend/src/types/relationship.ts`, `frontend/src/types/__tests__/relationship.test.ts`
+   - 커밋 메시지: `feat(behavior): add relationship type definitions with tests`
+   - 테스트: 16개 통과
+
+2. **✅ 커밋 준비 완료**: A-1.3 API 클라이언트
+   - 파일: `frontend/src/lib/api/relationship.ts`, `frontend/src/lib/api/__tests__/relationship.test.ts`
+   - 커밋 메시지: `feat(behavior): add relationship API client with tests`
+   - 테스트: 7개 통과
+
+---
+
+### 이전 작업 (2025-11-28)
+
 ## [dev] 작업 보고
 - **시간**: 2025-11-28 16:00
 - **상태**: ⚠️ S3 버킷 생성 대기
