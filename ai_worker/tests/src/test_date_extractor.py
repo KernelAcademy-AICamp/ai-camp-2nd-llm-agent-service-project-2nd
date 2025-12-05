@@ -4,8 +4,7 @@ DateExtractor 테스트
 날짜/시간 추출 유틸리티 테스트
 """
 
-import pytest
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from src.utils.date_extractor import (
     DateExtractor,
@@ -13,8 +12,6 @@ from src.utils.date_extractor import (
     extract_dates_from_text,
     parse_date,
     parse_date_safe,
-    DATETIME_FORMATS,
-    RELATIVE_DATE_PATTERNS,
 )
 
 

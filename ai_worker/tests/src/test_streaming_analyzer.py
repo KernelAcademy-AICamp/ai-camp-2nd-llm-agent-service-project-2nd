@@ -8,7 +8,7 @@ Note: API 호출이 필요한 테스트는 @pytest.mark.integration 마커 사�
 import pytest
 import json
 import hashlib
-from unittest.mock import Mock, patch, MagicMock, AsyncMock
+from unittest.mock import Mock, patch, AsyncMock
 from datetime import datetime
 
 from src.analysis.streaming_analyzer import (
@@ -390,7 +390,7 @@ class TestErrorHandling:
         with pytest.raises(AnalysisError) as exc_info:
             list(analyzer.analyze_stream(chunk))
 
-        assert exc_info.value.fallback_available == True
+        assert exc_info.value.fallback_available is True
 
     def test_analysis_error_attributes(self):
         """AnalysisError 속성 테스트"""
@@ -401,4 +401,4 @@ class TestErrorHandling:
         )
 
         assert error.analysis_type == "streaming"
-        assert error.fallback_available == True
+        assert error.fallback_available is True

@@ -12,7 +12,6 @@ from pydantic import BaseModel, Field
 import openai
 
 from src.parsers.base import Message
-from src.prompts.tone_guidelines import DISCLAIMER_TEXT
 
 
 class SummaryType(str, Enum):

@@ -3,8 +3,7 @@ Test suite for EvidenceAdvisor
 증거 현황 분석기 테스트 (LLM 미사용, 규칙 기반)
 """
 
-import pytest
-from datetime import datetime, timedelta
+from datetime import datetime
 from src.analysis.evidence_advisor import (
     EvidenceAdvisor,
     EvidenceAdvice,

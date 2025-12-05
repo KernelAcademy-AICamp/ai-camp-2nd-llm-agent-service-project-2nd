@@ -4,7 +4,6 @@ PersonExtractor 테스트
 인물 추출기 테스트
 """
 
-import pytest
 
 from src.analysis.person_extractor import (
     PersonExtractor,
@@ -225,7 +224,7 @@ class TestContextRoleInference:
     def test_child_context(self):
         """자녀 문맥"""
         extractor = PersonExtractor()
-        result = extractor.extract("김민수는 우리 아들이에요")
+        _ = extractor.extract("김민수는 우리 아들이에요")
         # 자녀 문맥에서 CHILD로 추론될 수 있음
 
 
@@ -337,13 +336,13 @@ class TestEdgeCases:
     def test_no_persons(self):
         """인물 없는 텍스트"""
         extractor = PersonExtractor()
-        result = extractor.extract("오늘 날씨가 좋다")
+        _ = extractor.extract("오늘 날씨가 좋다")
         # 특정 이름이나 키워드가 없으면 빈 결과 가능
 
     def test_confidence_filtering(self):
         """신뢰도 필터링"""
         extractor = PersonExtractor(min_confidence=0.9)
-        result = extractor.extract("김철수가 왔다")
+        _ = extractor.extract("김철수가 왔다")
         # 높은 신뢰도 요구 시 일부 결과 필터링됨
 
 

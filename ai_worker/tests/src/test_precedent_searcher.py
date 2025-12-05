@@ -6,7 +6,6 @@ PrecedentSearcher 테스트
 
 import pytest
 from unittest.mock import patch, MagicMock
-from typing import List
 
 from src.analysis.precedent_searcher import (
     PrecedentSearcher,

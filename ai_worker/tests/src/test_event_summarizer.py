@@ -4,7 +4,6 @@ EventSummarizer 테스트
 이벤트 한 줄 요약 생성기 테스트
 """
 
-import pytest
 
 from src.analysis.event_summarizer import (
     EventSummarizer,

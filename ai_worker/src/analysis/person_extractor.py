@@ -11,7 +11,7 @@ LLM 의존 없이 규칙 기반으로 구현
 
 import re
 from dataclasses import dataclass, field
-from typing import List, Dict, Optional, Set, Tuple
+from typing import List, Dict, Tuple
 from enum import Enum
 
 
@@ -101,9 +101,7 @@ ROLE_KEYWORDS: Dict[str, Tuple[PersonRole, PersonSide]] = {
     "처제": (PersonRole.RELATIVE, PersonSide.PLAINTIFF_SIDE),
     "매형": (PersonRole.RELATIVE, PersonSide.PLAINTIFF_SIDE),
 
-    # 제3자
-    "그 여자": (PersonRole.THIRD_PARTY, PersonSide.UNKNOWN),
-    "그 남자": (PersonRole.THIRD_PARTY, PersonSide.UNKNOWN),
+    # 제3자 (그 여자/그 남자는 피고 섹션에서 정의됨)
     "상간녀": (PersonRole.THIRD_PARTY, PersonSide.UNKNOWN),
     "상간남": (PersonRole.THIRD_PARTY, PersonSide.UNKNOWN),
     "바람상대": (PersonRole.THIRD_PARTY, PersonSide.UNKNOWN),
@@ -424,8 +422,6 @@ class PersonExtractor:
         self, context: str, name: str
     ) -> Tuple[PersonRole, PersonSide]:
         """문맥에서 역할 추론"""
-        context_lower = context.lower()
-
         # 외도/불륜 관련 키워드
         affair_keywords = ["외도", "바람", "불륜", "상간", "만나"]
         if any(kw in context for kw in affair_keywords):

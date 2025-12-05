@@ -4,8 +4,6 @@ ImpactAnalyzer 및 Impact Rules 테스트
 재산분할 영향도 분석 모듈의 단위 테스트
 """
 
-import pytest
-from datetime import datetime
 from typing import Dict, Any, List
 
 from src.analysis.impact_rules import (
@@ -14,8 +12,6 @@ from src.analysis.impact_rules import (
     ImpactDirection,
     ImpactRule,
     IMPACT_RULES,
-    CONTRIBUTION_FACTORS,
-    CONFIDENCE_THRESHOLDS,
     get_impact_rule,
     calculate_evidence_weight,
     calculate_single_impact,

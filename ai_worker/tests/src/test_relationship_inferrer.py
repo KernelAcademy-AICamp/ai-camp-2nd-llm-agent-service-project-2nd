@@ -4,7 +4,6 @@ RelationshipInferrer 테스트
 관계 추론기 테스트
 """
 
-import pytest
 
 from src.analysis.relationship_inferrer import (
     RelationshipInferrer,
@@ -21,7 +20,6 @@ from src.analysis.relationship_inferrer import (
 from src.analysis.person_extractor import (
     ExtractedPerson,
     PersonRole,
-    PersonSide,
 )
 
 
@@ -54,20 +52,20 @@ class TestKeywordRelationshipInference:
         """배우자 키워드"""
         inferrer = RelationshipInferrer()
         rels = inferrer.infer_relationships("김철수 남편이 이영희와 만났다")
-        types = [r.relationship_type for r in rels]
+        _ = [r.relationship_type for r in rels]
         # 배우자 관계가 추론될 수 있음
 
     def test_affair_keyword(self):
         """외도 키워드"""
         inferrer = RelationshipInferrer()
         rels = inferrer.infer_relationships("남편이 박지연과 불륜 관계")
-        types = [r.relationship_type for r in rels]
+        _ = [r.relationship_type for r in rels]
         # AFFAIR 관계가 추론될 수 있음
 
     def test_friend_keyword(self):
         """친구 키워드"""
         inferrer = RelationshipInferrer()
-        rels = inferrer.infer_relationships("김철수는 내 친구야")
+        _ = inferrer.infer_relationships("김철수는 내 친구야")
         # 친구 관계 추론
 
 
@@ -304,7 +302,7 @@ class TestEdgeCases:
     def test_no_relationship_detected(self):
         """관계 미감지"""
         inferrer = RelationshipInferrer()
-        rels = inferrer.infer_relationships("오늘 날씨가 좋다")
+        _ = inferrer.infer_relationships("오늘 날씨가 좋다")
         # 인물이 없으면 관계 없음
 
 

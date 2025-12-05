@@ -20,22 +20,16 @@ import logging
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import List, Dict, Optional, Any
-from enum import Enum
 
 from .impact_rules import (
-    FaultType,
-    EvidenceType,
     ImpactDirection,
     ImpactRule,
-    IMPACT_RULES,
-    CONTRIBUTION_FACTORS,
     CONFIDENCE_THRESHOLDS,
     get_impact_rule,
-    calculate_evidence_weight,
     calculate_single_impact,
     map_legal_category_to_fault,
 )
-from .precedent_searcher import PrecedentSearcher, PrecedentCase
+from .precedent_searcher import PrecedentSearcher
 
 logger = logging.getLogger(__name__)
 

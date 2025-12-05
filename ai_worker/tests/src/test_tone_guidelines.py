@@ -3,7 +3,6 @@ Test suite for Tone Guidelines
 톤앤매너 가이드라인 검증 테스트
 """
 
-import pytest
 from src.prompts.tone_guidelines import (
     OBJECTIVE_TONE_GUIDELINES,
     DISCLAIMER_TEXT,

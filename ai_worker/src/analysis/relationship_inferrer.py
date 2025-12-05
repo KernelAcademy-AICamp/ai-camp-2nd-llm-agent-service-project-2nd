@@ -10,16 +10,14 @@ LLM 의존 없이 규칙 기반으로 구현
 """
 
 import re
-from dataclasses import dataclass, field
-from typing import List, Dict, Optional, Set, Tuple
+from dataclasses import dataclass
+from typing import List, Dict, Optional, Set
 from enum import Enum
 
 from .person_extractor import (
     PersonExtractor,
     ExtractedPerson,
-    PersonExtractionResult,
     PersonRole,
-    PersonSide,
 )
 
 

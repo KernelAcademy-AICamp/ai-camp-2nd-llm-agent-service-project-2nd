@@ -24,7 +24,6 @@ from qdrant_client.http.models import (
     Filter,
     FieldCondition,
     MatchValue,
-    MatchAny,
 )
 
 logger = logging.getLogger(__name__)
