@@ -1,8 +1,8 @@
 ## [L-work-v2] 작업 보고
 - **시간**: 2025-12-05
 - **브랜치**: `L-work-v2` (upstream/dev 기반)
-- **상태**: ✅ Track A + Track B + 통합 완료
-- **작업 내용**: 인물 관계도 + 재산분할 UI 구현 (TDD 방식)
+- **상태**: ✅ Track A + Track B + Track C 완료
+- **작업 내용**: 인물 관계도 + 재산분할 UI + Backend Properties API 구현
 
 ---
 
@@ -40,6 +40,15 @@
 |------|------|------|----------|
 | 통합-1 | `CaseDetailClient.tsx` | ✅ 완료 | 관계도/재산분할 탭 추가 |
 
+#### Track C: Backend Properties API
+
+| 단계 | 파일 | 상태 | 변경 내용 |
+|------|------|------|----------|
+| C-1 | `models.py` | ✅ 완료 | PropertyType, ImpactDirection, ConfidenceLevel 열거형 + CaseProperty, DivisionPrediction 모델 추가 |
+| C-2 | `schemas.py` | ✅ 완료 | PropertyCreate/Update/Out, DivisionPredictionCreate/Out, EvidenceImpactOut 스키마 추가 |
+| C-3 | `properties.py` | ✅ 완료 | Properties CRUD + DivisionPrediction API 라우터 생성 |
+| C-4 | `main.py` | ✅ 완료 | /cases/{case_id}/properties 라우터 등록 |
+
 #### 생성된 파일 목록
 
 ```
@@ -70,6 +79,14 @@ frontend/src/
     ├── PropertyDivisionDashboard.tsx # ✅ Track B
     ├── DivisionGauge.tsx            # ✅ Track B
     └── EvidenceImpactList.tsx       # ✅ Track B
+
+backend/app/
+├── db/
+│   ├── models.py                    # ✅ Track C (CaseProperty, DivisionPrediction 모델 추가)
+│   └── schemas.py                   # ✅ Track C (Property 스키마 추가)
+├── api/
+│   └── properties.py                # ✅ Track C (신규)
+└── main.py                          # ✅ Track C (properties 라우터 등록)
 ```
 
 ---
@@ -138,6 +155,23 @@ frontend/src/
      - 재산분할 탭 추가 (PropertyDivisionDashboard 통합)
      - Users, Scale 아이콘 import
    - 커밋 메시지: `feat(frontend): integrate relationship and property tabs into CaseDetail`
+
+5. **✅ 커밋 준비 완료**: Track C - Backend Properties API
+   - **수정된 파일**:
+     - `backend/app/db/models.py` (수정) - PropertyType, ImpactDirection, ConfidenceLevel 열거형 + CaseProperty, DivisionPrediction 모델
+     - `backend/app/db/schemas.py` (수정) - Property/DivisionPrediction 스키마
+     - `backend/app/api/properties.py` (신규) - Properties CRUD API
+     - `backend/app/main.py` (수정) - 라우터 등록
+   - 커밋 메시지:
+     ```
+     feat(backend): add Properties API for property division
+
+     - Add PropertyType, ImpactDirection, ConfidenceLevel enums
+     - Add CaseProperty and DivisionPrediction models
+     - Add Property/DivisionPrediction Pydantic schemas
+     - Add Properties CRUD endpoints (/cases/{case_id}/properties)
+     - Add DivisionPrediction endpoints
+     ```
 
 ---
 
