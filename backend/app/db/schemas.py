@@ -9,7 +9,8 @@ from datetime import datetime
 from enum import Enum
 from app.db.models import (
     UserRole, UserStatus, CaseStatus, CaseMemberRole,
-    CalendarEventType, InvestigationRecordType, InvoiceStatus
+    CalendarEventType, InvestigationRecordType, InvoiceStatus,
+    PropertyType, ImpactDirection, ConfidenceLevel
 )
 
 
@@ -719,6 +720,97 @@ class DetectiveDashboardStats(BaseModel):
     total_records: int = 0
     pending_reports: int = 0
     total_earnings: str = "0"  # Total earnings in KRW
+
+
+# ============================================
+# Property Division Schemas
+# ============================================
+class EvidenceImpactOut(BaseModel):
+    """Evidence impact output schema"""
+    evidence_id: str
+    evidence_type: str
+    impact_percent: float = Field(..., ge=-100, le=100)
+    direction: ImpactDirection
+    reason: Optional[str] = None
+
+
+class PropertyCreate(BaseModel):
+    """Property creation request schema"""
+    name: str = Field(..., min_length=1, max_length=255)
+    property_type: PropertyType = PropertyType.OTHER
+    estimated_value: Optional[int] = Field(None, ge=0)
+    owner_side: Optional[str] = Field(None, pattern="^(plaintiff|defendant|joint)$")
+    description: Optional[str] = None
+    evidence_ids: Optional[List[str]] = None
+
+
+class PropertyUpdate(BaseModel):
+    """Property update request schema"""
+    name: Optional[str] = Field(None, min_length=1, max_length=255)
+    property_type: Optional[PropertyType] = None
+    estimated_value: Optional[int] = Field(None, ge=0)
+    owner_side: Optional[str] = Field(None, pattern="^(plaintiff|defendant|joint)$")
+    description: Optional[str] = None
+    evidence_ids: Optional[List[str]] = None
+
+
+class PropertyOut(BaseModel):
+    """Property output schema"""
+    id: str
+    case_id: str
+    name: str
+    property_type: PropertyType
+    estimated_value: Optional[int] = None
+    owner_side: Optional[str] = None
+    description: Optional[str] = None
+    evidence_ids: Optional[List[str]] = None
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class PropertyListResponse(BaseModel):
+    """Property list response schema"""
+    properties: List[PropertyOut]
+    total: int
+    total_value: int = 0  # Total estimated value
+
+
+class DivisionPredictionCreate(BaseModel):
+    """Division prediction creation request schema"""
+    plaintiff_ratio: int = Field(..., ge=0, le=100)
+    defendant_ratio: int = Field(..., ge=0, le=100)
+    plaintiff_amount: Optional[int] = Field(None, ge=0)
+    defendant_amount: Optional[int] = Field(None, ge=0)
+    confidence_level: ConfidenceLevel = ConfidenceLevel.MEDIUM
+    evidence_impacts: Optional[List[EvidenceImpactOut]] = None
+    reasoning: Optional[str] = None
+
+
+class DivisionPredictionOut(BaseModel):
+    """Division prediction output schema"""
+    id: str
+    case_id: str
+    plaintiff_ratio: int
+    defendant_ratio: int
+    plaintiff_amount: Optional[int] = None
+    defendant_amount: Optional[int] = None
+    confidence_level: ConfidenceLevel
+    evidence_impacts: Optional[List[EvidenceImpactOut]] = None
+    reasoning: Optional[str] = None
+    created_by: Optional[str] = None
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class DivisionPredictionListResponse(BaseModel):
+    """Division prediction list response schema"""
+    predictions: List[DivisionPredictionOut]
+    total: int
 
 
 # ============================================

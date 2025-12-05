@@ -24,7 +24,7 @@ from mangum import Mangum  # noqa: E402 - AWS Lambda handler
 from app.core.config import settings  # noqa: E402
 
 # Import API routers
-from app.api import auth, admin, cases, evidence, drafts, lawyer_portal  # noqa: E402
+from app.api import auth, admin, cases, evidence, drafts, lawyer_portal, properties  # noqa: E402
 from app.middleware import (  # noqa: E402
     register_exception_handlers,
     SecurityHeadersMiddleware,
@@ -195,6 +195,9 @@ app.include_router(drafts.router, prefix="/cases/{case_id}/drafts", tags=["Draft
 
 # 변호사 포털 라우터 (003-role-based-ui Feature)
 app.include_router(lawyer_portal.router, prefix="/lawyer", tags=["Lawyer Portal"])
+
+# 재산분할 라우터 (케이스별 재산 CRUD)
+app.include_router(properties.router, prefix="/cases/{case_id}/properties", tags=["Properties"])
 
 # Note: Draft preview endpoint (POST /cases/{case_id}/draft-preview) remains in cases router
 # Note: RAG search is integrated into draft generation service (draft_service.py)
