@@ -16,6 +16,7 @@ def mock_session():
     session.add = Mock()
     session.flush = Mock()
     session.query = Mock()
+    session.delete = Mock()
     return session
 
 
@@ -97,9 +98,11 @@ class TestCaseRepositoryGetById:
         """Test getting case by ID when it exists"""
         # Arrange
         mock_query = Mock()
-        mock_filter = Mock()
-        mock_filter.first.return_value = sample_case
-        mock_query.filter.return_value = mock_filter
+        mock_filter1 = Mock()
+        mock_filter2 = Mock()
+        mock_filter2.first.return_value = sample_case
+        mock_filter1.filter.return_value = mock_filter2
+        mock_query.filter.return_value = mock_filter1
         mock_session.query.return_value = mock_query
 
         # Act
@@ -113,9 +116,11 @@ class TestCaseRepositoryGetById:
         """Test getting case by ID when it doesn't exist"""
         # Arrange
         mock_query = Mock()
-        mock_filter = Mock()
-        mock_filter.first.return_value = None
-        mock_query.filter.return_value = mock_filter
+        mock_filter1 = Mock()
+        mock_filter2 = Mock()
+        mock_filter2.first.return_value = None
+        mock_filter1.filter.return_value = mock_filter2
+        mock_query.filter.return_value = mock_filter1
         mock_session.query.return_value = mock_query
 
         # Act
@@ -123,6 +128,22 @@ class TestCaseRepositoryGetById:
 
         # Assert
         assert result is None
+
+    def test_get_by_id_include_deleted(self, case_repository, mock_session, sample_case):
+        """Test getting deleted case with include_deleted=True"""
+        # Arrange
+        sample_case.deleted_at = datetime.now(timezone.utc)
+        mock_query = Mock()
+        mock_filter = Mock()
+        mock_filter.first.return_value = sample_case
+        mock_query.filter.return_value = mock_filter
+        mock_session.query.return_value = mock_query
+
+        # Act
+        result = case_repository.get_by_id("case_123abc", include_deleted=True)
+
+        # Assert
+        assert result == sample_case
 
 
 class TestCaseRepositoryGetAllForUser:
@@ -195,11 +216,13 @@ class TestCaseRepositorySoftDelete:
 
     def test_soft_delete_success(self, case_repository, mock_session, sample_case):
         """Test successful soft deletion"""
-        # Arrange
+        # Arrange - get_by_id now uses two filter() calls
         mock_query = Mock()
-        mock_filter = Mock()
-        mock_filter.first.return_value = sample_case
-        mock_query.filter.return_value = mock_filter
+        mock_filter1 = Mock()
+        mock_filter2 = Mock()
+        mock_filter2.first.return_value = sample_case
+        mock_filter1.filter.return_value = mock_filter2
+        mock_query.filter.return_value = mock_filter1
         mock_session.query.return_value = mock_query
 
         # Act
@@ -208,15 +231,18 @@ class TestCaseRepositorySoftDelete:
         # Assert
         assert result is True
         assert sample_case.status == "closed"
+        assert sample_case.deleted_at is not None
         mock_session.flush.assert_called_once()
 
     def test_soft_delete_not_found(self, case_repository, mock_session):
         """Test soft deletion when case doesn't exist"""
-        # Arrange
+        # Arrange - get_by_id now uses two filter() calls
         mock_query = Mock()
-        mock_filter = Mock()
-        mock_filter.first.return_value = None
-        mock_query.filter.return_value = mock_filter
+        mock_filter1 = Mock()
+        mock_filter2 = Mock()
+        mock_filter2.first.return_value = None
+        mock_filter1.filter.return_value = mock_filter2
+        mock_query.filter.return_value = mock_filter1
         mock_session.query.return_value = mock_query
 
         # Act
@@ -225,3 +251,44 @@ class TestCaseRepositorySoftDelete:
         # Assert
         assert result is False
         mock_session.flush.assert_not_called()
+
+
+class TestCaseRepositoryHardDelete:
+    """Tests for hard_delete method"""
+
+    def test_hard_delete_success(self, case_repository, mock_session, sample_case):
+        """Test successful hard deletion"""
+        # Arrange
+        mock_query = Mock()
+        mock_filter1 = Mock()
+        mock_filter2 = Mock()
+        mock_filter2.first.return_value = sample_case
+        mock_filter1.filter.return_value = mock_filter2
+        mock_query.filter.return_value = mock_filter1
+        mock_session.query.return_value = mock_query
+
+        # Act
+        result = case_repository.hard_delete("case_123abc")
+
+        # Assert
+        assert result is True
+        mock_session.delete.assert_called_once_with(sample_case)
+        mock_session.flush.assert_called_once()
+
+    def test_hard_delete_not_found(self, case_repository, mock_session):
+        """Test hard deletion when case doesn't exist"""
+        # Arrange
+        mock_query = Mock()
+        mock_filter1 = Mock()
+        mock_filter2 = Mock()
+        mock_filter2.first.return_value = None
+        mock_filter1.filter.return_value = mock_filter2
+        mock_query.filter.return_value = mock_filter1
+        mock_session.query.return_value = mock_query
+
+        # Act
+        result = case_repository.hard_delete("nonexistent")
+
+        # Assert
+        assert result is False
+        mock_session.delete.assert_not_called()
