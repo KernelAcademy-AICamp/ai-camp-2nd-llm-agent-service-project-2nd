@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, CheckCircle2, Filter, Shield, Sparkles, Loader2, AlertCircle, RefreshCw } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Filter, Shield, Sparkles, Loader2, AlertCircle, RefreshCw, Users, Scale } from 'lucide-react';
 import Link from 'next/link';
 import EvidenceUpload from '@/components/evidence/EvidenceUpload';
 import EvidenceTable from '@/components/evidence/EvidenceTable';
@@ -20,6 +20,7 @@ import {
 import { getCase, Case } from '@/lib/api/cases';
 import { generateDraftPreview, DraftCitation as ApiDraftCitation } from '@/lib/api/draft';
 import { mapApiEvidenceToEvidence, mapApiEvidenceListToEvidence } from '@/lib/utils/evidenceMapper';
+import { PropertyDivisionDashboard } from '@/components/property-division';
 
 /**
  * Convert API draft citation to component DraftCitation type
@@ -33,7 +34,7 @@ function mapApiCitationToCitation(apiCitation: ApiDraftCitation, evidenceList: E
     quote: apiCitation.snippet,
   };
 }
-type CaseDetailTab = 'evidence' | 'opponent' | 'timeline' | 'draft';
+type CaseDetailTab = 'evidence' | 'opponent' | 'timeline' | 'draft' | 'relationship' | 'property';
 type UploadFeedback = { message: string; tone: 'info' | 'success' | 'error' };
 type UploadStatus = {
   isUploading: boolean;
@@ -309,9 +310,11 @@ export default function CaseDetailClient({ id }: CaseDetailClientProps) {
         return downloadDraftAsDocx(content, id, format);
     };
 
-    const tabItems: { id: CaseDetailTab; label: string; description: string }[] = useMemo(
+    const tabItems: { id: CaseDetailTab; label: string; description: string; icon?: React.ReactNode }[] = useMemo(
         () => [
             { id: 'evidence', label: '증거', description: '업로드 · 상태 · 요약' },
+            { id: 'relationship', label: '관계도', description: '인물 관계 시각화', icon: <Users className="w-4 h-4" /> },
+            { id: 'property', label: '재산분할', description: 'AI 예측 분석', icon: <Scale className="w-4 h-4" /> },
             { id: 'opponent', label: '상대방 주장', description: '주장 정리 & AI 추천' },
             { id: 'timeline', label: '타임라인', description: '사건 맥락 · 흐름' },
             { id: 'draft', label: 'Draft', description: 'AI 초안 검토/다운로드' },
@@ -377,7 +380,10 @@ export default function CaseDetailClient({ id }: CaseDetailClientProps) {
                                     isActive ? 'border-accent bg-accent/10 text-secondary shadow-sm' : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300'
                                 }`}
                             >
-                                <span className="text-sm font-semibold">{tab.label}</span>
+                                <div className="flex items-center space-x-1.5">
+                                    {tab.icon && <span className={isActive ? 'text-accent' : 'text-gray-400'}>{tab.icon}</span>}
+                                    <span className="text-sm font-semibold">{tab.label}</span>
+                                </div>
                                 <span className="text-xs text-gray-500">{tab.description}</span>
                             </button>
                         );
@@ -557,6 +563,53 @@ export default function CaseDetailClient({ id }: CaseDetailClientProps) {
                             hasExistingDraft={hasGeneratedDraft}
                             onGenerate={openDraftModal}
                             onDownload={({ content, format }) => handleDownload(content, format)}
+                        />
+                    </section>
+                )}
+
+                {activeTab === 'relationship' && (
+                    <section className="space-y-4" role="tabpanel" aria-label="관계도 탭">
+                        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                            <div className="flex items-center justify-between mb-4">
+                                <div className="flex items-center space-x-3">
+                                    <Users className="w-6 h-6 text-accent" />
+                                    <div>
+                                        <h2 className="text-lg font-bold text-gray-900">인물 관계도</h2>
+                                        <p className="text-sm text-gray-500">증거에서 추출된 인물들의 관계를 시각화합니다.</p>
+                                    </div>
+                                </div>
+                                <Link
+                                    href={`/cases/${caseId}/relationship`}
+                                    className="flex items-center px-4 py-2 bg-accent text-white rounded-lg hover:bg-accent/90 transition-colors text-sm font-medium"
+                                >
+                                    전체 화면으로 보기
+                                </Link>
+                            </div>
+                            <div className="bg-neutral-50 rounded-xl p-8 text-center">
+                                <Users className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                                <p className="text-gray-600 mb-4">
+                                    관계도를 전체 화면에서 확인하세요.
+                                </p>
+                                <Link
+                                    href={`/cases/${caseId}/relationship`}
+                                    className="text-accent hover:underline text-sm"
+                                >
+                                    /cases/{caseId}/relationship 페이지로 이동 →
+                                </Link>
+                            </div>
+                        </div>
+                    </section>
+                )}
+
+                {activeTab === 'property' && (
+                    <section className="space-y-4" role="tabpanel" aria-label="재산분할 탭">
+                        <PropertyDivisionDashboard
+                            caseId={caseId}
+                            evidences={evidenceList.map(e => ({
+                                id: e.id,
+                                type: e.type,
+                                content: e.summary || '',
+                            }))}
                         />
                     </section>
                 )}
