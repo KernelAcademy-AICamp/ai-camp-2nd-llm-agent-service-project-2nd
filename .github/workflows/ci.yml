@@ -110,12 +110,12 @@ jobs:
           DATABASE_URL: postgresql://test_user:test_pass@localhost:5432/test_db
           JWT_SECRET: test_secret_key_for_ci_pipeline_32chars
           TESTING: true
-          AWS_REGION: ap-northeast-2
-          AWS_ACCESS_KEY_ID: test-access-key
-          AWS_SECRET_ACCESS_KEY: test-secret-key
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           S3_EVIDENCE_BUCKET: test-bucket
           DDB_EVIDENCE_TABLE: test-evidence-table
-          OPENAI_API_KEY: test-openai-key
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: pytest --cov=app --cov-report=xml -v --timeout=60 -m "not integration"
 
       - name: Upload coverage report
@@ -165,14 +165,14 @@ jobs:
       - name: Run pytest
         env:
           TESTING: true
-          AWS_REGION: ap-northeast-2
-          AWS_ACCESS_KEY_ID: test-access-key
-          AWS_SECRET_ACCESS_KEY: test-secret-key
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           S3_EVIDENCE_BUCKET: test-bucket
           DDB_EVIDENCE_TABLE: test-evidence-table
-          OPENAI_API_KEY: test-openai-key
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           QDRANT_URL: http://localhost:6333
-          QDRANT_API_KEY: test-qdrant-key
+          QDRANT_API_KEY: ${{ secrets.QDRANT_API_KEY }}
         run: pytest --cov=src --cov-report=xml -v -m "not integration"
 
       - name: Upload coverage report
