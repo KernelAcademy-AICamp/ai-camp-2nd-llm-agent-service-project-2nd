@@ -292,3 +292,43 @@ class TestCaseRepositoryHardDelete:
         # Assert
         assert result is False
         mock_session.delete.assert_not_called()
+
+
+class TestCaseRepositoryGetDeletedCasesOlderThan:
+    """Tests for get_deleted_cases_older_than method"""
+
+    def test_get_deleted_cases_older_than_found(self, case_repository, mock_session, sample_case):
+        """Test getting deleted cases older than specified days"""
+        # Arrange
+        sample_case.deleted_at = datetime(2020, 1, 1, tzinfo=timezone.utc)
+        mock_query = Mock()
+        mock_filter1 = Mock()
+        mock_filter2 = Mock()
+        mock_filter2.all.return_value = [sample_case]
+        mock_filter1.filter.return_value = mock_filter2
+        mock_query.filter.return_value = mock_filter1
+        mock_session.query.return_value = mock_query
+
+        # Act
+        result = case_repository.get_deleted_cases_older_than(30)
+
+        # Assert
+        assert len(result) == 1
+        assert result[0] == sample_case
+
+    def test_get_deleted_cases_older_than_empty(self, case_repository, mock_session):
+        """Test getting deleted cases when none exist"""
+        # Arrange
+        mock_query = Mock()
+        mock_filter1 = Mock()
+        mock_filter2 = Mock()
+        mock_filter2.all.return_value = []
+        mock_filter1.filter.return_value = mock_filter2
+        mock_query.filter.return_value = mock_filter1
+        mock_session.query.return_value = mock_query
+
+        # Act
+        result = case_repository.get_deleted_cases_older_than(30)
+
+        # Assert
+        assert result == []
