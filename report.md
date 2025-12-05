@@ -1,7 +1,7 @@
 ## [L-work-v2] 작업 보고
 - **시간**: 2025-12-05
 - **브랜치**: `L-work-v2` (upstream/dev 기반)
-- **상태**: ✅ Track A 완료
+- **상태**: ✅ Track A + Track B 완료
 - **작업 내용**: 인물 관계도 + 재산분할 UI 구현 (TDD 방식)
 
 ---
@@ -23,27 +23,47 @@
 | A-4 | `RelationshipLegend.tsx` | ✅ 완료 | `feat(behavior): add RelationshipLegend component` |
 | A-5 | `index.ts` (배럴) | ✅ 완료 | `chore(structure): add relationship component barrel exports` |
 
+#### Track B: 재산분할 대시보드
+
+| 단계 | 파일 | 상태 | 커밋 메시지 |
+|------|------|------|------------|
+| B-1.1 | `types/property.ts` | ✅ 완료 (18 tests) | `feat(behavior): add property type definitions with tests` |
+| B-1.2 | `lib/api/properties.ts` | ✅ 완료 (6 tests) | `feat(behavior): add properties API client with tests` |
+| B-2.1 | `DivisionGauge.tsx` | ✅ 완료 | `feat(behavior): add DivisionGauge component` |
+| B-2.2 | `EvidenceImpactList.tsx` | ✅ 완료 | `feat(behavior): add EvidenceImpactList component` |
+| B-2.3 | `PropertyDivisionDashboard.tsx` | ✅ 완료 | `feat(behavior): add PropertyDivisionDashboard component` |
+| B-3 | `index.ts` (배럴) | ✅ 완료 | `chore(structure): add property-division component barrel exports` |
+
 #### 생성된 파일 목록
 
 ```
 frontend/src/
 ├── types/
-│   ├── relationship.ts              # ✅ 생성완료
+│   ├── relationship.ts              # ✅ Track A
+│   ├── property.ts                  # ✅ Track B
 │   └── __tests__/
-│       └── relationship.test.ts     # ✅ 생성완료 (16 tests)
+│       ├── relationship.test.ts     # ✅ Track A (16 tests)
+│       └── property.test.ts         # ✅ Track B (18 tests)
 ├── lib/api/
-│   ├── relationship.ts              # ✅ 생성완료
+│   ├── relationship.ts              # ✅ Track A
+│   ├── properties.ts                # ✅ Track B
 │   └── __tests__/
-│       └── relationship.test.ts     # ✅ 생성완료 (7 tests)
+│       ├── relationship.test.ts     # ✅ Track A (7 tests)
+│       └── properties.test.ts       # ✅ Track B (6 tests)
 ├── app/cases/[id]/relationship/
-│   ├── page.tsx                     # ✅ 생성완료
-│   └── RelationshipClient.tsx       # ✅ 생성완료
-└── components/relationship/
-    ├── index.ts                     # ✅ 생성완료
-    ├── RelationshipFlow.tsx         # ✅ 생성완료
-    ├── PersonNode.tsx               # ✅ 생성완료
-    ├── RelationshipEdge.tsx         # ✅ 생성완료
-    └── RelationshipLegend.tsx       # ✅ 생성완료
+│   ├── page.tsx                     # ✅ Track A
+│   └── RelationshipClient.tsx       # ✅ Track A
+├── components/relationship/
+│   ├── index.ts                     # ✅ Track A
+│   ├── RelationshipFlow.tsx         # ✅ Track A
+│   ├── PersonNode.tsx               # ✅ Track A
+│   ├── RelationshipEdge.tsx         # ✅ Track A
+│   └── RelationshipLegend.tsx       # ✅ Track A
+└── components/property-division/
+    ├── index.ts                     # ✅ Track B
+    ├── PropertyDivisionDashboard.tsx # ✅ Track B
+    ├── DivisionGauge.tsx            # ✅ Track B
+    └── EvidenceImpactList.tsx       # ✅ Track B
 ```
 
 ---
@@ -62,8 +82,8 @@ frontend/src/
    - 커밋 메시지: `feat(behavior): add relationship API client with tests`
    - 테스트: 7개 통과
 
-3. **✅ 커밋 준비 완료**: Track A 전체 (권장: 단일 커밋)
-   - 파일:
+3. **✅ 커밋 준비 완료**: Track A + Track B 전체 (권장: 단일 커밋)
+   - **Track A 파일 (11개)**:
      - `frontend/src/types/relationship.ts`
      - `frontend/src/types/__tests__/relationship.test.ts`
      - `frontend/src/lib/api/relationship.ts`
@@ -75,19 +95,35 @@ frontend/src/
      - `frontend/src/components/relationship/PersonNode.tsx`
      - `frontend/src/components/relationship/RelationshipEdge.tsx`
      - `frontend/src/components/relationship/RelationshipLegend.tsx`
+   - **Track B 파일 (8개)**:
+     - `frontend/src/types/property.ts`
+     - `frontend/src/types/__tests__/property.test.ts`
+     - `frontend/src/lib/api/properties.ts`
+     - `frontend/src/lib/api/__tests__/properties.test.ts`
+     - `frontend/src/components/property-division/index.ts`
+     - `frontend/src/components/property-division/PropertyDivisionDashboard.tsx`
+     - `frontend/src/components/property-division/DivisionGauge.tsx`
+     - `frontend/src/components/property-division/EvidenceImpactList.tsx`
    - 커밋 메시지:
      ```
-     feat(frontend): implement relationship graph visualization with React Flow
+     feat(frontend): implement relationship graph and property division UI
 
-     - Add relationship type definitions (PersonNode, RelationshipEdge, RelationshipGraph)
-     - Add relationship API client for /l-demo/analyze/relationships
+     Track A: Relationship Graph (React Flow)
+     - Add relationship type definitions with tests (16 tests)
+     - Add relationship API client with tests (7 tests)
      - Add /cases/[id]/relationship route with RelationshipClient
-     - Add RelationshipFlow component using React Flow
-     - Add custom PersonNode and RelationshipEdge components
-     - Add RelationshipLegend with role/relationship color mappings
-     - Include 23 passing tests (16 type tests, 7 API tests)
+     - Add RelationshipFlow, PersonNode, RelationshipEdge components
+     - Add RelationshipLegend with color mappings
+
+     Track B: Property Division Dashboard
+     - Add property type definitions with tests (18 tests)
+     - Add properties API client with tests (6 tests)
+     - Add PropertyDivisionDashboard with DivisionGauge
+     - Add EvidenceImpactList component
+
+     Total: 47 tests passing
      ```
-   - 테스트: 23개 통과
+   - 테스트: 47개 통과 (Track A: 23개, Track B: 24개)
 
 ---
 
