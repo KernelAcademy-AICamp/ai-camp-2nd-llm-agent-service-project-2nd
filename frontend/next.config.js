@@ -1,7 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // Static HTML Export for S3/CloudFront deployment
-  output: 'export',
+  // 개발 모드에서는 비활성화 (미들웨어 사용 위해)
+  ...(process.env.NODE_ENV === 'production' && { output: 'export' }),
 
   // Disable image optimization for static export (use external CDN or unoptimized)
   images: {

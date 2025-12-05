@@ -22,6 +22,7 @@ AI_WORKER_PATH = Path(__file__).parent.parent.parent.parent.parent / "ai_worker"
 if str(AI_WORKER_PATH) not in sys.path:
     sys.path.insert(0, str(AI_WORKER_PATH))
 
+print("DEBUG: Loading l_demo module...")
 router = APIRouter(prefix="/l-demo", tags=["L-Demo"])
 
 
