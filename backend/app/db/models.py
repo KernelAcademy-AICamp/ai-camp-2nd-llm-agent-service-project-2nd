@@ -101,6 +101,29 @@ class InvoiceStatus(str, enum.Enum):
     CANCELLED = "cancelled"  # 취소
 
 
+class PropertyType(str, enum.Enum):
+    """Property type enum for property division"""
+    REAL_ESTATE = "real_estate"  # 부동산
+    SAVINGS = "savings"          # 예금
+    STOCKS = "stocks"            # 주식
+    VEHICLE = "vehicle"          # 차량
+    OTHER = "other"              # 기타
+
+
+class ImpactDirection(str, enum.Enum):
+    """Impact direction enum for evidence impact"""
+    PLAINTIFF_FAVOR = "plaintiff_favor"   # 원고에게 유리
+    DEFENDANT_FAVOR = "defendant_favor"   # 피고에게 유리
+    NEUTRAL = "neutral"                   # 중립
+
+
+class ConfidenceLevel(str, enum.Enum):
+    """Confidence level enum for predictions"""
+    HIGH = "high"
+    MEDIUM = "medium"
+    LOW = "low"
+
+
 # ============================================
 # Models
 # ============================================
@@ -405,3 +428,55 @@ class Invoice(Base):
 
     def __repr__(self):
         return f"<Invoice(id={self.id}, amount={self.amount}, status={self.status})>"
+
+
+class CaseProperty(Base):
+    """
+    Case property model - individual property items for division
+    재산분할 대상 개별 재산 항목
+    """
+    __tablename__ = "case_properties"
+
+    id = Column(String, primary_key=True, default=lambda: f"prop_{uuid.uuid4().hex[:12]}")
+    case_id = Column(String, ForeignKey("cases.id", ondelete="CASCADE"), nullable=False, index=True)
+    name = Column(String(255), nullable=False)  # 재산명 (예: "강남 아파트", "국민은행 예금")
+    property_type = Column(SQLEnum(PropertyType), nullable=False, default=PropertyType.OTHER)
+    estimated_value = Column(Integer, nullable=True)  # 추정 가치 (원)
+    owner_side = Column(String(20), nullable=True)  # 'plaintiff', 'defendant', 'joint'
+    description = Column(Text, nullable=True)
+    evidence_ids = Column(JSON, nullable=True)  # 관련 증거 ID 목록
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
+
+    # Relationships
+    case = relationship("Case", backref="properties")
+
+    def __repr__(self):
+        return f"<CaseProperty(id={self.id}, name={self.name}, type={self.property_type})>"
+
+
+class DivisionPrediction(Base):
+    """
+    Division prediction model - AI-generated property division predictions
+    AI 재산분할 예측 결과
+    """
+    __tablename__ = "division_predictions"
+
+    id = Column(String, primary_key=True, default=lambda: f"divpred_{uuid.uuid4().hex[:12]}")
+    case_id = Column(String, ForeignKey("cases.id", ondelete="CASCADE"), nullable=False, index=True)
+    plaintiff_ratio = Column(Integer, nullable=False)  # 원고 분할 비율 (0-100)
+    defendant_ratio = Column(Integer, nullable=False)  # 피고 분할 비율 (0-100)
+    plaintiff_amount = Column(Integer, nullable=True)  # 원고 예상 금액 (원)
+    defendant_amount = Column(Integer, nullable=True)  # 피고 예상 금액 (원)
+    confidence_level = Column(SQLEnum(ConfidenceLevel), nullable=False, default=ConfidenceLevel.MEDIUM)
+    evidence_impacts = Column(JSON, nullable=True)  # 증거별 영향도 배열
+    reasoning = Column(Text, nullable=True)  # AI 분석 근거
+    created_by = Column(String, ForeignKey("users.id"), nullable=True)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
+
+    # Relationships
+    case = relationship("Case", backref="division_predictions")
+    creator = relationship("User", foreign_keys=[created_by])
+
+    def __repr__(self):
+        return f"<DivisionPrediction(id={self.id}, plaintiff={self.plaintiff_ratio}%, defendant={self.defendant_ratio}%)>"

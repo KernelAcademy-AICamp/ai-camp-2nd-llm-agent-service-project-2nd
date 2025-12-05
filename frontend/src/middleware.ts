@@ -188,6 +188,10 @@ export function middleware(request: NextRequest) {
 
   // Handle legacy /cases route - redirect to role-appropriate portal
   if (pathname === '/cases' || pathname.startsWith('/cases/')) {
+    // App Router에 직접 정의된 라우트는 리디렉션하지 않음
+    if (pathname.includes('/relationship')) {
+      return NextResponse.next();
+    }
     const portalPath = ROLE_PORTALS[user.role] || '/lawyer';
     const newPath = pathname.replace('/cases', `${portalPath}/cases`);
     return NextResponse.redirect(new URL(newPath, request.url));

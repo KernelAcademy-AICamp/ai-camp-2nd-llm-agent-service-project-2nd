@@ -1,3 +1,200 @@
+## [L-work-v2] 작업 보고
+- **시간**: 2025-12-05
+- **브랜치**: `L-work-v2` (upstream/dev 기반)
+- **상태**: ✅ Track A + Track B + Track C + Phase 2 완료
+- **작업 내용**: 인물 관계도 + 재산분할 UI + Backend Properties API + 타임라인 컴포넌트 구현
+
+---
+
+### 🆕 최신 상태 (2025-12-05)
+
+#### Track A: 인물 관계도 (React Flow)
+
+| 단계 | 파일 | 상태 | 커밋 메시지 |
+|------|------|------|------------|
+| A-1.1 | React Flow 설치 | ✅ 완료 (이미 설치됨 v11.11.4) | - |
+| A-1.2 | `types/relationship.ts` | ✅ 완료 (16 tests) | `feat(behavior): add relationship type definitions with tests` |
+| A-1.3 | `lib/api/relationship.ts` | ✅ 완료 (7 tests) | `feat(behavior): add relationship API client with tests` |
+| A-2.1 | `app/cases/[id]/relationship/page.tsx` | ✅ 완료 | `feat(behavior): add relationship page route` |
+| A-2.2 | `RelationshipClient.tsx` | ✅ 완료 | `feat(behavior): add RelationshipClient component` |
+| A-2.3 | `RelationshipFlow.tsx` | ✅ 완료 | `feat(behavior): add RelationshipFlow component` |
+| A-3.1 | `PersonNode.tsx` | ✅ 완료 | `feat(behavior): add PersonNode custom component` |
+| A-3.2 | `RelationshipEdge.tsx` | ✅ 완료 | `feat(behavior): add RelationshipEdge custom component` |
+| A-4 | `RelationshipLegend.tsx` | ✅ 완료 | `feat(behavior): add RelationshipLegend component` |
+| A-5 | `index.ts` (배럴) | ✅ 완료 | `chore(structure): add relationship component barrel exports` |
+
+#### Track B: 재산분할 대시보드
+
+| 단계 | 파일 | 상태 | 커밋 메시지 |
+|------|------|------|------------|
+| B-1.1 | `types/property.ts` | ✅ 완료 (18 tests) | `feat(behavior): add property type definitions with tests` |
+| B-1.2 | `lib/api/properties.ts` | ✅ 완료 (6 tests) | `feat(behavior): add properties API client with tests` |
+| B-2.1 | `DivisionGauge.tsx` | ✅ 완료 | `feat(behavior): add DivisionGauge component` |
+| B-2.2 | `EvidenceImpactList.tsx` | ✅ 완료 | `feat(behavior): add EvidenceImpactList component` |
+| B-2.3 | `PropertyDivisionDashboard.tsx` | ✅ 완료 | `feat(behavior): add PropertyDivisionDashboard component` |
+| B-3 | `index.ts` (배럴) | ✅ 완료 | `chore(structure): add property-division component barrel exports` |
+
+#### Phase 4: CaseDetail 통합
+
+| 단계 | 파일 | 상태 | 변경 내용 |
+|------|------|------|----------|
+| 통합-1 | `CaseDetailClient.tsx` | ✅ 완료 | 관계도/재산분할 탭 추가 |
+
+#### Track C: Backend Properties API
+
+| 단계 | 파일 | 상태 | 변경 내용 |
+|------|------|------|----------|
+| C-1 | `models.py` | ✅ 완료 | PropertyType, ImpactDirection, ConfidenceLevel 열거형 + CaseProperty, DivisionPrediction 모델 추가 |
+| C-2 | `schemas.py` | ✅ 완료 | PropertyCreate/Update/Out, DivisionPredictionCreate/Out, EvidenceImpactOut 스키마 추가 |
+| C-3 | `properties.py` | ✅ 완료 | Properties CRUD + DivisionPrediction API 라우터 생성 |
+| C-4 | `main.py` | ✅ 완료 | /cases/{case_id}/properties 라우터 등록 |
+
+#### Phase 2: 타임라인 컴포넌트
+
+| 단계 | 파일 | 상태 | 설명 |
+|------|------|------|------|
+| 2-1 | `types/timeline.ts` | ✅ 완료 | TimelineEvent, TimelineResult 타입 정의 |
+| 2-2 | `lib/api/timeline.ts` | ✅ 완료 | 타임라인 API 클라이언트 |
+| 2-3 | `components/timeline/TimelineEventCard.tsx` | ✅ 완료 | 이벤트 카드 컴포넌트 |
+| 2-4 | `components/timeline/TimelineView.tsx` | ✅ 완료 | 메인 타임라인 뷰 |
+| 2-5 | `components/timeline/index.ts` | ✅ 완료 | 배럴 익스포트 |
+
+#### 생성된 파일 목록
+
+```
+frontend/src/
+├── types/
+│   ├── relationship.ts              # ✅ Track A
+│   ├── property.ts                  # ✅ Track B
+│   └── __tests__/
+│       ├── relationship.test.ts     # ✅ Track A (16 tests)
+│       └── property.test.ts         # ✅ Track B (18 tests)
+├── lib/api/
+│   ├── relationship.ts              # ✅ Track A
+│   ├── properties.ts                # ✅ Track B
+│   └── __tests__/
+│       ├── relationship.test.ts     # ✅ Track A (7 tests)
+│       └── properties.test.ts       # ✅ Track B (6 tests)
+├── app/cases/[id]/relationship/
+│   ├── page.tsx                     # ✅ Track A
+│   └── RelationshipClient.tsx       # ✅ Track A
+├── components/relationship/
+│   ├── index.ts                     # ✅ Track A
+│   ├── RelationshipFlow.tsx         # ✅ Track A
+│   ├── PersonNode.tsx               # ✅ Track A
+│   ├── RelationshipEdge.tsx         # ✅ Track A
+│   └── RelationshipLegend.tsx       # ✅ Track A
+├── components/property-division/
+│   ├── index.ts                     # ✅ Track B
+│   ├── PropertyDivisionDashboard.tsx # ✅ Track B
+│   ├── DivisionGauge.tsx            # ✅ Track B
+│   └── EvidenceImpactList.tsx       # ✅ Track B
+├── components/timeline/
+│   ├── index.ts                     # ✅ Phase 2
+│   ├── TimelineView.tsx             # ✅ Phase 2
+│   └── TimelineEventCard.tsx        # ✅ Phase 2
+├── types/
+│   └── timeline.ts                  # ✅ Phase 2
+└── lib/api/
+    └── timeline.ts                  # ✅ Phase 2
+
+backend/app/
+├── db/
+│   ├── models.py                    # ✅ Track C (CaseProperty, DivisionPrediction 모델 추가)
+│   └── schemas.py                   # ✅ Track C (Property 스키마 추가)
+├── api/
+│   └── properties.py                # ✅ Track C (신규)
+└── main.py                          # ✅ Track C (properties 라우터 등록)
+```
+
+---
+
+### 📝 커밋 대기열
+
+커밋이 필요한 작업 완료 시 아래에 기록합니다:
+
+1. **✅ 커밋 준비 완료**: A-1.2 타입 정의
+   - 파일: `frontend/src/types/relationship.ts`, `frontend/src/types/__tests__/relationship.test.ts`
+   - 커밋 메시지: `feat(behavior): add relationship type definitions with tests`
+   - 테스트: 16개 통과
+
+2. **✅ 커밋 준비 완료**: A-1.3 API 클라이언트
+   - 파일: `frontend/src/lib/api/relationship.ts`, `frontend/src/lib/api/__tests__/relationship.test.ts`
+   - 커밋 메시지: `feat(behavior): add relationship API client with tests`
+   - 테스트: 7개 통과
+
+3. **✅ 커밋 준비 완료**: Track A + Track B 전체 (권장: 단일 커밋)
+   - **Track A 파일 (11개)**:
+     - `frontend/src/types/relationship.ts`
+     - `frontend/src/types/__tests__/relationship.test.ts`
+     - `frontend/src/lib/api/relationship.ts`
+     - `frontend/src/lib/api/__tests__/relationship.test.ts`
+     - `frontend/src/app/cases/[id]/relationship/page.tsx`
+     - `frontend/src/app/cases/[id]/relationship/RelationshipClient.tsx`
+     - `frontend/src/components/relationship/index.ts`
+     - `frontend/src/components/relationship/RelationshipFlow.tsx`
+     - `frontend/src/components/relationship/PersonNode.tsx`
+     - `frontend/src/components/relationship/RelationshipEdge.tsx`
+     - `frontend/src/components/relationship/RelationshipLegend.tsx`
+   - **Track B 파일 (8개)**:
+     - `frontend/src/types/property.ts`
+     - `frontend/src/types/__tests__/property.test.ts`
+     - `frontend/src/lib/api/properties.ts`
+     - `frontend/src/lib/api/__tests__/properties.test.ts`
+     - `frontend/src/components/property-division/index.ts`
+     - `frontend/src/components/property-division/PropertyDivisionDashboard.tsx`
+     - `frontend/src/components/property-division/DivisionGauge.tsx`
+     - `frontend/src/components/property-division/EvidenceImpactList.tsx`
+   - 커밋 메시지:
+     ```
+     feat(frontend): implement relationship graph and property division UI
+
+     Track A: Relationship Graph (React Flow)
+     - Add relationship type definitions with tests (16 tests)
+     - Add relationship API client with tests (7 tests)
+     - Add /cases/[id]/relationship route with RelationshipClient
+     - Add RelationshipFlow, PersonNode, RelationshipEdge components
+     - Add RelationshipLegend with color mappings
+
+     Track B: Property Division Dashboard
+     - Add property type definitions with tests (18 tests)
+     - Add properties API client with tests (6 tests)
+     - Add PropertyDivisionDashboard with DivisionGauge
+     - Add EvidenceImpactList component
+
+     Total: 47 tests passing
+     ```
+   - 테스트: 47개 통과 (Track A: 23개, Track B: 24개)
+
+4. **✅ 커밋 준비 완료**: CaseDetail 통합
+   - 파일: `frontend/src/app/cases/[id]/CaseDetailClient.tsx` (수정)
+   - 변경 내용:
+     - 관계도 탭 추가 (relationship 페이지 링크)
+     - 재산분할 탭 추가 (PropertyDivisionDashboard 통합)
+     - Users, Scale 아이콘 import
+   - 커밋 메시지: `feat(frontend): integrate relationship and property tabs into CaseDetail`
+
+5. **✅ 커밋 준비 완료**: Track C - Backend Properties API
+   - **수정된 파일**:
+     - `backend/app/db/models.py` (수정) - PropertyType, ImpactDirection, ConfidenceLevel 열거형 + CaseProperty, DivisionPrediction 모델
+     - `backend/app/db/schemas.py` (수정) - Property/DivisionPrediction 스키마
+     - `backend/app/api/properties.py` (신규) - Properties CRUD API
+     - `backend/app/main.py` (수정) - 라우터 등록
+   - 커밋 메시지:
+     ```
+     feat(backend): add Properties API for property division
+
+     - Add PropertyType, ImpactDirection, ConfidenceLevel enums
+     - Add CaseProperty and DivisionPrediction models
+     - Add Property/DivisionPrediction Pydantic schemas
+     - Add Properties CRUD endpoints (/cases/{case_id}/properties)
+     - Add DivisionPrediction endpoints
+     ```
+
+---
+
+### 이전 작업 (2025-11-28)
+
 ## [dev] 작업 보고
 - **시간**: 2025-11-28 16:00
 - **상태**: ⚠️ S3 버킷 생성 대기
