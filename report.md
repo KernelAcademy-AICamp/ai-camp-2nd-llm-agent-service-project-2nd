@@ -1,7 +1,7 @@
 ## [L-work-v2] 작업 보고
 - **시간**: 2025-12-05
 - **브랜치**: `L-work-v2` (upstream/dev 기반)
-- **상태**: ✅ Track A + Track B 완료
+- **상태**: ✅ Track A + Track B + 통합 완료
 - **작업 내용**: 인물 관계도 + 재산분할 UI 구현 (TDD 방식)
 
 ---
@@ -33,6 +33,12 @@
 | B-2.2 | `EvidenceImpactList.tsx` | ✅ 완료 | `feat(behavior): add EvidenceImpactList component` |
 | B-2.3 | `PropertyDivisionDashboard.tsx` | ✅ 완료 | `feat(behavior): add PropertyDivisionDashboard component` |
 | B-3 | `index.ts` (배럴) | ✅ 완료 | `chore(structure): add property-division component barrel exports` |
+
+#### Phase 4: CaseDetail 통합
+
+| 단계 | 파일 | 상태 | 변경 내용 |
+|------|------|------|----------|
+| 통합-1 | `CaseDetailClient.tsx` | ✅ 완료 | 관계도/재산분할 탭 추가 |
 
 #### 생성된 파일 목록
 
@@ -124,6 +130,14 @@ frontend/src/
      Total: 47 tests passing
      ```
    - 테스트: 47개 통과 (Track A: 23개, Track B: 24개)
+
+4. **✅ 커밋 준비 완료**: CaseDetail 통합
+   - 파일: `frontend/src/app/cases/[id]/CaseDetailClient.tsx` (수정)
+   - 변경 내용:
+     - 관계도 탭 추가 (relationship 페이지 링크)
+     - 재산분할 탭 추가 (PropertyDivisionDashboard 통합)
+     - Users, Scale 아이콘 import
+   - 커밋 메시지: `feat(frontend): integrate relationship and property tabs into CaseDetail`
 
 ---
 
