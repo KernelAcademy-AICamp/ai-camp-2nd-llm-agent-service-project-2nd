@@ -41,7 +41,7 @@ class TestCaseMemberRepositoryAddMember:
     def test_add_member_success(self, case_member_repository, mock_session):
         """Test successful member addition"""
         # Act
-        result = case_member_repository.add_member(
+        case_member_repository.add_member(
             case_id="case_123",
             user_id="user_456",
             role="owner"
