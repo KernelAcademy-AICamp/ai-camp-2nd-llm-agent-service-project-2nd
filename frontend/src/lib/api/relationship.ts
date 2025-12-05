@@ -48,6 +48,9 @@ export async function analyzeRelationships(
     };
   }
 
-  // 에러 시 그대로 반환
-  return response as ApiResponse<RelationshipGraph>;
+  // 에러 시 에러 정보만 반환
+  return {
+    error: response.error,
+    status: response.status,
+  };
 }
