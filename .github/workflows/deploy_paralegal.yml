@@ -4,9 +4,9 @@
 name: Deploy LEH to AWS
 
 on:
-  # main, dev 브랜치 푸시 시 자동 배포
+  # main, dev, feat/ui-ux-m3-improvements 브랜치 푸시 시 자동 배포
   push:
-    branches: [main, dev]
+    branches: [main, dev, feat/ui-ux-m3-improvements]
   # 수동 배포 (긴급 시)
   workflow_dispatch:
     inputs:
