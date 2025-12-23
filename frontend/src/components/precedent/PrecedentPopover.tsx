@@ -119,7 +119,7 @@ export function PrecedentPopover({
       <div
         className={`
           absolute left-0 bottom-full mb-2 z-50
-          w-80 max-h-80 overflow-y-auto
+          w-96 max-h-96 overflow-y-auto
           bg-white dark:bg-neutral-800
           border border-gray-200 dark:border-neutral-700
           rounded-md shadow-lg
@@ -174,7 +174,7 @@ export function PrecedentPopover({
                 >
                   <div className="flex items-start justify-between gap-2 mb-1">
                     <div className="flex-1 min-w-0">
-                      <h5 className="font-medium text-sm text-[var(--color-text-primary)] truncate">
+                      <h5 className="font-medium text-sm text-[var(--color-text-primary)] line-clamp-2">
                         {precedent.title}
                       </h5>
                       <p className="text-xs text-[var(--color-text-secondary)]">

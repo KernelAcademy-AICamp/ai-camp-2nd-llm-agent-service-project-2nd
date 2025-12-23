@@ -962,7 +962,7 @@ export default function LawyerCaseDetailClient({ id: paramId }: LawyerCaseDetail
                   <div>
                     <p className="text-xs text-[var(--color-text-secondary)] mb-1">증거 수</p>
                     <p className="font-medium text-[var(--color-text-primary)]">
-                      {caseDetail.evidenceCount}건
+                      {evidenceList.length}건
                     </p>
                   </div>
                 </div>
