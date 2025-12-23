@@ -187,7 +187,7 @@ export function PortalSidebar({
   return (
     <>
       {/* Desktop Sidebar - flush to left edge */}
-      <aside className="hidden lg:flex lg:flex-col lg:w-52 lg:fixed lg:inset-y-0 lg:left-0 bg-white border-r border-gray-200 z-30">
+      <aside className="hidden lg:flex lg:flex-col lg:w-40 lg:fixed lg:inset-y-0 lg:left-0 bg-white border-r border-gray-200 z-30">
         {sidebarContent}
       </aside>
 
