@@ -33,23 +33,23 @@ function WorkspaceSection({
 }: WorkspaceSectionProps) {
   return (
     <section className={`bg-white dark:bg-neutral-800 rounded-lg border border-gray-200 dark:border-neutral-700 shadow-sm ${className}`}>
-      {/* Section Header - Lightning Record Detail */}
-      <div className="px-4 py-2.5 border-b border-gray-200 dark:border-neutral-700 bg-gray-50 dark:bg-neutral-850">
+      {/* Section Header - LDS2 Compact (32px height) */}
+      <div className="px-3 py-2 border-b border-gray-200 dark:border-neutral-700 bg-gray-50 dark:bg-neutral-850">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             <span className="text-[var(--color-primary)]">{icon}</span>
             <div>
-              <h3 className="font-semibold text-sm text-[var(--color-text-primary)]">{title}</h3>
+              <h3 className="font-semibold text-xs text-[var(--color-text-primary)]">{title}</h3>
               {description && (
-                <p className="text-xs text-[var(--color-text-secondary)]">{description}</p>
+                <p className="text-[10px] text-[var(--color-text-secondary)]">{description}</p>
               )}
             </div>
           </div>
-          {actions && <div className="flex items-center gap-2">{actions}</div>}
+          {actions && <div className="flex items-center gap-1.5">{actions}</div>}
         </div>
       </div>
-      {/* Section Content */}
-      <div className="p-4">
+      {/* Section Content - LDS2 Compact */}
+      <div className="p-3">
         {children}
       </div>
     </section>
@@ -79,16 +79,16 @@ export function MainWorkspace({
   draftContent,
 }: MainWorkspaceProps) {
   return (
-    <div className="space-y-4">
-      {/* Fact Summary Section - Lightning Record Detail */}
+    <div className="space-y-3">
+      {/* Fact Summary Section - LDS2 Compact */}
       <WorkspaceSection
         id="fact-summary"
         title="사실관계 요약"
-        icon={<FileText className="w-5 h-5" />}
+        icon={<FileText className="w-4 h-4" />}
         description="증거 자료를 기반으로 정리된 사건 사실관계"
-        className="min-h-[400px]"
+        className="min-h-[350px]"
       >
-        <div className="min-h-[300px]">
+        <div className="min-h-[250px]">
           {factSummaryContent}
         </div>
       </WorkspaceSection>
@@ -98,30 +98,30 @@ export function MainWorkspace({
         <WorkspaceSection
           id="analysis"
           title="쟁점 분석"
-          icon={<Scale className="w-5 h-5" />}
+          icon={<Scale className="w-4 h-4" />}
           description="핵심 쟁점 및 법률적 판단 근거"
         >
           {analysisContent}
         </WorkspaceSection>
       )}
 
-      {/* Draft Generation - Lightning Action Bar */}
-      <div className="flex justify-end pt-2 border-t border-gray-200 dark:border-neutral-700">
+      {/* Draft Generation - LDS2 Compact Action Bar */}
+      <div className="flex justify-end pt-1.5 border-t border-gray-200 dark:border-neutral-700">
         <button
           onClick={onGenerateDraft}
           disabled={isGeneratingDraft}
-          className="inline-flex items-center px-4 py-2 text-sm font-medium bg-[var(--color-primary)] text-white rounded-md shadow-sm
+          className="inline-flex items-center px-3 py-1.5 text-xs font-medium bg-[var(--color-primary)] text-white rounded-md shadow-sm
             hover:bg-[var(--color-primary-hover)] active:scale-[0.98]
             transition-all duration-100 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isGeneratingDraft ? (
             <>
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
               생성 중...
             </>
           ) : (
             <>
-              <Sparkles className="w-4 h-4 mr-2" />
+              <Sparkles className="w-3.5 h-3.5 mr-1.5" />
               초안 생성
             </>
           )}
@@ -130,7 +130,7 @@ export function MainWorkspace({
 
       {/* Draft Content (if exists) */}
       {hasDraft && draftContent && (
-        <div className="mt-4">
+        <div className="mt-3">
           {draftContent}
         </div>
       )}

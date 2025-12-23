@@ -2,12 +2,13 @@
 
 /**
  * DataPanel - Left Panel Accordion Component
- * 014-ui-settings-completion Feature
+ * LDS2 Compact density applied
  *
  * Collapsible accordion lists for:
  * - Evidence (with legal numbering: 갑제1호증, 을제1호증)
  * - Consultation history
  * - Assets
+ * - Similar precedents
  */
 
 import { useState, ReactNode } from 'react';
@@ -48,27 +49,27 @@ export function DataPanel({ sections, defaultOpenSections = ['evidence'] }: Data
   };
 
   return (
-    <div className="divide-y divide-gray-200 dark:divide-neutral-700">
+    <div className="divide-y divide-gray-100 dark:divide-neutral-700">
       {sections.map((section) => {
         const isOpen = openSections.has(section.id);
 
         return (
           <div key={section.id}>
-            {/* Section Header - Lightning Compact */}
+            {/* Section Header - LDS2 Compact (32px height) */}
             <button
               onClick={() => toggleSection(section.id)}
-              className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-gray-50 dark:hover:bg-neutral-750 transition-all duration-100"
+              className="w-full flex items-center justify-between px-3 py-2 hover:bg-gray-50 dark:hover:bg-neutral-750 transition-colors duration-100"
             >
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5">
                 <span className="text-[var(--color-text-secondary)]">
-                  {isOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                  {isOpen ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
                 </span>
                 <span className="text-[var(--color-text-secondary)]">{section.icon}</span>
-                <span className="text-sm font-medium text-[var(--color-text-primary)]">
+                <span className="text-xs font-medium text-[var(--color-text-primary)]">
                   {section.title}
                 </span>
                 {section.count !== undefined && section.count > 0 && (
-                  <span className="ml-1 px-1.5 py-0.5 text-xs bg-gray-100 dark:bg-neutral-700 text-[var(--color-text-secondary)] rounded">
+                  <span className="px-1.5 py-0.5 text-[10px] bg-gray-100 dark:bg-neutral-700 text-[var(--color-text-secondary)] rounded">
                     {section.count}
                   </span>
                 )}
@@ -79,7 +80,7 @@ export function DataPanel({ sections, defaultOpenSections = ['evidence'] }: Data
                     e.stopPropagation();
                     section.action?.onClick();
                   }}
-                  className="p-1 rounded hover:bg-gray-200 dark:hover:bg-neutral-600 text-[var(--color-primary)]"
+                  className="p-1 rounded hover:bg-gray-200 dark:hover:bg-neutral-600 text-[var(--color-primary)] transition-colors"
                   aria-label={section.action.label}
                 >
                   {section.action.icon}
@@ -87,9 +88,9 @@ export function DataPanel({ sections, defaultOpenSections = ['evidence'] }: Data
               )}
             </button>
 
-            {/* Section Content - Lightning Compact */}
+            {/* Section Content - LDS2 Compact */}
             {isOpen && (
-              <div className="px-3 pb-3">
+              <div className="px-3 pb-2">
                 {section.content}
               </div>
             )}

@@ -103,14 +103,14 @@ export function EvidenceListCompact({
 }: EvidenceListCompactProps) {
   if (items.length === 0) {
     return (
-      <div className="py-4 text-center text-sm text-[var(--color-text-secondary)]">
+      <div className="py-3 text-center text-xs text-[var(--color-text-secondary)]">
         {emptyMessage}
       </div>
     );
   }
 
   return (
-    <ul className="space-y-0.5">
+    <ul className="space-y-px">
       {items.map((item, index) => {
         // Generate legal number if not provided
         const legalNumber = item.legalNumber || generateLegalNumber(item.submittedBy || 'plaintiff', index + 1);
@@ -119,10 +119,10 @@ export function EvidenceListCompact({
           <li key={item.id}>
             <button
               onClick={() => onItemClick?.(item)}
-              className="w-full flex items-center gap-2 px-2 py-2 rounded-sm text-left transition-all duration-100 group
+              className="w-full flex items-center gap-1.5 px-2 py-1.5 rounded text-left transition-colors duration-100 group
                 hover:bg-gray-100 dark:hover:bg-neutral-700
-                active:bg-gray-200 dark:active:bg-neutral-600 active:scale-[0.99]
-                focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-offset-1"
+                active:bg-gray-200 dark:active:bg-neutral-600
+                focus:outline-none focus:ring-1 focus:ring-[var(--color-primary)] focus:ring-inset"
             >
               {/* Status Indicator */}
               <span className="flex-shrink-0">
@@ -130,7 +130,7 @@ export function EvidenceListCompact({
               </span>
 
               {/* Legal Number */}
-              <span className="flex-shrink-0 text-xs font-mono font-medium text-[var(--color-primary)]">
+              <span className="flex-shrink-0 text-[10px] font-mono font-medium text-[var(--color-primary)]">
                 {legalNumber}
               </span>
 
@@ -139,8 +139,8 @@ export function EvidenceListCompact({
                 {getTypeIcon(item.type)}
               </span>
 
-              {/* Filename (full display, single line) */}
-              <span className="text-xs text-[var(--color-text-primary)] whitespace-nowrap">
+              {/* Filename (truncated with ellipsis) */}
+              <span className="flex-1 text-xs text-[var(--color-text-primary)] truncate">
                 {item.filename}
               </span>
             </button>

@@ -1,5 +1,16 @@
 'use client';
 
+/**
+ * Drawer - LDS2 Side Panel Component
+ *
+ * LDS2 원칙: "패널은 모달보다 선호된다. 모달은 즉각적 주의가 필요한 중요 작업에만 사용"
+ *
+ * 사용 케이스:
+ * - 보조 정보 표시 (인물 상세, 증거 상세)
+ * - 컨텍스트 유지가 필요한 작업
+ * - 긴 폼 입력
+ */
+
 import { useEffect, useRef, useCallback, ReactNode, useId } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
@@ -7,40 +18,52 @@ import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { IconButton } from '../IconButton';
 
-export type ModalSize = 'sm' | 'md' | 'lg' | 'xl' | 'full';
+export type DrawerPosition = 'left' | 'right';
+export type DrawerSize = 'sm' | 'md' | 'lg';
 
-export interface ModalProps {
-  /** Controls modal visibility */
+export interface DrawerProps {
+  /** Controls drawer visibility */
   isOpen: boolean;
-  /** Called when modal should close */
+  /** Called when drawer should close */
   onClose: () => void;
-  /** Modal title (displayed in header) */
+  /** Drawer title (displayed in header) */
   title: string;
   /** Optional description below title */
   description?: string;
-  /** Modal content */
+  /** Drawer content */
   children: ReactNode;
-  /** Optional footer content (typically action buttons) */
+  /** Optional footer content */
   footer?: ReactNode;
+  /** Position on screen */
+  position?: DrawerPosition;
   /** Size variant */
-  size?: ModalSize;
+  size?: DrawerSize;
   /** Close when clicking backdrop (default: true) */
   closeOnOverlayClick?: boolean;
   /** Close when pressing Escape (default: true) */
   closeOnEscape?: boolean;
-  /** Ref to element that should receive initial focus */
-  initialFocusRef?: React.RefObject<HTMLElement>;
   /** Hide close button in header */
   hideCloseButton?: boolean;
 }
 
-// LDS2 Modal Size Standards
-const sizeStyles: Record<ModalSize, string> = {
-  sm: 'max-w-[400px]',     // 400px - 확인/경고, 간단한 입력
-  md: 'max-w-[560px]',     // 560px - 일반 폼, 선택
-  lg: 'max-w-[800px]',     // 800px - 복잡한 폼, 테이블
-  xl: 'max-w-[1080px]',    // 1080px - 미디어, 편집기
-  full: 'max-w-[90vw] max-h-[90vh]',
+// LDS2 Drawer Size Standards
+const sizeStyles: Record<DrawerSize, string> = {
+  sm: 'w-80',    // 320px
+  md: 'w-[400px]', // 400px
+  lg: 'w-[560px]', // 560px
+};
+
+const positionStyles: Record<DrawerPosition, { base: string; open: string; closed: string }> = {
+  right: {
+    base: 'right-0',
+    open: 'translate-x-0',
+    closed: 'translate-x-full',
+  },
+  left: {
+    base: 'left-0',
+    open: 'translate-x-0',
+    closed: '-translate-x-full',
+  },
 };
 
 /**
@@ -59,68 +82,32 @@ function getFocusableElements(container: HTMLElement): HTMLElement[] {
   return Array.from(container.querySelectorAll<HTMLElement>(focusableSelectors));
 }
 
-/**
- * Modal - Dialog overlay component
- *
- * A fully accessible modal dialog with focus trapping, keyboard navigation,
- * and proper ARIA attributes.
- *
- * Accessibility features:
- * - Focus trapped within modal when open
- * - Escape key closes modal
- * - Focus restored to trigger element on close
- * - Body scroll locked when open
- * - role="dialog" and aria-modal="true"
- * - aria-labelledby and aria-describedby
- *
- * @example
- * ```tsx
- * const [isOpen, setIsOpen] = useState(false);
- *
- * <Modal
- *   isOpen={isOpen}
- *   onClose={() => setIsOpen(false)}
- *   title="확인"
- *   description="이 작업을 수행하시겠습니까?"
- *   footer={
- *     <>
- *       <Button variant="ghost" onClick={() => setIsOpen(false)}>
- *         취소
- *       </Button>
- *       <Button onClick={handleConfirm}>확인</Button>
- *     </>
- *   }
- * >
- *   <p>모달 내용이 여기에 표시됩니다.</p>
- * </Modal>
- * ```
- */
-export function Modal({
+export function Drawer({
   isOpen,
   onClose,
   title,
   description,
   children,
   footer,
+  position = 'right',
   size = 'md',
   closeOnOverlayClick = true,
   closeOnEscape = true,
-  initialFocusRef,
   hideCloseButton = false,
-}: ModalProps) {
-  const modalRef = useRef<HTMLDivElement>(null);
+}: DrawerProps) {
+  const drawerRef = useRef<HTMLDivElement>(null);
   const previousActiveElement = useRef<HTMLElement | null>(null);
 
   // Generate unique IDs for ARIA attributes
   const titleId = useId();
   const descriptionId = useId();
 
-  // Handle keyboard events (Escape and Tab for focus trap)
+  // Handle keyboard events
   const handleKeyDown = useCallback(
     (event: KeyboardEvent) => {
-      if (!isOpen || !modalRef.current) return;
+      if (!isOpen || !drawerRef.current) return;
 
-      // Skip if IME composition is in progress (for Korean/Japanese/Chinese input)
+      // Skip if IME composition is in progress
       if (event.isComposing || event.keyCode === 229) return;
 
       // Close on Escape
@@ -132,20 +119,18 @@ export function Modal({
 
       // Focus trap
       if (event.key === 'Tab') {
-        const focusableElements = getFocusableElements(modalRef.current);
+        const focusableElements = getFocusableElements(drawerRef.current);
         if (focusableElements.length === 0) return;
 
         const firstElement = focusableElements[0];
         const lastElement = focusableElements[focusableElements.length - 1];
 
         if (event.shiftKey) {
-          // Shift + Tab: moving backward
           if (document.activeElement === firstElement) {
             event.preventDefault();
             lastElement.focus();
           }
         } else {
-          // Tab: moving forward
           if (document.activeElement === lastElement) {
             event.preventDefault();
             firstElement.focus();
@@ -159,26 +144,17 @@ export function Modal({
   // Setup/cleanup effects
   useEffect(() => {
     if (isOpen) {
-      // Store the currently focused element
       previousActiveElement.current = document.activeElement as HTMLElement;
-
-      // Add keyboard listener
       document.addEventListener('keydown', handleKeyDown);
 
-      // Lock body scroll
-      document.body.style.overflow = 'hidden';
-
-      // Focus initial element after modal renders
+      // Focus first focusable element
       requestAnimationFrame(() => {
-        if (initialFocusRef?.current) {
-          initialFocusRef.current.focus();
-        } else if (modalRef.current) {
-          const focusableElements = getFocusableElements(modalRef.current);
+        if (drawerRef.current) {
+          const focusableElements = getFocusableElements(drawerRef.current);
           if (focusableElements.length > 0) {
             focusableElements[0].focus();
           } else {
-            // If no focusable elements, focus the modal itself
-            modalRef.current.focus();
+            drawerRef.current.focus();
           }
         }
       });
@@ -186,69 +162,72 @@ export function Modal({
 
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
-      document.body.style.overflow = '';
-
-      // Restore focus to previous element
       if (previousActiveElement.current && !isOpen) {
         previousActiveElement.current.focus();
       }
     };
-  }, [isOpen, handleKeyDown, initialFocusRef]);
+  }, [isOpen, handleKeyDown]);
 
   // Don't render if not open or if we're on the server
-  if (!isOpen || typeof document === 'undefined') return null;
+  if (typeof document === 'undefined') return null;
 
-  const modalContent = (
+  const posStyles = positionStyles[position];
+
+  const drawerContent = (
     <div
-      className="fixed inset-0 flex items-center justify-center p-4"
+      className="fixed inset-0"
       role="presentation"
-      style={{ zIndex: 9999, isolation: 'isolate' }}
+      style={{ zIndex: 9998, isolation: 'isolate' }}
     >
-      {/* Backdrop/Overlay - blocks all clicks to content behind */}
+      {/* Backdrop - Semi-transparent (non-modal feel) */}
       <div
-        className="fixed inset-0 bg-black/80"
+        className={twMerge(
+          'fixed inset-0 bg-black/20 transition-opacity duration-200',
+          isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
+        )}
         onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
           if (closeOnOverlayClick) onClose();
         }}
-        onMouseDown={(e) => e.stopPropagation()}
         aria-hidden="true"
-        style={{ zIndex: 9999 }}
+        style={{ zIndex: 9998 }}
       />
 
-      {/* Modal Panel - LDS2 Compact */}
-      <div
-        ref={modalRef}
+      {/* Drawer Panel - LDS2 Compact */}
+      <aside
+        ref={drawerRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
         aria-describedby={description ? descriptionId : undefined}
         tabIndex={-1}
-        style={{ zIndex: 10000, position: 'relative' }}
+        style={{ zIndex: 9999 }}
         className={twMerge(
           clsx(
-            'bg-white dark:bg-neutral-800 rounded-lg shadow-lg',
-            'w-full max-h-[85vh] flex flex-col',
-            'animate-scale-in',
+            'fixed top-0 h-full bg-white dark:bg-neutral-800 shadow-xl',
+            'flex flex-col',
+            'transform transition-transform duration-200 ease-out',
             'focus:outline-none',
-            sizeStyles[size]
+            sizeStyles[size],
+            posStyles.base,
+            isOpen ? posStyles.open : posStyles.closed
           )
         )}
       >
         {/* Header - LDS2 Compact (h-12 = 48px) */}
-        <div className="flex items-center justify-between gap-3 h-12 px-4 border-b border-neutral-200 dark:border-neutral-700">
+        <div className="flex items-center justify-between gap-3 h-12 px-4 border-b border-neutral-200 dark:border-neutral-700 flex-shrink-0">
           <div className="flex-1 min-w-0">
-            <h2
+            <h3
               id={titleId}
-              className="text-base font-semibold text-secondary dark:text-gray-100 truncate"
+              className="text-sm font-semibold text-[var(--color-text-primary)] truncate"
             >
               {title}
-            </h2>
+            </h3>
             {description && (
               <p
                 id={descriptionId}
-                className="text-xs text-neutral-500 dark:text-gray-400 truncate"
+                className="text-xs text-[var(--color-text-secondary)] truncate"
               >
                 {description}
               </p>
@@ -266,23 +245,23 @@ export function Modal({
           )}
         </div>
 
-        {/* Body - LDS2 Compact (p-4, max-h-[60vh]) */}
-        <div className="flex-1 overflow-y-auto p-4 max-h-[60vh] bg-white dark:bg-neutral-800">
+        {/* Body - LDS2 Compact */}
+        <div className="flex-1 overflow-y-auto p-4">
           {children}
         </div>
 
         {/* Footer - LDS2 Compact (h-14 = 56px) */}
         {footer && (
-          <div className="flex items-center justify-end gap-2 h-14 px-4 border-t border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900 rounded-b-lg">
+          <div className="flex items-center justify-end gap-2 h-14 px-4 border-t border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900 flex-shrink-0">
             {footer}
           </div>
         )}
-      </div>
+      </aside>
     </div>
   );
 
   // Render in portal
-  return createPortal(modalContent, document.body);
+  return createPortal(drawerContent, document.body);
 }
 
-export default Modal;
+export default Drawer;

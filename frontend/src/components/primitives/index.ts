@@ -28,3 +28,6 @@ export { IconButton, type IconButtonProps, type IconButtonVariant, type IconButt
 
 // Spinner
 export { Spinner, type SpinnerProps, type SpinnerSize } from './Spinner';
+
+// Drawer (LDS2 Side Panel)
+export { Drawer, type DrawerProps, type DrawerPosition, type DrawerSize } from './Drawer';

@@ -58,6 +58,8 @@ import { MainWorkspace } from '@/components/case/MainWorkspace';
 import { ContextPanel } from '@/components/case/ContextPanel';
 import { FactSummaryEditor } from '@/components/legal-analysis/FactSummaryEditor';
 import { EvidenceListCompact, type LegalEvidence } from '@/components/case/EvidenceListCompact';
+// LDS2: UtilityBar for top navigation
+import { UtilityBar, CaseStatus } from '@/components/shared/UtilityBar';
 // 016-draft-fact-summary: fact-summary 조회
 import { getFactSummary } from '@/lib/api/fact-summary';
 // Issue #423: Pipeline progress visualization
@@ -474,53 +476,26 @@ export default function LawyerCaseDetailClient({ id: paramId }: LawyerCaseDetail
   // Phase A.1: Use getCaseStatusConfig for status colors/labels
   const statusConfig = getCaseStatusConfig(caseDetail.status);
 
+  // Map case status to UtilityBar status
+  const utilityBarStatus: CaseStatus = caseDetail.status === 'completed' ? 'completed'
+    : caseDetail.status === 'on_hold' ? 'on_hold'
+    : caseDetail.status === 'in_progress' ? 'in_progress'
+    : 'pending';
+
   return (
-    <div className="space-y-4">
-      {/* Breadcrumb */}
-      <nav className="text-sm text-[var(--color-text-secondary)]">
-        <Link href="/lawyer/cases" className="hover:text-[var(--color-primary)]">
-          케이스 관리
-        </Link>
-        <span className="mx-2">/</span>
-        <span className="text-[var(--color-text-primary)]">{caseDetail.title}</span>
-      </nav>
-
-      {/* Header */}
-      <div className="bg-white dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-lg p-4">
-        <div className="flex items-start justify-between">
-          <div className="flex-1">
-            <div className="flex items-center gap-3 mb-2">
-              <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">
-                {caseDetail.title}
-              </h1>
-              <span className={`px-3 py-1 text-sm font-medium rounded-full ${statusConfig.color}`}>
-                {statusConfig.label}
-              </span>
-            </div>
-            {caseDetail.clientName && (
-              <p className="text-[var(--color-text-secondary)]">
-                의뢰인: {caseDetail.clientName}
-              </p>
-            )}
-            {caseDetail.description && (
-              <p className="mt-2 text-[var(--color-text-secondary)]">
-                {caseDetail.description}
-              </p>
-            )}
-          </div>
-          {/* Phase B.1: Header buttons consolidated into dropdown */}
-          <div className="flex items-center gap-2">
-            {/* Secondary Actions in Dropdown */}
-            <CaseActionsDropdown
-              assetsPath={assetsPath}
-              onEdit={() => setShowEditModal(true)}
-              onSummaryCard={() => setShowSummaryCard(true)}
-              onExpertInsights={() => setShowExpertPanel(true)}
-            />
-          </div>
-        </div>
-
-      </div>
+    <div className="space-y-0">
+      {/* LDS2: UtilityBar replaces breadcrumb and header */}
+      <UtilityBar
+        breadcrumbs={[
+          { label: '케이스 관리', href: '/lawyer/cases' },
+          { label: caseDetail.title },
+        ]}
+        caseStatus={utilityBarStatus}
+        assignee={caseDetail.ownerName || caseDetail.ownerEmail}
+        onSettingsClick={() => setShowEditModal(true)}
+        onShareClick={() => setShowShareModal(true)}
+        showNotifications={true}
+      />
 
       {/* Expert Insights Panel */}
       <ExpertInsightsPanel
@@ -528,41 +503,37 @@ export default function LawyerCaseDetailClient({ id: paramId }: LawyerCaseDetail
         onClose={() => setShowExpertPanel(false)}
       />
 
-      {/* Tabs - 014-ui-settings-completion: Reduced to 4 main tabs */}
-      <div className="border-b border-gray-200 dark:border-neutral-700">
-        {/* Tab order follows data pipeline: 수집(Collection) → 분석(Analysis) → 구조화(Structuring) → 생성(Generation) */}
-        <nav className="flex gap-6">
+      {/* LDS2 Tabs - 3 main tabs with Compact styling */}
+      <div className="border-b border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 px-3">
+        <nav className="flex gap-0.5">
           {[
-            { id: 'workspace', label: '워크스페이스', count: null, icon: <Scale className="w-4 h-4 mr-1" />, primary: true },
-            { id: 'relations', label: '고객리포트', count: null, icon: null },
-            { id: 'timeline', label: '타임라인', count: caseDetail.recentActivities.length, icon: null },
+            { id: 'workspace', label: '워크스페이스', icon: <Scale className="w-3.5 h-3.5" /> },
+            { id: 'relations', label: '고객정보', icon: <FileText className="w-3.5 h-3.5" /> },
+            { id: 'timeline', label: '타임라인', icon: <Activity className="w-3.5 h-3.5" /> },
           ].map((tab) => (
             <button
               key={tab.id}
               type="button"
               onClick={() => setActiveTab(tab.id as typeof activeTab)}
               className={`
-                pb-3 text-sm font-medium border-b-2 transition-colors flex items-center
+                flex items-center gap-1 px-3 py-2 text-xs font-medium rounded-t
+                border-b-2 -mb-[2px] transition-all duration-150 ease-out
+                active:scale-[0.98]
                 ${activeTab === tab.id
-                  ? 'border-[var(--color-primary)] text-[var(--color-primary)]'
-                  : 'border-transparent text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
+                  ? 'border-[var(--color-primary)] text-[var(--color-primary)] bg-primary/5'
+                  : 'border-transparent text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-gray-50 dark:hover:bg-neutral-700'
                 }
               `}
             >
               {tab.icon}
               {tab.label}
-              {tab.count != null && tab.count > 0 && (
-                <span className="ml-2 px-2 py-0.5 bg-gray-100 dark:bg-neutral-700 rounded-full text-xs">
-                  {tab.count}
-                </span>
-              )}
             </button>
           ))}
         </nav>
       </div>
 
-      {/* Tab Content */}
-      <div className="bg-white dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-lg p-4">
+      {/* Tab Content - LDS2 Compact */}
+      <div className="bg-white dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-lg p-3">
         {/* 014-ui-settings-completion: 3-column workspace layout */}
         {activeTab === 'workspace' && (
           <CaseWorkspace
