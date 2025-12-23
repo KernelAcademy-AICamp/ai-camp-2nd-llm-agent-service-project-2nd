@@ -533,7 +533,7 @@ export default function LawyerCaseDetailClient({ id: paramId }: LawyerCaseDetail
       </div>
 
       {/* Tab Content - LDS2 Compact */}
-      <div className="bg-white dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-lg p-3">
+      <div className="bg-white dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-lg p-2">
         {/* 014-ui-settings-completion: 3-column workspace layout */}
         {activeTab === 'workspace' && (
           <CaseWorkspace
@@ -949,12 +949,12 @@ export default function LawyerCaseDetailClient({ id: paramId }: LawyerCaseDetail
             </div>
 
             {/* Relationship Graph - Kept from original */}
-            <div className="bg-white dark:bg-neutral-800/50 rounded-lg border border-gray-200 dark:border-neutral-700 p-4">
-              <div className="flex items-center gap-2 mb-3">
+            <div className="bg-white dark:bg-neutral-800/50 rounded-lg border border-gray-200 dark:border-neutral-700 p-3">
+              <div className="flex items-center gap-2 mb-2">
                 <UserPlus className="w-4 h-4 text-purple-600 dark:text-purple-400" />
                 <h4 className="font-medium text-[var(--color-text-primary)]">인물 관계도</h4>
               </div>
-              <div className="h-[450px]">
+              <div className="h-[280px] lg:h-[320px]">
                 <PartyGraph caseId={caseId} />
               </div>
             </div>

@@ -75,7 +75,7 @@ export default function LawyerCasesPage() {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {/* Header - LDS2 Compact */}
       <div className="flex items-center justify-between">
         <div>

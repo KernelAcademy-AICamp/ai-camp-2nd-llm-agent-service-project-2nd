@@ -113,7 +113,7 @@ export default function LawyerLayout({
           <div className="h-16 lg:hidden" />
 
           {/* Page Content */}
-          <div className="p-3 lg:p-4">
+          <div className="p-2 lg:p-3">
             {children}
           </div>
         </main>

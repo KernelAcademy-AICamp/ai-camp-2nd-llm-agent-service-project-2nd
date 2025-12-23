@@ -130,7 +130,7 @@ export default function LawyerDashboardPage() {
   const statsIcons = [<ActiveIcon key="0" />, <CompletedIcon key="1" />];
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {/* Page Title - LDS2 Compact */}
       <div>
         <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-100">대시보드</h1>
@@ -140,7 +140,7 @@ export default function LawyerDashboardPage() {
       </div>
 
       {/* Stats Grid - LDS2 Compact */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-2">
         {data?.stats?.stats_cards?.map((card, index) => (
           <StatsCard
             key={card.label}
@@ -159,7 +159,7 @@ export default function LawyerDashboardPage() {
       </div>
 
       {/* Today View Section - LDS2 Compact */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {/* Today's Urgent Items */}
         <TodayCard items={urgent} allComplete={allComplete} isLoading={todayLoading} />
 
@@ -168,7 +168,7 @@ export default function LawyerDashboardPage() {
       </div>
 
       {/* Main Content Grid - LDS2 Compact */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 gap-3">
         {/* Recent Cases - Full width */}
         <div className="lg:col-span-3 bg-white dark:bg-neutral-800 rounded-lg shadow-sm border border-gray-200 dark:border-neutral-700">
           <div className="px-3 py-2 border-b border-gray-200 dark:border-neutral-700 flex items-center justify-between">

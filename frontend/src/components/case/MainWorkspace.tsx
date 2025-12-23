@@ -79,16 +79,16 @@ export function MainWorkspace({
   draftContent,
 }: MainWorkspaceProps) {
   return (
-    <div className="space-y-3">
+    <div className="flex flex-col h-full space-y-3">
       {/* Fact Summary Section - LDS2 Compact */}
       <WorkspaceSection
         id="fact-summary"
         title="사실관계 요약"
         icon={<FileText className="w-4 h-4" />}
         description="증거 자료를 기반으로 정리된 사건 사실관계"
-        className="min-h-[350px]"
+        className="flex-1"
       >
-        <div className="min-h-[250px]">
+        <div className="min-h-[150px]">
           {factSummaryContent}
         </div>
       </WorkspaceSection>
