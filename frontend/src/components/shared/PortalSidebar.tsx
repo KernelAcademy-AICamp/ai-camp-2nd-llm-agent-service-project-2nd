@@ -135,7 +135,7 @@ export function PortalSidebar({
   const sidebarContent = (
     <>
       {/* Logo */}
-      <div className="px-2 py-3 border-b border-gray-100">
+      <div className="px-1 py-3 border-b border-gray-100">
         <Link href="/dashboard">
           <Logo size="md" />
         </Link>
@@ -143,16 +143,16 @@ export function PortalSidebar({
 
       {/* Optional Header Content */}
       {headerContent && (
-        <div className="px-4 py-3 border-b border-gray-100">{headerContent}</div>
+        <div className="px-2 py-3 border-b border-gray-100">{headerContent}</div>
       )}
 
       {/* Navigation Groups */}
-      <nav className="flex-1 px-1 py-2 overflow-y-auto">
+      <nav className="flex-1 px-0.5 py-2 overflow-y-auto">
         {groups.map(renderNavGroup)}
       </nav>
 
       {/* User Info & Logout */}
-      <div className="px-2 py-3 border-t border-gray-100">
+      <div className="px-1 py-3 border-t border-gray-100">
         <div className="flex items-center gap-2 mb-2">
           <div className="w-10 h-10 bg-primary-light rounded-full flex items-center justify-center">
             <span className="text-primary font-semibold text-sm">
@@ -179,7 +179,7 @@ export function PortalSidebar({
 
       {/* Optional Footer Content */}
       {footerContent && (
-        <div className="px-4 py-3 border-t border-gray-100">{footerContent}</div>
+        <div className="px-2 py-3 border-t border-gray-100">{footerContent}</div>
       )}
     </>
   );
