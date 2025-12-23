@@ -475,7 +475,7 @@ export default function LawyerCaseDetailClient({ id: paramId }: LawyerCaseDetail
   const statusConfig = getCaseStatusConfig(caseDetail.status);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Breadcrumb */}
       <nav className="text-sm text-[var(--color-text-secondary)]">
         <Link href="/lawyer/cases" className="hover:text-[var(--color-primary)]">
@@ -486,7 +486,7 @@ export default function LawyerCaseDetailClient({ id: paramId }: LawyerCaseDetail
       </nav>
 
       {/* Header */}
-      <div className="bg-white dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-lg p-6">
+      <div className="bg-white dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-lg p-4">
         <div className="flex items-start justify-between">
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-2">
@@ -536,7 +536,6 @@ export default function LawyerCaseDetailClient({ id: paramId }: LawyerCaseDetail
             { id: 'workspace', label: '워크스페이스', count: null, icon: <Scale className="w-4 h-4 mr-1" />, primary: true },
             { id: 'relations', label: '고객리포트', count: null, icon: null },
             { id: 'timeline', label: '타임라인', count: caseDetail.recentActivities.length, icon: null },
-            { id: 'assets', label: '재산분할', count: null, icon: <Wallet className="w-4 h-4 mr-1" /> },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -563,7 +562,7 @@ export default function LawyerCaseDetailClient({ id: paramId }: LawyerCaseDetail
       </div>
 
       {/* Tab Content */}
-      <div className="bg-white dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-lg p-6">
+      <div className="bg-white dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-lg p-4">
         {/* 014-ui-settings-completion: 3-column workspace layout */}
         {activeTab === 'workspace' && (
           <CaseWorkspace
@@ -814,7 +813,7 @@ export default function LawyerCaseDetailClient({ id: paramId }: LawyerCaseDetail
         )}
 
         {activeTab === 'timeline' && (
-          <div className="space-y-8">
+          <div className="space-y-8 max-w-3xl">
             {/* Procedure Timeline Section */}
             <div>
               <h3 className="text-lg font-bold text-[var(--color-text-primary)] mb-4">절차 진행 현황</h3>

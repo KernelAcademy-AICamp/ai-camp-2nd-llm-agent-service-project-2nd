@@ -101,17 +101,32 @@ export function DataPanel({ sections, defaultOpenSections = ['evidence'] }: Data
 }
 
 // Convenience wrapper for case detail page
-// 상담내역, 재산목록은 모달에만 존재 (DataPanel에서 제거)
 interface CaseDataPanelProps {
   evidenceContent: ReactNode;
   evidenceCount: number;
   onUploadEvidence: () => void;
+  consultationContent?: ReactNode;
+  consultationCount?: number;
+  onAddConsultation?: () => void;
+  assetContent?: ReactNode;
+  assetCount?: number;
+  onAddAsset?: () => void;
+  precedentContent?: ReactNode;
+  precedentCount?: number;
 }
 
 export function CaseDataPanel({
   evidenceContent,
   evidenceCount,
   onUploadEvidence,
+  consultationContent,
+  consultationCount = 0,
+  onAddConsultation,
+  assetContent,
+  assetCount = 0,
+  onAddAsset,
+  precedentContent,
+  precedentCount = 0,
 }: CaseDataPanelProps) {
   const sections: AccordionSection[] = [
     {
@@ -126,16 +141,43 @@ export function CaseDataPanel({
         onClick: onUploadEvidence,
       },
     },
+    {
+      id: 'consultation',
+      title: '상담내역',
+      icon: <FileText className="w-4 h-4" />,
+      count: consultationCount,
+      content: consultationContent || <div className="text-sm text-[var(--color-text-secondary)]">상담 내역이 없습니다.</div>,
+      action: onAddConsultation ? {
+        label: '상담 추가',
+        icon: <Upload className="w-4 h-4" />,
+        onClick: onAddConsultation,
+      } : undefined,
+    },
+    {
+      id: 'assets',
+      title: '재산목록',
+      icon: <FileText className="w-4 h-4" />,
+      count: assetCount,
+      content: assetContent || <div className="text-sm text-[var(--color-text-secondary)]">등록된 재산이 없습니다.</div>,
+      action: onAddAsset ? {
+        label: '재산 추가',
+        icon: <Upload className="w-4 h-4" />,
+        onClick: onAddAsset,
+      } : undefined,
+    },
+    {
+      id: 'precedent',
+      title: '유사판례',
+      icon: <FileText className="w-4 h-4" />,
+      count: precedentCount,
+      content: precedentContent || <PrecedentPopover />,
+    },
   ];
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex-1">
+      <div className="flex-1 overflow-y-auto">
         <DataPanel sections={sections} defaultOpenSections={['evidence']} />
-      </div>
-      {/* Similar Precedents Popover - Lightning Related Records */}
-      <div className="px-3 py-2 border-t border-gray-200 dark:border-neutral-700">
-        <PrecedentPopover />
       </div>
     </div>
   );

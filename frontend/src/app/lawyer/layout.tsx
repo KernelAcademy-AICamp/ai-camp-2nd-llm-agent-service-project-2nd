@@ -108,12 +108,12 @@ export default function LawyerLayout({
         <PortalSidebar groups={lawyerNavGroups} />
 
         {/* Main Content */}
-        <main className="flex-1 lg:ml-56 min-h-screen">
+        <main className="flex-1 lg:ml-52 min-h-screen">
           {/* Mobile header spacing */}
           <div className="h-16 lg:hidden" />
 
           {/* Page Content */}
-          <div className="p-4 lg:p-6">
+          <div className="p-3 lg:p-4">
             {children}
           </div>
         </main>

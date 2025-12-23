@@ -140,8 +140,8 @@ export function EvidenceListCompact({
                 {getTypeIcon(item.type)}
               </span>
 
-              {/* Filename (truncated) */}
-              <span className="flex-1 min-w-0 text-xs text-[var(--color-text-primary)] truncate">
+              {/* Filename (full display) */}
+              <span className="flex-1 min-w-0 text-xs text-[var(--color-text-primary)] break-words">
                 {item.filename}
               </span>
 
