@@ -34,7 +34,7 @@ export function CaseWorkspace({
   const [leftOpen, setLeftOpen] = useState(defaultLeftOpen);
 
   return (
-    <div className="flex h-[calc(100vh-180px)] min-h-[300px]">
+    <div className="flex h-[calc(100vh-140px)] min-h-[400px]">
       {/* Left Panel - Data Lists (256px) */}
       <aside
         className={`
@@ -79,9 +79,9 @@ export function CaseWorkspace({
         )}
       </aside>
 
-      {/* Main Workspace (flex-1, responsive min-width) */}
+      {/* Main Workspace (flex-1, responsive min-width) - LDS2 Compact */}
       <main className="flex-1 min-w-0 overflow-y-auto bg-gray-50 dark:bg-neutral-900/30">
-        <div className="p-4">
+        <div className="p-3">
           {mainContent}
         </div>
       </main>

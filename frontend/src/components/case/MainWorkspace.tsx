@@ -10,8 +10,8 @@
  * - Draft generation section
  */
 
-import { ReactNode } from 'react';
-import { FileText, Scale, Sparkles, Loader2 } from 'lucide-react';
+import { ReactNode, useState, useCallback } from 'react';
+import { FileText, Scale, Sparkles, Loader2, Wand2, RefreshCw } from 'lucide-react';
 
 interface WorkspaceSectionProps {
   id: string;
@@ -59,6 +59,10 @@ function WorkspaceSection({
 interface MainWorkspaceProps {
   // Fact Summary
   factSummaryContent: ReactNode;
+  // Fact Summary Generation
+  onGenerateFactSummary?: () => void;
+  isGeneratingFactSummary?: boolean;
+  hasFactSummary?: boolean;
   // Issue Analysis (hidden by default as per Task 6)
   analysisContent?: ReactNode;
   showAnalysis?: boolean;
@@ -71,6 +75,9 @@ interface MainWorkspaceProps {
 
 export function MainWorkspace({
   factSummaryContent,
+  onGenerateFactSummary,
+  isGeneratingFactSummary = false,
+  hasFactSummary = false,
   analysisContent,
   showAnalysis = false, // Hidden by default as per Task 6
   onGenerateDraft,
@@ -87,8 +94,36 @@ export function MainWorkspace({
         icon={<FileText className="w-4 h-4" />}
         description="증거 자료를 기반으로 정리된 사건 사실관계"
         className="flex-1"
+        actions={
+          onGenerateFactSummary && (
+            <button
+              onClick={onGenerateFactSummary}
+              disabled={isGeneratingFactSummary}
+              className="inline-flex items-center px-2 py-1 text-[10px] font-medium text-[var(--color-primary)] bg-[var(--color-primary)]/10 rounded
+                hover:bg-[var(--color-primary)]/20 active:scale-[0.98]
+                transition-all duration-100 disabled:opacity-50 disabled:cursor-not-allowed"
+              title={hasFactSummary ? "AI 요약 재생성" : "AI 요약 생성"}
+            >
+              {isGeneratingFactSummary ? (
+                <>
+                  <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                  생성 중...
+                </>
+              ) : (
+                <>
+                  {hasFactSummary ? (
+                    <RefreshCw className="w-3 h-3 mr-1" />
+                  ) : (
+                    <Wand2 className="w-3 h-3 mr-1" />
+                  )}
+                  {hasFactSummary ? 'AI 재생성' : 'AI 요약 생성'}
+                </>
+              )}
+            </button>
+          )
+        }
       >
-        <div className="min-h-[150px]">
+        <div className="min-h-[250px] flex-1">
           {factSummaryContent}
         </div>
       </WorkspaceSection>

@@ -61,9 +61,17 @@ import { EvidenceListCompact, type LegalEvidence } from '@/components/case/Evide
 // LDS2: UtilityBar for top navigation
 import { UtilityBar, CaseStatus } from '@/components/shared/UtilityBar';
 // 016-draft-fact-summary: fact-summary 조회
-import { getFactSummary } from '@/lib/api/fact-summary';
+import { getFactSummary, generateFactSummary } from '@/lib/api/fact-summary';
 // Issue #423: Pipeline progress visualization
 import { PipelineProgressIndicator } from '@/components/case/PipelineProgressIndicator';
+// DataPanel compact lists for consultation and assets
+import { ConsultationListCompact } from '@/components/consultation/ConsultationListCompact';
+import { AssetListCompact } from '@/components/asset/AssetListCompact';
+import { SimilarPrecedentList } from '@/components/precedent/SimilarPrecedentList';
+import { getConsultations } from '@/lib/api/consultation';
+import { getAssets } from '@/lib/api/assets';
+import type { Consultation } from '@/types/consultation';
+import type { LegacyAsset as Asset } from '@/types/asset';
 
 interface CaseDetail {
   id: string;
@@ -145,13 +153,22 @@ export default function LawyerCaseDetailClient({ id: paramId }: LawyerCaseDetail
   const [hasExistingDraft, setHasExistingDraft] = useState(false);
   const [draftProgress, setDraftProgress] = useState(0);
   const [draftStatus, setDraftStatus] = useState<DraftJobStatus | null>(null);
-  // 016-draft-fact-summary: fact-summary 존재 여부
+  // 016-draft-fact-summary: fact-summary 존재 여부 및 생성 상태
   const [hasFactSummary, setHasFactSummary] = useState(false);
+  const [isGeneratingFactSummary, setIsGeneratingFactSummary] = useState(false);
 
   // Evidence state
   const [evidenceList, setEvidenceList] = useState<Evidence[]>([]);
   const [isLoadingEvidence, setIsLoadingEvidence] = useState(true);
   const [evidenceError, setEvidenceError] = useState<string | null>(null);
+
+  // Consultation state (for DataPanel)
+  const [consultationList, setConsultationList] = useState<Consultation[]>([]);
+  const [isLoadingConsultations, setIsLoadingConsultations] = useState(true);
+
+  // Asset state (for DataPanel)
+  const [assetList, setAssetList] = useState<Asset[]>([]);
+  const [isLoadingAssets, setIsLoadingAssets] = useState(true);
 
   // 증거 필터 상태
   const [showFilterDropdown, setShowFilterDropdown] = useState(false);
@@ -267,12 +284,56 @@ export default function LawyerCaseDetailClient({ id: paramId }: LawyerCaseDetail
     fetchEvidence();
   }, [fetchEvidence]);
 
+  // Fetch consultations for DataPanel
+  const fetchConsultations = useCallback(async () => {
+    if (!caseId) return;
+    setIsLoadingConsultations(true);
+    try {
+      const response = await getConsultations(caseId);
+      if (response.data) {
+        setConsultationList(response.data.consultations);
+      }
+    } catch {
+      // Silently handle errors for sidebar data
+    } finally {
+      setIsLoadingConsultations(false);
+    }
+  }, [caseId]);
+
+  // Fetch assets for DataPanel
+  const fetchAssets = useCallback(async () => {
+    if (!caseId) return;
+    setIsLoadingAssets(true);
+    try {
+      const assets = await getAssets(caseId);
+      setAssetList(assets);
+    } catch {
+      // Silently handle errors for sidebar data
+    } finally {
+      setIsLoadingAssets(false);
+    }
+  }, [caseId]);
+
+  // Load consultations and assets on mount
+  useEffect(() => {
+    fetchConsultations();
+    fetchAssets();
+  }, [fetchConsultations, fetchAssets]);
+
   // 016-draft-fact-summary: fact-summary 존재 여부 확인
   const checkFactSummary = useCallback(async () => {
     if (!caseId) return;
     try {
       const response = await getFactSummary(caseId);
-      setHasFactSummary(!!(response.data?.ai_summary || response.data?.modified_summary));
+      const aiSummary = response.data?.ai_summary || '';
+      const modifiedSummary = response.data?.modified_summary || '';
+      setHasFactSummary(!!(aiSummary || modifiedSummary));
+      // Set editor content if summary exists
+      if (modifiedSummary) {
+        setFactSummaryContent(modifiedSummary);
+      } else if (aiSummary) {
+        setFactSummaryContent(aiSummary);
+      }
     } catch {
       setHasFactSummary(false);
     }
@@ -281,6 +342,34 @@ export default function LawyerCaseDetailClient({ id: paramId }: LawyerCaseDetail
   useEffect(() => {
     checkFactSummary();
   }, [checkFactSummary]);
+
+  // Handle fact summary generation
+  const handleGenerateFactSummary = useCallback(async () => {
+    if (!caseId) return;
+
+    setIsGeneratingFactSummary(true);
+    try {
+      const response = await generateFactSummary(caseId, {
+        force_regenerate: hasFactSummary,
+      });
+
+      if (response.error) {
+        logger.error('Fact summary generation error:', response.error);
+        alert(`요약 생성 실패: ${response.error}`);
+        return;
+      }
+
+      if (response.data?.ai_summary) {
+        setFactSummaryContent(response.data.ai_summary);
+        setHasFactSummary(true);
+      }
+    } catch (err) {
+      logger.error('Fact summary generation error:', err);
+      alert('사실관계 요약 생성에 실패했습니다.');
+    } finally {
+      setIsGeneratingFactSummary(false);
+    }
+  }, [caseId, hasFactSummary]);
 
   // Auto-polling: silently check for status updates
   useEffect(() => {
@@ -550,6 +639,37 @@ export default function LawyerCaseDetailClient({ id: paramId }: LawyerCaseDetail
                 }
                 evidenceCount={evidenceList.length}
                 onUploadEvidence={() => setShowEvidenceUploadModal(true)}
+                consultationContent={
+                  <ConsultationListCompact
+                    consultations={consultationList}
+                    onItemClick={() => setActiveTab('consultation')}
+                  />
+                }
+                consultationCount={consultationList.length}
+                onAddConsultation={() => {
+                  setShowConsultationAddModal(true);
+                  setActiveTab('consultation');
+                }}
+                assetContent={
+                  <AssetListCompact
+                    assets={assetList}
+                    onItemClick={() => setActiveTab('assets')}
+                  />
+                }
+                assetCount={assetList.length}
+                onAddAsset={() => {
+                  setShowAssetAddModal(true);
+                  setActiveTab('assets');
+                }}
+                precedentContent={
+                  <SimilarPrecedentList
+                    caseId={caseId}
+                    maxItems={5}
+                    onViewDetail={(precedent) => {
+                      console.log('View precedent:', precedent);
+                    }}
+                  />
+                }
               />
             }
             mainContent={
@@ -561,6 +681,9 @@ export default function LawyerCaseDetailClient({ id: paramId }: LawyerCaseDetail
                     placeholder="사실관계를 입력하세요..."
                   />
                 }
+                onGenerateFactSummary={handleGenerateFactSummary}
+                isGeneratingFactSummary={isGeneratingFactSummary}
+                hasFactSummary={hasFactSummary}
                 analysisContent={
                   <AnalysisTab
                     caseId={caseId || ''}

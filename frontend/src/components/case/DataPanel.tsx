@@ -12,7 +12,7 @@
  */
 
 import { useState, ReactNode } from 'react';
-import { ChevronDown, ChevronRight, FileText, Upload } from 'lucide-react';
+import { ChevronDown, ChevronRight, FileText, Upload, MessageSquare, Wallet, Scale, Plus } from 'lucide-react';
 import { PrecedentPopover } from '@/components/precedent/PrecedentPopover';
 
 interface AccordionSection {
@@ -145,31 +145,31 @@ export function CaseDataPanel({
     {
       id: 'consultation',
       title: '상담내역',
-      icon: <FileText className="w-4 h-4" />,
+      icon: <MessageSquare className="w-4 h-4" />,
       count: consultationCount,
-      content: consultationContent || <div className="text-sm text-[var(--color-text-secondary)]">상담 내역이 없습니다.</div>,
+      content: consultationContent || <div className="text-xs text-[var(--color-text-secondary)]">상담 내역이 없습니다.</div>,
       action: onAddConsultation ? {
         label: '상담 추가',
-        icon: <Upload className="w-4 h-4" />,
+        icon: <Plus className="w-4 h-4" />,
         onClick: onAddConsultation,
       } : undefined,
     },
     {
       id: 'assets',
       title: '재산목록',
-      icon: <FileText className="w-4 h-4" />,
+      icon: <Wallet className="w-4 h-4" />,
       count: assetCount,
-      content: assetContent || <div className="text-sm text-[var(--color-text-secondary)]">등록된 재산이 없습니다.</div>,
+      content: assetContent || <div className="text-xs text-[var(--color-text-secondary)]">등록된 재산이 없습니다.</div>,
       action: onAddAsset ? {
         label: '재산 추가',
-        icon: <Upload className="w-4 h-4" />,
+        icon: <Plus className="w-4 h-4" />,
         onClick: onAddAsset,
       } : undefined,
     },
     {
       id: 'precedent',
       title: '유사판례',
-      icon: <FileText className="w-4 h-4" />,
+      icon: <Scale className="w-4 h-4" />,
       count: precedentCount,
       content: precedentContent || <PrecedentPopover />,
     },
