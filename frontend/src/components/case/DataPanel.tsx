@@ -177,7 +177,7 @@ export function CaseDataPanel({
   return (
     <div className="flex flex-col h-full">
       <div className="flex-1 overflow-y-auto">
-        <DataPanel sections={sections} defaultOpenSections={['evidence']} />
+        <DataPanel sections={sections} defaultOpenSections={['evidence', 'consultation', 'assets', 'precedent']} />
       </div>
     </div>
   );

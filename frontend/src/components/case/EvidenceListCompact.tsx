@@ -114,7 +114,6 @@ export function EvidenceListCompact({
       {items.map((item, index) => {
         // Generate legal number if not provided
         const legalNumber = item.legalNumber || generateLegalNumber(item.submittedBy || 'plaintiff', index + 1);
-        const timestamp = formatTimestamp(item.evidenceTimestamp || item.uploadDate);
 
         return (
           <li key={item.id}>
@@ -140,14 +139,9 @@ export function EvidenceListCompact({
                 {getTypeIcon(item.type)}
               </span>
 
-              {/* Filename (full display) */}
-              <span className="flex-1 min-w-0 text-xs text-[var(--color-text-primary)] break-words">
+              {/* Filename (full display, single line) */}
+              <span className="text-xs text-[var(--color-text-primary)] whitespace-nowrap">
                 {item.filename}
-              </span>
-
-              {/* Timestamp */}
-              <span className="flex-shrink-0 text-xs text-[var(--color-text-secondary)] opacity-0 group-hover:opacity-100 transition-opacity">
-                {timestamp}
               </span>
             </button>
           </li>
