@@ -12,7 +12,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Loader2, RefreshCw, Sparkles, CheckCircle2, FileText, Scale, Filter, Wallet, MessageSquare, FileUp, Edit3, UserPlus, Calendar, Bell, Activity } from 'lucide-react';
+import { Loader2, RefreshCw, Sparkles, CheckCircle2, FileText, Scale, Filter, Wallet, MessageSquare, FileUp, Edit3, UserPlus, Calendar, Bell, Activity, ClipboardList } from 'lucide-react';
 import { apiClient } from '@/lib/api/client';
 import ExplainerCard from '@/components/cases/ExplainerCard';
 import ShareSummaryModal from '@/components/cases/ShareSummaryModal';
@@ -49,6 +49,9 @@ import { ProcedureTimeline } from '@/components/procedure';
 // New tab components
 import { AssetSummaryTab } from '@/components/case/AssetSummaryTab';
 import { ConsultationHistoryTab } from '@/components/case/ConsultationHistoryTab';
+// Independent modals for consultation and asset
+import { ConsultationModal } from '@/components/consultation/ConsultationModal';
+import { AssetModal } from '@/components/asset/AssetModal';
 // 014-case-fact-summary: FactSummaryPanel
 import { FactSummaryPanel } from '@/components/fact-summary/FactSummaryPanel';
 // 014-ui-settings-completion: New 3-column layout components
@@ -133,7 +136,7 @@ export default function LawyerCaseDetailClient({ id: paramId }: LawyerCaseDetail
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   // 014-ui-settings-completion: Tabs reduced to 4 with workspace as default
-  const [activeTab, setActiveTab] = useState<'workspace' | 'evidence' | 'timeline' | 'consultation' | 'analysis' | 'relations' | 'assets' | 'draft'>('workspace');
+  const [activeTab, setActiveTab] = useState<'workspace' | 'evidence' | 'timeline' | 'consultation' | 'analysis' | 'relations' | 'assets' | 'draft' | 'caseSummary'>('workspace');
   const [showSummaryCard, setShowSummaryCard] = useState(false);
   // 014-ui-settings-completion: Fact summary editor state
   const [factSummaryContent, setFactSummaryContent] = useState('');
@@ -592,11 +595,12 @@ export default function LawyerCaseDetailClient({ id: paramId }: LawyerCaseDetail
         onClose={() => setShowExpertPanel(false)}
       />
 
-      {/* LDS2 Tabs - 3 main tabs with Compact styling */}
+      {/* LDS2 Tabs - 4 main tabs with Compact styling */}
       <div className="border-b border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 px-3">
         <nav className="flex gap-0.5">
           {[
             { id: 'workspace', label: '워크스페이스', icon: <Scale className="w-3.5 h-3.5" /> },
+            { id: 'caseSummary', label: '사건정리', icon: <ClipboardList className="w-3.5 h-3.5" /> },
             { id: 'relations', label: '고객정보', icon: <FileText className="w-3.5 h-3.5" /> },
             { id: 'timeline', label: '타임라인', icon: <Activity className="w-3.5 h-3.5" /> },
           ].map((tab) => (
@@ -642,25 +646,19 @@ export default function LawyerCaseDetailClient({ id: paramId }: LawyerCaseDetail
                 consultationContent={
                   <ConsultationListCompact
                     consultations={consultationList}
-                    onItemClick={() => setActiveTab('consultation')}
+                    onItemClick={() => setShowConsultationAddModal(true)}
                   />
                 }
                 consultationCount={consultationList.length}
-                onAddConsultation={() => {
-                  setShowConsultationAddModal(true);
-                  setActiveTab('consultation');
-                }}
+                onAddConsultation={() => setShowConsultationAddModal(true)}
                 assetContent={
                   <AssetListCompact
                     assets={assetList}
-                    onItemClick={() => setActiveTab('assets')}
+                    onItemClick={() => setShowAssetAddModal(true)}
                   />
                 }
                 assetCount={assetList.length}
-                onAddAsset={() => {
-                  setShowAssetAddModal(true);
-                  setActiveTab('assets');
-                }}
+                onAddAsset={() => setShowAssetAddModal(true)}
                 precedentContent={
                   <SimilarPrecedentList
                     caseId={caseId}
@@ -984,6 +982,65 @@ export default function LawyerCaseDetailClient({ id: paramId }: LawyerCaseDetail
           </div>
         )}
 
+        {activeTab === 'caseSummary' && (
+          <div className="space-y-6">
+            {/* 사건정리 탭 헤더 */}
+            <div className="bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 rounded-lg p-4 border border-purple-200 dark:border-purple-800">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-purple-100 dark:bg-purple-800/50 rounded-lg">
+                  <ClipboardList className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-purple-800 dark:text-purple-200">사건 정리</h3>
+                  <p className="text-sm text-purple-600 dark:text-purple-400">사건의 인물 관계와 절차 진행 현황을 한눈에 확인합니다.</p>
+                </div>
+              </div>
+            </div>
+
+            {/* 인물 관계도 섹션 */}
+            <div className="bg-white dark:bg-neutral-800 rounded-lg border border-gray-200 dark:border-neutral-700">
+              <div className="px-4 py-3 border-b border-gray-200 dark:border-neutral-700 bg-gray-50 dark:bg-neutral-900/50">
+                <div className="flex items-center gap-2">
+                  <UserPlus className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                  <h4 className="font-semibold text-[var(--color-text-primary)]">인물 관계도</h4>
+                </div>
+                <p className="text-xs text-[var(--color-text-secondary)] mt-1">사건 관련 당사자들의 관계를 시각적으로 표현합니다.</p>
+              </div>
+              <div className="p-4">
+                <div className="h-[300px] lg:h-[350px]">
+                  <PartyGraph caseId={caseId} />
+                </div>
+              </div>
+            </div>
+
+            {/* 절차 진행 현황 섹션 */}
+            <div className="bg-white dark:bg-neutral-800 rounded-lg border border-gray-200 dark:border-neutral-700">
+              <div className="px-4 py-3 border-b border-gray-200 dark:border-neutral-700 bg-gray-50 dark:bg-neutral-900/50">
+                <div className="flex items-center gap-2">
+                  <Activity className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                  <h4 className="font-semibold text-[var(--color-text-primary)]">절차 진행 현황</h4>
+                </div>
+                <p className="text-xs text-[var(--color-text-secondary)] mt-1">소송 절차의 진행 단계와 현재 상태를 확인합니다.</p>
+              </div>
+              <div className="p-4">
+                <ProcedureTimeline
+                  stages={procedure.stages}
+                  currentStage={procedure.currentStage}
+                  progressPercent={procedure.progressPercent}
+                  validNextStages={procedure.validNextStages}
+                  loading={procedure.loading}
+                  error={procedure.error}
+                  onUpdateStage={procedure.updateStage}
+                  onCompleteStage={procedure.completeStage}
+                  onSkipStage={procedure.skipStage}
+                  onTransition={procedure.transition}
+                  onInitialize={procedure.initializeTimeline}
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
         {activeTab === 'analysis' && (
           <div className="space-y-6">
             {/* 014-case-fact-summary: 사실관계 요약 패널 */}
@@ -1274,6 +1331,22 @@ export default function LawyerCaseDetailClient({ id: paramId }: LawyerCaseDetail
         }}
         caseId={caseId}
         isLoading={isUploading}
+      />
+
+      {/* Independent Consultation Modal */}
+      <ConsultationModal
+        isOpen={showConsultationAddModal}
+        onClose={() => setShowConsultationAddModal(false)}
+        caseId={caseId}
+        onSuccess={fetchConsultations}
+      />
+
+      {/* Independent Asset Modal */}
+      <AssetModal
+        isOpen={showAssetAddModal}
+        onClose={() => setShowAssetAddModal(false)}
+        caseId={caseId}
+        onSuccess={fetchAssets}
       />
     </div>
   );
