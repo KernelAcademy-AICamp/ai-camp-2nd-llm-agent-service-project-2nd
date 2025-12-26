@@ -716,18 +716,6 @@ export default function LawyerCaseDetailClient({ id: paramId }: LawyerCaseDetail
 
         {activeTab === 'evidence' && (
           <div className="space-y-6">
-            {/* Issue #423: Pipeline Progress Indicator */}
-            {evidenceList.length > 0 && (
-              <PipelineProgressIndicator
-                totalEvidence={evidenceList.length}
-                completedEvidence={evidenceList.filter(e => e.status === 'completed').length}
-                processingEvidence={evidenceList.filter(e => e.status === 'processing' || e.status === 'queued').length}
-                hasDraft={hasExistingDraft}
-                hasRelations={false}
-                compact={false}
-              />
-            )}
-
             {/* Evidence Upload Section */}
             <section className="space-y-4">
               <div className="flex items-center justify-between">

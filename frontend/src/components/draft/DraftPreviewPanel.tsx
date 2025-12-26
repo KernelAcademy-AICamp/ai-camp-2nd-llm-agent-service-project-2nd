@@ -102,9 +102,11 @@ const DOCUMENT_TEMPLATES = [
 
 /**
  * Convert plain text (with \n newlines) to HTML
+ * - Preserves whitespace (spaces, indentation) for legal document formatting
  * - Double newlines become paragraph breaks
  * - Single newlines become <br>
  * - Escapes HTML entities
+ * - Converts multiple spaces to &nbsp; to preserve indentation
  */
 const textToHtml = (text: string): string => {
     if (!text) return '';
@@ -120,12 +122,26 @@ const textToHtml = (text: string): string => {
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;');
 
+    // Preserve leading spaces and multiple consecutive spaces
+    // Convert 2+ spaces to &nbsp; pairs to maintain visual spacing
+    const preserveSpaces = (str: string): string => {
+        // First, preserve leading spaces in each line
+        return str.replace(/^( +)/gm, (match) => {
+            return match.replace(/ /g, '&nbsp;');
+        })
+        // Then preserve multiple consecutive spaces within text
+        .replace(/  +/g, (match) => {
+            return match.replace(/ /g, '&nbsp;');
+        });
+    };
+
     // Split by double newlines for paragraphs
     const paragraphs = escaped.split(/\n\n+/);
 
     // Convert single newlines to <br> within paragraphs
     const htmlParagraphs = paragraphs.map(p => {
-        const withBreaks = p.replace(/\n/g, '<br>');
+        const withSpaces = preserveSpaces(p);
+        const withBreaks = withSpaces.replace(/\n/g, '<br>');
         return `<p>${withBreaks}</p>`;
     });
 
@@ -882,7 +898,7 @@ export default function DraftPreviewPanel({
                     onClick={handleEditorClick}
                     onBeforeInput={handleBeforeInput}
                     onInput={handleEditorInput}
-                    className="w-full min-h-[320px] bg-transparent p-6 text-gray-800 dark:text-gray-200 leading-relaxed focus:outline-none overflow-auto cursor-pointer [&_.evidence-ref]:underline [&_.evidence-ref]:text-secondary [&_.evidence-ref]:cursor-pointer [&_.evidence-ref:hover]:text-primary [&_.evidence-ref]:decoration-dotted"
+                    className="w-full min-h-[320px] bg-transparent p-6 text-gray-800 dark:text-gray-200 leading-relaxed focus:outline-none overflow-auto cursor-pointer font-mono text-sm whitespace-pre-wrap [&_.evidence-ref]:underline [&_.evidence-ref]:text-secondary [&_.evidence-ref]:cursor-pointer [&_.evidence-ref:hover]:text-primary [&_.evidence-ref]:decoration-dotted"
                     dangerouslySetInnerHTML={{ __html: editorHtml }}
                 />
             </div>

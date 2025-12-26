@@ -5,6 +5,7 @@ Party Extraction Service - Extract parties and relationships from fact summary u
 
 import json
 import logging
+import re
 from dataclasses import dataclass
 from typing import List, Dict, Optional, Tuple
 
@@ -19,6 +20,27 @@ from app.utils.gemini_client import generate_chat_completion_gemini
 from app.middleware import NotFoundError, PermissionError, ValidationError
 
 logger = logging.getLogger(__name__)
+
+# ============================================================================
+# 019-party-extraction-prompt: 인물 추출 정확도 개선 상수들
+# ============================================================================
+
+# 한국 성씨 목록 (상위 100개)
+KOREAN_SURNAMES = {
+    "김", "이", "박", "최", "정", "강", "조", "윤", "장", "임",
+    "한", "오", "서", "신", "권", "황", "안", "송", "류", "전",
+    "홍", "고", "문", "양", "손", "배", "백", "허", "유", "남",
+    "심", "노", "하", "곽", "성", "차", "주", "우", "구", "민",
+    "진", "나", "지", "엄", "변", "채", "원", "천", "방", "공",
+    "현", "함", "여", "염", "석", "추", "도", "소", "설", "선",
+    "마", "길", "연", "위", "표", "명", "기", "반", "왕", "금",
+    "옥", "육", "인", "맹", "제", "모", "탁", "국", "어", "은",
+    "편", "용", "예", "경", "봉", "사", "부", "황보", "남궁", "제갈",
+    "독고", "선우", "동방", "사공", "서문", "어금", "장곡", "등정", "망절", "무본",
+}
+
+# 최대 추출 인원 수
+MAX_PERSONS = 15
 
 
 @dataclass
@@ -161,6 +183,16 @@ class PartyExtractionService:
             # Step 2: Verify extracted names are actual person names
             verified_persons = self._verify_person_names(persons)
 
+            # 019-party-extraction-prompt: MAX_PERSONS 제한 적용
+            # 15명 초과 시 신뢰도(extraction_confidence) 기준 정렬 후 상위 15명만 선택
+            if len(verified_persons) > MAX_PERSONS:
+                logger.info(
+                    f"[PartyExtraction] Limiting persons from {len(verified_persons)} to {MAX_PERSONS}"
+                )
+                # 현재는 신뢰도 정보가 없으므로 순서대로 상위 15명 선택
+                # 향후 신뢰도 필드 추가 시 정렬 로직 적용 가능
+                verified_persons = verified_persons[:MAX_PERSONS]
+
             # Filter relationships to only include verified persons
             verified_names = {p.name for p in verified_persons}
             verified_relationships = [
@@ -179,43 +211,177 @@ class PartyExtractionService:
             logger.error(f"[PartyExtraction] Gemini API error: {e}")
             raise ValidationError(f"인물 추출 중 오류가 발생했습니다: {str(e)}")
 
-    # Non-person words to filter out (fallback list)
+    # Non-person words to filter out (019-party-extraction-prompt: 확장된 블랙리스트 ~150단어)
     NON_PERSON_WORDS = {
-        # Time expressions
-        "오전", "오후", "저녁", "새벽", "아침", "밤", "점심",
-        # Legal terms
+        # === 1글자 단어 (절대 인물 아님) ===
+        "하", "이", "나", "저", "그", "뭐", "왜", "어", "네", "예",
+        "아", "오", "음", "응", "헐", "앗", "엥", "흠", "쯧", "윽",
+
+        # === 동사/형용사 어간 및 활용형 ===
+        "하다", "했다", "하고", "하면", "하는", "하지", "하게", "하자", "하니",
+        "한다", "한다고", "하겠어", "하세요", "해서", "해도", "해야", "해줘",
+        "이다", "이고", "이면", "이라", "이니", "이야", "였다", "이었다",
+        "있다", "있고", "있어", "있으면", "없다", "없어", "없으면",
+        "된다", "되고", "되면", "되어", "됐다", "안됨", "안된",
+        "간다", "가고", "가면", "가서", "갔다", "온다", "오고", "왔다",
+        "본다", "보고", "보면", "봐서", "봤다", "봐도", "보니",
+        "먹다", "먹고", "먹어", "싶다", "싶어", "싶으면",
+        "알다", "알고", "알아", "몰라", "모르고", "살다", "살고", "살아",
+
+        # === 부사/접속사/감탄사 ===
+        "정말", "진짜", "너무", "매우", "아주", "굉장히", "엄청",
+        "이렇게", "그렇게", "저렇게", "어떻게", "왜냐면", "왜냐하면",
+        "그래서", "하지만", "그러나", "그런데", "그리고", "또한", "게다가",
+        "일단", "우선", "먼저", "다음", "이제", "지금", "아직", "벌써",
+        "오히려", "차라리", "결국", "역시", "물론", "당연히",
+        "제발", "부디", "아마", "혹시", "설마", "어쩌면",
+
+        # === 조사/어미 ===
+        "이랑", "한테", "에게", "으로", "이라고", "라고", "라면", "이면",
+        "에서", "까지", "부터", "마저", "조차", "이나", "나마",
+        "이요", "요", "이에요", "예요", "입니다", "습니다",
+
+        # === 대명사 ===
+        "우리", "너희", "그들", "이것", "저것", "그것", "여기", "저기", "거기",
+        "누구", "무엇", "어디", "언제", "어느", "자신", "본인",
+
+        # === 시간 표현 ===
+        "오전", "오후", "저녁", "새벽", "아침", "밤", "점심", "낮",
+        "오늘", "내일", "어제", "모레", "글피", "이번주", "다음주", "지난주",
+        "올해", "내년", "작년", "이번달", "다음달", "지난달",
+        "월요일", "화요일", "수요일", "목요일", "금요일", "토요일", "일요일",
+
+        # === 법률 용어 ===
         "이혼", "결혼", "합의", "조정", "소송", "재판", "판결", "위자료",
-        # Status expressions
-        "정됨", "완료", "진행", "확인", "승인", "거부", "취소",
-        # General nouns
+        "양육권", "양육비", "재산분할", "면접교섭", "가사", "민사", "형사",
+        "항소", "상고", "심리", "변론", "증거", "기일", "출석", "불출석",
+
+        # === 역할/직함 (단독 사용시) ===
+        "원고", "피고", "증인", "참고인", "변호사", "판사", "조정위원",
+        "대리인", "소송대리인", "법정대리인", "후견인",
+
+        # === 가족 관계 일반명사 ===
         "자녀", "부모", "배우자", "친구", "동료", "직장", "회사",
-        # Roles (not names)
-        "원고", "피고", "증인", "참고인",
-        # Other common misidentifications
-        "이혼아", "결혼식", "법원", "변호사", "판사",
+        "남편", "아내", "아버지", "어머니", "아들", "딸", "형", "동생",
+        "언니", "오빠", "누나", "할머니", "할아버지", "삼촌", "이모", "고모",
+
+        # === 시스템 키워드 ===
+        "Unknown", "unknown", "UNKNOWN",
+        "Speaker", "speaker", "SPEAKER",
+        "System", "system", "SYSTEM",
+        "undefined", "null", "None", "NULL",
+        "Date", "Time", "Document", "File",
+
+        # === 성씨+일반단어 조합 (오추출 방지) ===
+        "김치", "이상", "박수", "최고", "정리", "강조", "조정",
+        "윤리", "장난", "임시", "한심", "오늘", "서류", "신고",
+        "권리", "황당", "안녕", "송금", "류행", "전화", "홍보",
+
+        # === 기타 오추출 빈발 단어 ===
+        "이혼아", "결혼식", "법원", "고마워", "미안해", "조심해",
+        "그래요", "아니요", "네에", "됐어", "알았어", "몰랐어",
+        "사람", "분들", "여러분", "손님", "고객", "이용자",
     }
 
+    def _is_valid_name(self, name: str) -> bool:
+        """
+        019-party-extraction-prompt: 이름 유효성 검증 메서드
+
+        검증 규칙:
+        1. 길이 체크 (2글자 이상)
+        2. 블랙리스트 체크
+        3. 한국 성씨 검증 (한글 이름인 경우)
+        4. 역할 기반 이름 허용 ("원고 어머니" 등)
+        5. 익명화 패턴 인식 (김OO, 박XX 등)
+
+        Returns:
+            True if valid name, False otherwise
+        """
+        if not name:
+            return False
+
+        name = name.strip()
+
+        # 1. 길이 체크: 2글자 미만은 무조건 제외
+        if len(name) < 2:
+            return False
+
+        # 2. 블랙리스트 체크
+        if name in self.NON_PERSON_WORDS:
+            return False
+        if name.lower() in self.NON_PERSON_WORDS:
+            return False
+
+        # 3. 역할 기반 이름 체크: "원고 어머니", "피고 동생" 등은 허용
+        role_pattern = re.compile(r'^(원고|피고|증인|참고인)(의?\s*(아버지|어머니|형|동생|언니|오빠|누나|자녀|아들|딸|배우자|본인|측))$')
+        if role_pattern.match(name):
+            return True
+
+        # 단독 역할명은 불허
+        if name in {"원고", "피고", "증인", "참고인", "변호사", "판사"}:
+            return False
+
+        # 4. 익명화 패턴 인식: 김OO, 이XX, 박○○ 등
+        anonymized_pattern = re.compile(r'^[가-힣][OXox○●]+$')
+        if anonymized_pattern.match(name):
+            return True
+
+        # 5. 한글 이름 검증
+        korean_pattern = re.compile(r'^[가-힣]+$')
+        if korean_pattern.match(name):
+            # 2-4글자 한글 이름
+            if 2 <= len(name) <= 4:
+                first_char = name[0]
+                # 성씨로 시작하면 더 신뢰
+                if first_char in KOREAN_SURNAMES:
+                    # 성씨+일반단어 조합 체크 (블랙리스트에 있는지)
+                    if name in self.NON_PERSON_WORDS:
+                        return False
+                    return True
+                else:
+                    # 성씨가 아닌 2글자는 허용 (외자 이름 등)
+                    return True
+            # 5글자 이상 한글은 이름이 아닐 가능성 높음
+            elif len(name) >= 5:
+                return False
+
+        # 6. 영문 이름 검증 (외국 이름)
+        english_pattern = re.compile(r'^[A-Za-z][a-z]+$')
+        if english_pattern.match(name) and len(name) >= 2:
+            return True
+
+        # 7. 한글+띄어쓰기 (복합 이름: "김 변호사", "박 대리")
+        compound_pattern = re.compile(r'^[가-힣]+\s+[가-힣]+$')
+        if compound_pattern.match(name):
+            parts = name.split()
+            if len(parts) == 2:
+                first = parts[0]
+                # 첫 글자가 성씨이면 유효
+                if first in KOREAN_SURNAMES or (len(first) == 1 and first in KOREAN_SURNAMES):
+                    return True
+
+        # 기본: 2글자 이상이고 블랙리스트에 없으면 허용
+        return len(name) >= 2
 
     def _verify_person_names(
         self,
         persons: List[ExtractedPerson]
     ) -> List[ExtractedPerson]:
         """
-        Step 2: Verify extracted names are actual person names using Gemini.
-        Filters out time expressions, legal terms, and other non-person words.
+        Step 2: Verify extracted names are actual person names.
+        019-party-extraction-prompt: _is_valid_name() 메서드를 사용하여 1차 필터링 후 Gemini 검증.
         """
         if not persons:
             return []
 
-        # Pre-filter: Remove obvious non-person words before Gemini verification
+        # Pre-filter: _is_valid_name()을 사용하여 유효한 이름만 필터링
         pre_filtered = [
             p for p in persons
-            if p.name.strip() not in self.NON_PERSON_WORDS
-            and len(p.name.strip()) >= 2  # Names should be at least 2 chars
+            if self._is_valid_name(p.name)
         ]
 
         if not pre_filtered:
-            logger.info("[PartyExtraction] All names filtered by pre-filter")
+            logger.info("[PartyExtraction] All names filtered by _is_valid_name()")
             return []
 
         names = [p.name for p in pre_filtered]
