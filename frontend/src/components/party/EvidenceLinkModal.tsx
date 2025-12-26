@@ -5,7 +5,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useId } from 'react';
 import type {
   PartyNode,
   PartyRelationship,
@@ -55,6 +55,7 @@ export function EvidenceLinkModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const titleId = useId();
 
   // Reset form when modal opens
   useEffect(() => {
@@ -120,18 +121,24 @@ export function EvidenceLinkModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/50" onClick={onClose} aria-hidden="true" />
 
       {/* Modal */}
-      <div className="relative bg-white rounded-lg shadow-xl w-full max-w-lg mx-4 max-h-[90vh] overflow-hidden flex flex-col">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        className="relative bg-white dark:bg-neutral-800 rounded-lg shadow-xl w-full max-w-lg mx-4 max-h-[90vh] overflow-hidden flex flex-col"
+      >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b">
-          <h2 className="text-lg font-semibold text-gray-900">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-200 dark:border-neutral-700">
+          <h2 id={titleId} className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">
             증거 연결
           </h2>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600"
+            aria-label="닫기"
+            className="text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -144,15 +151,15 @@ export function EvidenceLinkModal({
           <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
             {/* Error message */}
             {error && (
-              <div className="p-3 text-sm text-red-600 bg-red-50 rounded-lg">
+              <div className="p-3 text-sm text-error bg-error-light rounded-lg">
                 {error}
               </div>
             )}
 
             {/* Evidence selection */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                증거 선택 <span className="text-red-500">*</span>
+              <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
+                증거 선택 <span className="text-error">*</span>
               </label>
               <input
                 type="text"
@@ -163,11 +170,11 @@ export function EvidenceLinkModal({
               />
               <div className="max-h-40 overflow-y-auto border rounded-lg">
                 {isLoadingEvidence ? (
-                  <div className="p-4 text-center text-gray-500">
+                  <div className="p-4 text-center text-neutral-500 dark:text-neutral-400">
                     불러오는 중...
                   </div>
                 ) : filteredEvidence.length === 0 ? (
-                  <div className="p-4 text-center text-gray-500">
+                  <div className="p-4 text-center text-neutral-500 dark:text-neutral-400">
                     {searchQuery ? '검색 결과가 없습니다' : '증거가 없습니다'}
                   </div>
                 ) : (
@@ -175,8 +182,8 @@ export function EvidenceLinkModal({
                     <label
                       key={evidence.id}
                       className={`
-                        flex items-start gap-3 p-3 cursor-pointer hover:bg-gray-50
-                        ${selectedEvidence === evidence.id ? 'bg-blue-50' : ''}
+                        flex items-start gap-3 p-3 cursor-pointer hover:bg-neutral-50 dark:hover:bg-neutral-700
+                        ${selectedEvidence === evidence.id ? 'bg-info-light' : ''}
                       `}
                     >
                       <input
@@ -188,13 +195,13 @@ export function EvidenceLinkModal({
                         className="mt-1"
                       />
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900 truncate">
+                        <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100 truncate">
                           {evidence.summary || evidence.filename || `증거 #${evidence.id.slice(0, 8)}`}
                         </p>
-                        <p className="text-xs text-gray-500">
+                        <p className="text-xs text-neutral-500 dark:text-neutral-400">
                           {evidence.type} · {new Date(evidence.timestamp).toLocaleDateString()}
                           {evidence.filename && evidence.summary && (
-                            <span className="ml-1 text-gray-400">({evidence.filename})</span>
+                            <span className="ml-1 text-neutral-400 dark:text-neutral-500">({evidence.filename})</span>
                           )}
                         </p>
                         {evidence.labels && evidence.labels.length > 0 && (
@@ -202,7 +209,7 @@ export function EvidenceLinkModal({
                             {evidence.labels.slice(0, 3).map((label) => (
                               <span
                                 key={label}
-                                className="px-1.5 py-0.5 text-xs bg-gray-100 text-gray-600 rounded"
+                                className="px-1.5 py-0.5 text-xs bg-neutral-100 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-300 rounded"
                               >
                                 {label}
                               </span>
@@ -218,8 +225,8 @@ export function EvidenceLinkModal({
 
             {/* Target selection */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                연결 대상 <span className="text-red-500">*</span>
+              <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
+                연결 대상 <span className="text-error">*</span>
               </label>
               <div className="space-y-2">
                 {/* Party selection */}
@@ -239,7 +246,7 @@ export function EvidenceLinkModal({
                   ))}
                 </select>
 
-                <div className="text-center text-xs text-gray-400">또는</div>
+                <div className="text-center text-xs text-neutral-400 dark:text-neutral-500">또는</div>
 
                 {/* Relationship selection */}
                 <select
@@ -262,7 +269,7 @@ export function EvidenceLinkModal({
 
             {/* Link type */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
                 연결 유형
               </label>
               <div className="grid grid-cols-2 gap-2">
@@ -274,8 +281,8 @@ export function EvidenceLinkModal({
                     className={`
                       px-3 py-2 text-sm rounded-lg border transition-colors
                       ${linkType === type
-                        ? 'border-blue-500 bg-blue-50 text-blue-700'
-                        : 'border-gray-200 hover:border-gray-300'
+                        ? 'border-info bg-info-light text-info'
+                        : 'border-neutral-200 hover:border-neutral-300 dark:border-neutral-600 dark:hover:border-neutral-500'
                       }
                     `}
                   >
@@ -287,11 +294,11 @@ export function EvidenceLinkModal({
           </div>
 
           {/* Footer */}
-          <div className="flex justify-end gap-3 px-6 py-4 border-t bg-gray-50">
+          <div className="flex justify-end gap-3 px-6 py-4 border-t border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900 rounded-b-lg">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg"
+              className="px-4 py-2 text-sm font-medium text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 rounded-lg"
               disabled={isSubmitting}
             >
               취소

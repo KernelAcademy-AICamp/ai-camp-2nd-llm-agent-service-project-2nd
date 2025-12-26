@@ -5,7 +5,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useId } from 'react';
 import type {
   PartyNode,
   PartyType,
@@ -55,6 +55,7 @@ export function PartyModal({
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const titleId = useId();
 
   // Reset form when modal opens/closes or party changes
   useEffect(() => {
@@ -134,18 +135,25 @@ export function PartyModal({
       <div
         className="absolute inset-0 bg-black/50"
         onClick={onClose}
+        aria-hidden="true"
       />
 
       {/* Modal */}
-      <div className="relative bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        className="relative bg-white dark:bg-neutral-800 rounded-lg shadow-xl w-full max-w-md mx-4"
+      >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b">
-          <h2 className="text-lg font-semibold text-gray-900">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-200 dark:border-neutral-700">
+          <h2 id={titleId} className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">
             {isEditMode ? '당사자 수정' : '당사자 추가'}
           </h2>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600"
+            aria-label="닫기"
+            className="text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -166,8 +174,8 @@ export function PartyModal({
             {/* Type (only for create mode) */}
             {!isEditMode && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  유형 <span className="text-red-500">*</span>
+                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
+                  유형 <span className="text-error">*</span>
                 </label>
                 <div className="grid grid-cols-3 gap-2">
                   {PARTY_TYPES.map((type) => (
@@ -178,8 +186,8 @@ export function PartyModal({
                       className={`
                         px-3 py-2 text-sm rounded-lg border transition-colors
                         ${formData.type === type
-                          ? 'border-blue-500 bg-blue-50 text-blue-700'
-                          : 'border-gray-200 hover:border-gray-300'
+                          ? 'border-info bg-info-light text-info'
+                          : 'border-neutral-200 hover:border-neutral-300 dark:border-neutral-600 dark:hover:border-neutral-500'
                         }
                       `}
                     >
@@ -192,8 +200,8 @@ export function PartyModal({
 
             {/* Name */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                이름 <span className="text-red-500">*</span>
+              <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
+                이름 <span className="text-error">*</span>
               </label>
               <input
                 type="text"
@@ -207,7 +215,7 @@ export function PartyModal({
 
             {/* Alias */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
                 소장용 가명
               </label>
               <input
@@ -221,7 +229,7 @@ export function PartyModal({
 
             {/* Birth year */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
                 출생년도
               </label>
               <input
@@ -237,7 +245,7 @@ export function PartyModal({
 
             {/* Occupation */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
                 직업
               </label>
               <input
@@ -251,18 +259,18 @@ export function PartyModal({
           </div>
 
           {/* Footer */}
-          <div className="flex justify-end gap-3 px-6 py-4 border-t bg-gray-50 rounded-b-lg">
+          <div className="flex justify-end gap-3 px-6 py-4 border-t border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900 rounded-b-lg">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg"
+              className="px-4 py-2 text-sm font-medium text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 rounded-lg"
               disabled={isSubmitting}
             >
               취소
             </button>
             <button
               type="submit"
-              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg disabled:opacity-50"
+              className="px-4 py-2 text-sm font-medium text-white bg-primary hover:bg-primary/90 rounded-lg disabled:opacity-50"
               disabled={isSubmitting}
             >
               {isSubmitting ? '저장 중...' : isEditMode ? '수정' : '추가'}

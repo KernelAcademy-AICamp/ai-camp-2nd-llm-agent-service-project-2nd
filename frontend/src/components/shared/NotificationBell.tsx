@@ -8,7 +8,8 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { EmptyNotifications } from './EmptyStates';
+import { Spinner } from '@/components/primitives/Spinner/Spinner';
+import { EmptyNotifications } from './EmptyState';
 
 export interface Notification {
   id: string;
@@ -48,10 +49,10 @@ function formatRelativeTime(dateString: string): string {
 // Notification type icon
 function NotificationIcon({ type }: { type: Notification['type'] }) {
   const iconStyles = {
-    info: 'bg-blue-100 text-blue-600',
-    success: 'bg-green-100 text-green-600',
-    warning: 'bg-yellow-100 text-yellow-600',
-    error: 'bg-red-100 text-red-600',
+    info: 'bg-info-light text-info',
+    success: 'bg-success-light text-success',
+    warning: 'bg-warning-light text-warning',
+    error: 'bg-error-light text-error',
   };
 
   const icons = {
@@ -94,8 +95,8 @@ function NotificationItem({
 }) {
   return (
     <div
-      className={`p-3 hover:bg-gray-50 dark:hover:bg-neutral-700 cursor-pointer transition-colors ${
-        !notification.read ? 'bg-blue-50/50 dark:bg-blue-900/20' : ''
+      className={`p-3 hover:bg-neutral-50 dark:hover:bg-neutral-700 cursor-pointer transition-colors ${
+        !notification.read ? 'bg-info-light/50 dark:bg-info-light' : ''
       }`}
       onClick={onClick}
       role="button"
@@ -106,17 +107,17 @@ function NotificationItem({
         <NotificationIcon type={notification.type} />
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2">
-            <p className={`text-sm ${!notification.read ? 'font-semibold' : ''} text-gray-900 dark:text-gray-100 truncate`}>
+            <p className={`text-sm ${!notification.read ? 'font-semibold' : ''} text-neutral-900 dark:text-neutral-100 truncate`}>
               {notification.title}
             </p>
             {!notification.read && (
-              <span className="w-2 h-2 bg-blue-600 rounded-full flex-shrink-0 mt-1.5" />
+              <span className="w-2 h-2 bg-info rounded-full flex-shrink-0 mt-1.5" />
             )}
           </div>
-          <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2 mt-0.5">
+          <p className="text-xs text-neutral-500 dark:text-neutral-400 line-clamp-2 mt-0.5">
             {notification.message}
           </p>
-          <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+          <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-1">
             {formatRelativeTime(notification.created_at)}
           </p>
         </div>
@@ -171,18 +172,18 @@ export default function NotificationBell({
       {/* Bell Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="relative p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-neutral-700 transition-colors"
+        className="relative p-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
         aria-label={`알림 ${displayUnreadCount > 0 ? `(${displayUnreadCount}개 읽지 않음)` : ''}`}
         aria-expanded={isOpen}
         aria-haspopup="true"
       >
-        <svg className="w-6 h-6 text-gray-600 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-6 h-6 text-neutral-600 dark:text-neutral-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
         </svg>
 
         {/* Unread Badge */}
         {displayUnreadCount > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
+          <span className="absolute -top-0.5 -right-0.5 w-5 h-5 bg-error text-white text-xs font-bold rounded-full flex items-center justify-center">
             {displayUnreadCount > 9 ? '9+' : displayUnreadCount}
           </span>
         )}
@@ -190,14 +191,14 @@ export default function NotificationBell({
 
       {/* Dropdown */}
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-neutral-800 rounded-xl shadow-lg border border-gray-200 dark:border-neutral-700 overflow-hidden z-50">
+        <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-neutral-800 rounded-xl shadow-lg border border-neutral-200 dark:border-neutral-700 overflow-hidden z-50">
           {/* Header */}
-          <div className="px-4 py-3 border-b border-gray-200 dark:border-neutral-700 flex items-center justify-between">
-            <h3 className="font-semibold text-gray-900 dark:text-gray-100">알림</h3>
+          <div className="px-4 py-3 border-b border-neutral-200 dark:border-neutral-700 flex items-center justify-between">
+            <h3 className="font-semibold text-neutral-900 dark:text-neutral-100">알림</h3>
             {displayUnreadCount > 0 && onMarkAllRead && (
               <button
                 onClick={onMarkAllRead}
-                className="text-sm text-blue-600 hover:text-blue-700"
+                className="text-sm text-info hover:text-info-hover"
               >
                 모두 읽음
               </button>
@@ -207,12 +208,14 @@ export default function NotificationBell({
           {/* Notification List */}
           <div className="max-h-[400px] overflow-y-auto">
             {isLoading ? (
-              <div className="p-4 text-center text-gray-500 dark:text-gray-400">
-                <div className="animate-spin w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full mx-auto" />
+              <div className="p-4 text-center text-neutral-500 dark:text-neutral-400">
+                <div className="flex justify-center">
+                  <Spinner size="lg" className="text-info" />
+                </div>
                 <p className="mt-2 text-sm">불러오는 중...</p>
               </div>
             ) : notifications.length > 0 ? (
-              <div className="divide-y divide-gray-100 dark:divide-neutral-700">
+              <div className="divide-y divide-neutral-100 dark:divide-neutral-700">
                 {notifications.map((notification) => (
                   <NotificationItem
                     key={notification.id}
@@ -233,20 +236,20 @@ export default function NotificationBell({
 
           {/* Footer */}
           {notifications.length > 0 && (
-            <div className="px-4 py-3 border-t border-gray-200 dark:border-neutral-700 flex justify-between">
+            <div className="px-4 py-3 border-t border-neutral-200 dark:border-neutral-700 flex justify-between">
               <button
                 onClick={() => {
                   setIsOpen(false);
                   window.location.href = '/notifications';
                 }}
-                className="text-sm text-blue-600 hover:text-blue-700"
+                className="text-sm text-info hover:text-info-hover"
               >
                 전체 보기
               </button>
               {onClearAll && (
                 <button
                   onClick={onClearAll}
-                  className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+                  className="text-sm text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300"
                 >
                   모두 삭제
                 </button>

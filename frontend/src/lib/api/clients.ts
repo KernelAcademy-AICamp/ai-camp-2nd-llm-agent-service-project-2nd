@@ -31,7 +31,7 @@ export async function getClients(
   }
 
   const queryString = params.toString();
-  const url = queryString ? `/lawyer/clients?${queryString}` : '/lawyer/clients';
+  const url = queryString ? `/clients/lawyer-portal?${queryString}` : '/clients/lawyer-portal';
 
   return apiClient.get<ClientListResponse>(url);
 }
@@ -42,7 +42,7 @@ export async function getClients(
 export async function getClientDetail(
   clientId: string
 ): Promise<ApiResponse<ClientDetail>> {
-  return apiClient.get<ClientDetail>(`/lawyer/clients/${clientId}`);
+  return apiClient.get<ClientDetail>(`/clients/lawyer-portal/${clientId}`);
 }
 
 // Re-export types for convenience

@@ -6,6 +6,7 @@ API endpoints for client contact management.
 """
 
 import logging
+from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
@@ -13,16 +14,87 @@ from sqlalchemy.orm import Session
 from app.core.dependencies import get_db, get_current_user_id
 from app.core.error_messages import ErrorMessages
 from app.services.client_contact_service import ClientContactService
+from app.services.client_list_service import ClientListService
 from app.db.schemas import (
     ClientContactCreate,
     ClientContactUpdate,
     ClientContactResponse,
     ClientContactListResponse,
 )
+from app.schemas.client_list import (
+    ClientListResponse,
+    ClientDetail,
+    ClientFilter,
+    ClientSortField,
+    SortOrder,
+    ClientStatus,
+)
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/clients", tags=["clients"])
+
+
+# ============================================
+# Client User Management (Lawyer Portal)
+# ============================================
+
+@router.get(
+    "/lawyer-portal",
+    response_model=ClientListResponse,
+    summary="Get lawyer's clients (Users)",
+)
+async def get_lawyer_clients(
+    search: Optional[str] = Query(None, description="Search by name or email"),
+    status: Optional[ClientStatus] = Query(None, description="Filter by status"),
+    page: int = Query(1, ge=1, description="Page number"),
+    page_size: int = Query(20, ge=1, le=100, description="Items per page"),
+    sort_by: ClientSortField = Query(
+        ClientSortField.NAME, description="Field to sort by"
+    ),
+    sort_order: SortOrder = Query(SortOrder.ASC, description="Sort order"),
+    db: Session = Depends(get_db),
+    user_id: str = Depends(get_current_user_id),
+):
+    """
+    Get list of lawyer's clients (users with role='client') with filters.
+    """
+    service = ClientListService(db)
+    filters = ClientFilter(search=search, status=status)
+    return service.get_clients(
+        lawyer_id=user_id,
+        filters=filters,
+        page=page,
+        page_size=page_size,
+        sort_by=sort_by,
+        sort_order=sort_order,
+    )
+
+
+@router.get(
+    "/lawyer-portal/{client_id}",
+    response_model=ClientDetail,
+    summary="Get client data detail",
+)
+async def get_client_detail(
+    client_id: str,
+    db: Session = Depends(get_db),
+    user_id: str = Depends(get_current_user_id),
+):
+    """Get detailed information for a specific client user."""
+    service = ClientListService(db)
+    client = service.get_client_detail(lawyer_id=user_id, client_id=client_id)
+    if not client:
+        raise HTTPException(
+            status_code=404,
+            detail="Client not found or access denied",
+        )
+    return client
+
+
+# ============================================
+# Client Contact CRUD (Address Book)
+# ============================================
 
 
 @router.get(

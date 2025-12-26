@@ -47,6 +47,17 @@ class CaseMemberRole(str, enum.Enum):
     MEMBER = "member"
     VIEWER = "viewer"
 
+    def to_permission(self) -> "CaseMemberPermission":
+        """Converts CaseMemberRole to CaseMemberPermission.
+
+        OWNER and MEMBER roles get READ_WRITE permission.
+        VIEWER role gets READ permission.
+        """
+        from app.db.schemas import CaseMemberPermission
+        if self in (CaseMemberRole.OWNER, CaseMemberRole.MEMBER):
+            return CaseMemberPermission.READ_WRITE
+        return CaseMemberPermission.READ
+
 
 # ============================================
 # Draft & Document Enums

@@ -136,12 +136,6 @@ export async function apiRequest<T>(
           onRefreshComplete(false);
         }
 
-        // Clear cached data
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('user');
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('userCache');
-
         // Redirect to login if not on excluded pages
         if (!isAuthCheck && !isAuthPage && !isLandingPage) {
           window.location.href = '/login?expired=true';

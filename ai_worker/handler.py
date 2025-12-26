@@ -75,52 +75,46 @@ logger = setup_lambda_logging(SensitiveDataFilter())
 def route_parser(file_extension: str) -> Optional[Any]:
     """
     파일 확장자에 따라 적절한 파서를 반환
-
     NOTE: Keep in sync with backend/app/services/evidence_service.py type_mapping
-
-    Args:
-        file_extension: 파일 확장자 (예: '.pdf', '.jpg', '.mp4')
-
-    Returns:
-        적절한 파서 인스턴스 또는 None
     """
     ext = file_extension.lower()
+    
+    # 015-optimization: O(1) Parser Mapping
+    PARSER_MAP = {
+        '.jpg': ImageVisionParser,
+        '.jpeg': ImageVisionParser,
+        '.png': ImageVisionParser,
+        '.gif': ImageVisionParser,
+        '.bmp': ImageVisionParser,
+        '.pdf': PDFParser,
+        '.mp3': AudioParser,
+        '.wav': AudioParser,
+        '.m4a': AudioParser,
+        '.aac': AudioParser,
+        '.mp4': VideoParser,
+        '.avi': VideoParser,
+        '.mov': VideoParser,
+        '.mkv': VideoParser,
+        '.txt': TextParser,
+        '.csv': TextParser,
+        '.json': TextParser,
+    }
 
-    # 이미지 파일 (image)
-    if ext in ['.jpg', '.jpeg', '.png', '.gif', '.bmp']:
-        if ImageVisionParser is None:
-            logger.warning("ImageVisionParser not available (missing dependencies)")
-            return None
-        return ImageVisionParser()
-
-    # PDF 파일 (pdf)
-    elif ext == '.pdf':
-        if PDFParser is None:
-            logger.warning("PDFParser not available (missing dependencies)")
-            return None
-        return PDFParser()
-
-    # 오디오 파일 (audio)
-    elif ext in ['.mp3', '.wav', '.m4a', '.aac']:
-        if AudioParser is None:
-            logger.warning("AudioParser not available (missing dependencies)")
-            return None
-        return AudioParser()
-
-    # 비디오 파일 (video)
-    elif ext in ['.mp4', '.avi', '.mov', '.mkv']:
-        if VideoParser is None:
-            logger.warning("VideoParser not available (missing dependencies)")
-            return None
-        return VideoParser()
-
-    # 텍스트 파일 (text) - 카톡 포함
-    elif ext in ['.txt', '.csv', '.json']:
-        return TextParser()
-
-    else:
+    parser_class = PARSER_MAP.get(ext)
+    if not parser_class:
         logger.warning(f"Unsupported file type: {ext}")
         return None
+        
+    if parser_class is None: # Should not happen with current map logic but for safety
+        return None
+        
+    # Check if optional parser is available
+    instance = parser_class()
+    if instance is None:
+        logger.warning(f"Parser {parser_class.__name__} not available (missing dependencies)")
+        return None
+        
+    return instance
 
 
 def route_and_process(bucket_name: str, object_key: str) -> Dict[str, Any]:

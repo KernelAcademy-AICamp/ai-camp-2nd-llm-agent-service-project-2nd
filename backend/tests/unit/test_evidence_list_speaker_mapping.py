@@ -42,7 +42,7 @@ class TestEvidenceListHasSpeakerMapping:
                 "type": "image",
                 "filename": "test.jpg",
                 "size": 1024,
-                "created_at": "2024-01-15T10:00:00Z",
+                "created_at": "2024-01-15T10:00:00",
                 "status": "completed",
                 "ai_summary": "테스트 요약",
                 "speaker_mapping": {
@@ -68,7 +68,7 @@ class TestEvidenceListHasSpeakerMapping:
                 "type": "image",
                 "filename": "test.jpg",
                 "size": 1024,
-                "created_at": "2024-01-15T10:00:00Z",
+                "created_at": "2024-01-15T10:00:00",
                 "status": "completed",
                 "ai_summary": "테스트 요약",
                 # No speaker_mapping field
@@ -92,7 +92,7 @@ class TestEvidenceListHasSpeakerMapping:
                 "type": "image",
                 "filename": "test.jpg",
                 "size": 1024,
-                "created_at": "2024-01-15T10:00:00Z",
+                "created_at": "2024-01-15T10:00:00",
                 "status": "completed",
                 "speaker_mapping": {}  # Empty mapping
             }
@@ -115,7 +115,7 @@ class TestEvidenceListHasSpeakerMapping:
                 "type": "image",
                 "filename": "test.jpg",
                 "size": 1024,
-                "created_at": "2024-01-15T10:00:00Z",
+                "created_at": "2024-01-15T10:00:00",
                 "status": "completed",
                 "speaker_mapping": None
             }
@@ -136,7 +136,7 @@ class TestEvidenceListHasSpeakerMapping:
                 "type": "image",
                 "filename": "with_mapping.jpg",
                 "size": 1024,
-                "created_at": "2024-01-15T10:00:00Z",
+                "created_at": "2024-01-15T10:00:00",
                 "status": "completed",
                 "speaker_mapping": {
                     "나": {"party_id": "party_001", "party_name": "김동우"}
@@ -148,7 +148,7 @@ class TestEvidenceListHasSpeakerMapping:
                 "type": "audio",
                 "filename": "without_mapping.mp3",
                 "size": 2048,
-                "created_at": "2024-01-16T10:00:00Z",
+                "created_at": "2024-01-16T10:00:00",
                 "status": "completed",
                 # No speaker_mapping
             },
@@ -158,7 +158,7 @@ class TestEvidenceListHasSpeakerMapping:
                 "type": "image",
                 "filename": "empty_mapping.jpg",
                 "size": 512,
-                "created_at": "2024-01-17T10:00:00Z",
+                "created_at": "2024-01-17T10:00:00",
                 "status": "completed",
                 "speaker_mapping": {}
             },

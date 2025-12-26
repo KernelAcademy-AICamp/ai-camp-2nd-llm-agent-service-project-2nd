@@ -86,7 +86,7 @@ make dev-frontend  # http://localhost:3000
 
 ### 4.2 사전 요구사항
 
-- Python 3.11+
+- Python 3.12+
 - Node.js 18+
 - AWS 계정 + IAM (S3, DynamoDB 등)
 - OpenAI API 키
@@ -230,6 +230,7 @@ main  ←  dev  ←  feat/*
 | **API 명세** | [docs/specs/API_SPEC.md](docs/specs/API_SPEC.md) |
 | **환경 설정** | [docs/ENVIRONMENT.md](docs/ENVIRONMENT.md) |
 | **협업 규칙** | [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) |
+| **유지보수 가이드** | [docs/guides/MAINTENANCE_GUIDE.md](docs/guides/MAINTENANCE_GUIDE.md) |
 | **문서 인덱스** | [docs/INDEX.md](docs/INDEX.md) |
 
 ---

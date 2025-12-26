@@ -172,3 +172,15 @@ docs/guides/claude.md
 .specify/
 .agent/
 .local/
+
+# Temporary issue tracking files
+issues.md
+temp_gh_issues/
+
+# MCP tool files
+.mcp.json
+.playwright-mcp/
+
+# Test data (large fixture files)
+test_data/
+test_data_scenario*/

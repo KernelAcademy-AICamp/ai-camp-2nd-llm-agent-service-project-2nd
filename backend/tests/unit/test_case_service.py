@@ -911,17 +911,32 @@ class TestUpdateCaseDescription:
 
 
 class TestPermissionConversion:
-    """Unit tests for permission/role conversion (lines 45, 54)"""
+    """Unit tests for permission/role conversion using enum methods"""
 
     def test_permission_to_role_viewer(self, test_env):
-        """READ permission converts to VIEWER role (line 45)"""
-        result = CaseService._permission_to_role(CaseMemberPermission.READ)
+        """READ permission converts to VIEWER role via to_role() method"""
+        result = CaseMemberPermission.READ.to_role()
         assert result == CaseMemberRole.VIEWER
 
+    def test_permission_to_role_member(self, test_env):
+        """READ_WRITE permission converts to MEMBER role via to_role() method"""
+        result = CaseMemberPermission.READ_WRITE.to_role()
+        assert result == CaseMemberRole.MEMBER
+
     def test_role_to_permission_viewer(self, test_env):
-        """VIEWER role converts to READ permission (line 54)"""
-        result = CaseService._role_to_permission(CaseMemberRole.VIEWER)
+        """VIEWER role converts to READ permission via to_permission() method"""
+        result = CaseMemberRole.VIEWER.to_permission()
         assert result == CaseMemberPermission.READ
+
+    def test_role_to_permission_member(self, test_env):
+        """MEMBER role converts to READ_WRITE permission via to_permission() method"""
+        result = CaseMemberRole.MEMBER.to_permission()
+        assert result == CaseMemberPermission.READ_WRITE
+
+    def test_role_to_permission_owner(self, test_env):
+        """OWNER role converts to READ_WRITE permission via to_permission() method"""
+        result = CaseMemberRole.OWNER.to_permission()
+        assert result == CaseMemberPermission.READ_WRITE
 
 
 class TestUpdateCaseErrors:

@@ -492,47 +492,45 @@ class TestCaseSharing:
 
     def test_permission_to_role_mapping(self):
         """
-        Test permission to role conversion
+        Test permission to role conversion using enum methods
 
         Given: CaseMemberPermission enum values
-        When: Converted to CaseMemberRole
+        When: Converted to CaseMemberRole via to_role() method
         Then:
             - READ → VIEWER
             - READ_WRITE → MEMBER
         """
         from app.db.schemas import CaseMemberPermission
-        from app.services.case_service import CaseService
 
         # Test READ → VIEWER
-        viewer_role = CaseService._permission_to_role(CaseMemberPermission.READ)
+        viewer_role = CaseMemberPermission.READ.to_role()
         assert viewer_role == CaseMemberRole.VIEWER
 
         # Test READ_WRITE → MEMBER
-        member_role = CaseService._permission_to_role(CaseMemberPermission.READ_WRITE)
+        member_role = CaseMemberPermission.READ_WRITE.to_role()
         assert member_role == CaseMemberRole.MEMBER
 
     def test_role_to_permission_mapping(self):
         """
-        Test role to permission conversion
+        Test role to permission conversion using enum methods
 
         Given: CaseMemberRole enum values
-        When: Converted to CaseMemberPermission
+        When: Converted to CaseMemberPermission via to_permission() method
         Then:
             - OWNER → READ_WRITE
             - MEMBER → READ_WRITE
             - VIEWER → READ
         """
         from app.db.schemas import CaseMemberPermission
-        from app.services.case_service import CaseService
 
         # Test OWNER → READ_WRITE
-        owner_perm = CaseService._role_to_permission(CaseMemberRole.OWNER)
+        owner_perm = CaseMemberRole.OWNER.to_permission()
         assert owner_perm == CaseMemberPermission.READ_WRITE
 
         # Test MEMBER → READ_WRITE
-        member_perm = CaseService._role_to_permission(CaseMemberRole.MEMBER)
+        member_perm = CaseMemberRole.MEMBER.to_permission()
         assert member_perm == CaseMemberPermission.READ_WRITE
 
         # Test VIEWER → READ
-        viewer_perm = CaseService._role_to_permission(CaseMemberRole.VIEWER)
+        viewer_perm = CaseMemberRole.VIEWER.to_permission()
         assert viewer_perm == CaseMemberPermission.READ

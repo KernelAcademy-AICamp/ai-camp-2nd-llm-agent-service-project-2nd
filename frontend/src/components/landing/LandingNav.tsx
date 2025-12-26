@@ -12,6 +12,7 @@
 
 import { useCallback, useState } from 'react';
 import Link from 'next/link';
+import toast from 'react-hot-toast';
 import { Logo } from '@/components/shared/Logo';
 import { BRAND } from '@/config/brand';
 
@@ -45,6 +46,7 @@ export default function LandingNav({
       await onLogout();
     } catch (error) {
       console.error('로그아웃 실패', error);
+      toast.error('로그아웃에 실패했습니다.');
     } finally {
       setIsLoggingOut(false);
     }

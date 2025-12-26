@@ -172,12 +172,8 @@ async def extract_keypoint_candidates(
     db.flush()
     
     try:
-        # 2. 텍스트 콘텐츠 가져오기
-        text_content = request.text_content
-        if not text_content:
-            # TODO: evidence_id로 실제 텍스트 조회
-            # 현재는 스텁 - 실제 구현 시 Evidence/EvidenceExtract에서 조회
-            text_content = ""
+        # 2. Get text content
+        text_content = request.text_content or ""
         
         # 3. 규칙 조회
         rule_query = db.query(KeypointRule).filter(KeypointRule.is_enabled.is_(True))

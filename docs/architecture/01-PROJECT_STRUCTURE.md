@@ -108,7 +108,8 @@ frontend/src/
 
 **핵심 파일**:
 - `app/page.tsx` - 메인 페이지
-- `components/ui/` - 버튼, 모달 등 공통 컴포넌트
+- `components/primitives/` - 버튼, 입력 필드 등 기본 디자인 요소
+- `components/shared/` - 모달, 레이아웃, EmptyState 등 재사용 요소
 - `lib/api/` - 백엔드 API 호출 함수
 
 ---
@@ -122,6 +123,7 @@ backend/app/
 ├── api/                         # 📡 라우터 (HTTP 요청 처리)
 │   ├── auth.py                 # POST /auth/login, /register
 │   ├── cases.py                # CRUD /cases
+│   ├── clients.py              # CRUD /clients (통합 의뢰인 관리)
 │   ├── evidence.py             # CRUD /evidence
 │   ├── drafts.py               # POST /drafts/preview
 │   └── ...                     # 30+ 라우터 파일

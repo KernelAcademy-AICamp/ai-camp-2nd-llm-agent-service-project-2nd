@@ -50,11 +50,11 @@ export default function DetectiveCasesPage() {
 
   const getStatusBadge = (status: InvestigationStatus) => {
     const badges: Record<InvestigationStatus, string> = {
-      pending: 'bg-yellow-100 text-yellow-700',
-      active: 'bg-blue-100 text-blue-700',
+      pending: 'bg-warning-light text-warning',
+      active: 'bg-info-light text-info',
       review: 'bg-purple-100 text-purple-700',
-      completed: 'bg-green-100 text-green-700',
-      rejected: 'bg-red-100 text-red-700',
+      completed: 'bg-success-light text-success',
+      rejected: 'bg-error-light text-error',
     };
     const labels: Record<InvestigationStatus, string> = {
       pending: '대기중',
@@ -242,7 +242,7 @@ export default function DetectiveCasesPage() {
           ) : (
             <div className="p-12 text-center text-[var(--color-text-secondary)]">
               <svg
-                className="w-12 h-12 mx-auto mb-4 text-gray-300"
+                className="w-12 h-12 mx-auto mb-4 text-neutral-300"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"

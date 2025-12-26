@@ -3,28 +3,28 @@ Test suite for Lawyer Clients API endpoints
 005-lawyer-portal-pages Feature - US2
 
 Tests for:
-- GET /lawyer/clients - list clients with filters
-- GET /lawyer/clients/{client_id} - client detail
+- GET /clients/lawyer-portal - list clients with filters
+- GET /clients/lawyer-portal/{client_id} - client detail
 """
 
 from fastapi import status
 
 
 class TestGetClients:
-    """Test suite for GET /lawyer/clients endpoint"""
+    """Test suite for GET /clients/lawyer-portal endpoint"""
 
     def test_should_return_client_list_for_authenticated_lawyer(
         self, client, auth_headers
     ):
         """
         Given: Authenticated lawyer
-        When: GET /lawyer/clients is called
+        When: GET /clients/lawyer-portal is called
         Then:
             - Returns 200 status code
             - Response contains items, total, page, page_size, total_pages
         """
         # When
-        response = client.get("/lawyer/clients", headers=auth_headers)
+        response = client.get("/clients/lawyer-portal", headers=auth_headers)
 
         # Then
         assert response.status_code == status.HTTP_200_OK
@@ -39,11 +39,11 @@ class TestGetClients:
     def test_should_return_401_without_auth(self, client):
         """
         Given: No authentication
-        When: GET /lawyer/clients is called
+        When: GET /clients/lawyer-portal is called
         Then: Returns 401 Unauthorized
         """
         # When
-        response = client.get("/lawyer/clients")
+        response = client.get("/clients/lawyer-portal")
 
         # Then
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
@@ -51,12 +51,12 @@ class TestGetClients:
     def test_should_accept_search_filter(self, client, auth_headers):
         """
         Given: Authenticated lawyer
-        When: GET /lawyer/clients?search=test is called
+        When: GET /clients/lawyer-portal?search=test is called
         Then: Returns 200 with filtered results
         """
         # When
         response = client.get(
-            "/lawyer/clients?search=test",
+            "/clients/lawyer-portal?search=test",
             headers=auth_headers
         )
 
@@ -67,12 +67,12 @@ class TestGetClients:
     def test_should_accept_status_filter(self, client, auth_headers):
         """
         Given: Authenticated lawyer
-        When: GET /lawyer/clients?status=active is called
+        When: GET /clients/lawyer-portal?status=active is called
         Then: Returns 200 with filtered results
         """
         # When
         response = client.get(
-            "/lawyer/clients?status=active",
+            "/clients/lawyer-portal?status=active",
             headers=auth_headers
         )
 
@@ -83,12 +83,12 @@ class TestGetClients:
     def test_should_accept_pagination_params(self, client, auth_headers):
         """
         Given: Authenticated lawyer
-        When: GET /lawyer/clients?page=2&page_size=5 is called
+        When: GET /clients/lawyer-portal?page=2&page_size=5 is called
         Then: Returns 200 with correct pagination
         """
         # When
         response = client.get(
-            "/lawyer/clients?page=2&page_size=5",
+            "/clients/lawyer-portal?page=2&page_size=5",
             headers=auth_headers
         )
 
@@ -101,12 +101,12 @@ class TestGetClients:
     def test_should_accept_sort_params(self, client, auth_headers):
         """
         Given: Authenticated lawyer
-        When: GET /lawyer/clients?sort_by=name&sort_order=asc is called
+        When: GET /clients/lawyer-portal?sort_by=name&sort_order=asc is called
         Then: Returns 200 with sorted results
         """
         # When
         response = client.get(
-            "/lawyer/clients?sort_by=name&sort_order=asc",
+            "/clients/lawyer-portal?sort_by=name&sort_order=asc",
             headers=auth_headers
         )
 
@@ -115,21 +115,21 @@ class TestGetClients:
 
 
 class TestGetClientDetail:
-    """Test suite for GET /lawyer/clients/{client_id} endpoint"""
+    """Test suite for GET /clients/lawyer-portal/{client_id} endpoint"""
 
     def test_should_return_client_detail_for_valid_id(
         self, client, auth_headers, client_user
     ):
         """
         Given: Authenticated lawyer and valid client ID
-        When: GET /lawyer/clients/{client_id} is called
+        When: GET /clients/lawyer-portal/{client_id} is called
         Then:
             - Returns 200 status code
             - Response contains client details
         """
         # When
         response = client.get(
-            f"/lawyer/clients/{client_user.id}",
+            f"/clients/lawyer-portal/{client_user.id}",
             headers=auth_headers
         )
 
@@ -142,12 +142,12 @@ class TestGetClientDetail:
     def test_should_return_404_for_invalid_id(self, client, auth_headers):
         """
         Given: Authenticated lawyer
-        When: GET /lawyer/clients/{invalid_id} is called
+        When: GET /clients/lawyer-portal/{invalid_id} is called
         Then: Returns 404 Not Found
         """
         # When
         response = client.get(
-            "/lawyer/clients/non-existent-client-id",
+            "/clients/lawyer-portal/non-existent-client-id",
             headers=auth_headers
         )
 
@@ -157,11 +157,11 @@ class TestGetClientDetail:
     def test_should_return_401_without_auth(self, client):
         """
         Given: No authentication
-        When: GET /lawyer/clients/{id} is called
+        When: GET /clients/lawyer-portal/{id} is called
         Then: Returns 401 Unauthorized
         """
         # When
-        response = client.get("/lawyer/clients/some-client-id")
+        response = client.get("/clients/lawyer-portal/some-client-id")
 
         # Then
         assert response.status_code == status.HTTP_401_UNAUTHORIZED

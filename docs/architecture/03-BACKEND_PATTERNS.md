@@ -460,6 +460,25 @@ def test_login_success():
 | **Service** | `services/*.py` | 비즈니스 로직 | HTTP 코드, 직접 DB 접근 |
 | **Repository** | `repositories/*.py` | 데이터 CRUD | 비즈니스 로직 |
 | **Model** | `db/models/*.py` | 데이터 구조 정의 | 로직 |
+| **Schema** | `schemas/*.py` | API 입출력 DTO | DB 쿼리 |
+
+---
+
+## 🛠 유지보수 및 캡슐화 가이드
+
+### 1. 비즈니스 로직의 위치
+모든 비즈니스 로직(검증, 외부 API 호출, 복잡한 데이터 변환)은 반드시 **Service 계층**에 위치해야 합니다. Router(api/)에는 최소한의 요청 파싱 및 응답 처리만 남깁니다.
+
+> [!CAUTION]
+> **LSSP Pipeline**처럼 Router 내에 직접 비즈니스 로직을 구현하는 것은 기술 부채(Technical Debt)를 유발하며 유지보수를 어렵게 만듭니다.
+
+### 2. 에러 핸들링
+- 가급적 `app.middleware.error_handler`에 정의된 `LEHException` 하위 클래스를 사용하세요.
+- 예외 발생 시 자동으로 생성되는 `error_id`는 로그 추적의 핵심 키입니다.
+
+### 3. 로깅 전략
+- 민감 정보(PII)는 `SensitiveDataFilter`에 의해 자동으로 마스킹됩니다.
+- 핵심 비즈니스 흐름 전환점에는 반드시 `logger.info`를 남겨 추적성을 확보하세요.
 
 ---
 

@@ -1,11 +1,14 @@
 'use client';
 
 import { useState } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button, Input } from '@/components/primitives';
 import { useAuth } from '@/hooks/useAuth';
 
 export default function LoginForm() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -24,6 +27,11 @@ export default function LoginForm() {
         setError(result.error || '아이디 또는 비밀번호를 확인해 주세요.');
         return;
       }
+
+      // Redirect to returnUrl if provided, otherwise use default dashboard
+      const returnUrl = searchParams.get('returnUrl');
+      const redirectTo = returnUrl || result.redirectPath || '/';
+      router.push(redirectTo);
     } catch {
       setError('로그인 중 오류가 발생했습니다.');
     } finally {

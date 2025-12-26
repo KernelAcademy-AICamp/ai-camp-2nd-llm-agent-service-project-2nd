@@ -55,9 +55,8 @@ function EvidencePageContent() {
     fetchCase();
   }, [caseId]);
 
-  const handleUploadComplete = (evidenceId: string) => {
+  const handleUploadComplete = (_evidenceId: string) => {
     setUploadSuccess(true);
-    console.log('Upload complete:', evidenceId);
   };
 
   const handleError = (err: string) => {

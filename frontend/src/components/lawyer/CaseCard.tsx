@@ -24,10 +24,10 @@ interface CaseCardProps {
 }
 
 const statusColors: Record<string, string> = {
-  active: 'bg-blue-100 text-blue-800',
-  open: 'bg-green-100 text-green-800',
-  in_progress: 'bg-yellow-100 text-yellow-800',
-  closed: 'bg-gray-100 text-gray-800',
+  active: 'bg-info-light text-info',
+  open: 'bg-success-light text-success',
+  in_progress: 'bg-warning-light text-warning',
+  closed: 'bg-neutral-100 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-300',
 };
 
 const statusLabels: Record<string, string> = {
@@ -49,9 +49,9 @@ export function CaseCard({
   onSelect,
   onAction,
 }: CaseCardProps) {
-  // Debug: log if id is missing
-  if (!id) {
-    console.error('[CaseCard] Missing id for case:', title);
+  // Debug: warn if id is missing (this should not happen in production)
+  if (!id && process.env.NODE_ENV === 'development') {
+    console.warn('[CaseCard] Missing id for case:', title);
   }
 
   const statusColor = statusColors[status] || statusColors.active;
@@ -67,7 +67,7 @@ export function CaseCard({
       className={`
         relative p-4 bg-white dark:bg-neutral-800 border rounded-lg shadow-sm transition-all
         hover:shadow-md hover:border-[var(--color-primary)]
-        ${selected ? 'border-[var(--color-primary)] ring-2 ring-[var(--color-primary)]/20' : 'border-gray-200 dark:border-neutral-700'}
+        ${selected ? 'border-[var(--color-primary)] ring-2 ring-[var(--color-primary)]/20' : 'border-neutral-200 dark:border-neutral-700'}
       `}
     >
       {/* Selection Checkbox */}
@@ -77,7 +77,7 @@ export function CaseCard({
             type="checkbox"
             checked={selected}
             onChange={handleCheckboxChange}
-            className="w-4 h-4 rounded border-gray-300 text-[var(--color-primary)] focus:ring-[var(--color-primary)]"
+            className="w-4 h-4 rounded border-neutral-300 dark:border-neutral-600 text-[var(--color-primary)] focus:ring-[var(--color-primary)]"
           />
         </div>
       )}
@@ -109,7 +109,7 @@ export function CaseCard({
           <span>진행률</span>
           <span>{progress}%</span>
         </div>
-        <div className="w-full h-1.5 bg-gray-200 dark:bg-neutral-700 rounded-full overflow-hidden">
+        <div className="w-full h-1.5 bg-neutral-200 dark:bg-neutral-700 rounded-full overflow-hidden">
           <div
             className="h-full bg-[var(--color-primary)] rounded-full transition-all"
             style={{ width: `${progress}%` }}
@@ -118,17 +118,17 @@ export function CaseCard({
       </div>
 
       {/* Footer */}
-      <div className="mt-3 pt-3 border-t border-gray-100 dark:border-neutral-700 flex items-center justify-between text-xs text-[var(--color-text-secondary)]">
+      <div className="mt-3 pt-3 border-t border-neutral-100 dark:border-neutral-700 flex items-center justify-between text-xs text-[var(--color-text-secondary)]">
         <span>증거 {evidenceCount}건</span>
         <span>{new Date(updatedAt).toLocaleDateString('ko-KR')}</span>
       </div>
 
       {/* Quick Actions */}
-      <div className="mt-3 pt-3 border-t border-gray-100 dark:border-neutral-700 flex items-center justify-center gap-2">
+      <div className="mt-3 pt-3 border-t border-neutral-100 dark:border-neutral-700 flex items-center justify-center gap-2">
         <Link
           href={getLawyerCasePath('procedure', id)}
           prefetch={false}
-          className="flex items-center gap-1 px-2 py-1 text-xs text-blue-600 hover:bg-blue-50 dark:hover:bg-neutral-700 rounded transition-colors"
+          className="flex items-center gap-1 px-2 py-1 text-xs text-info hover:bg-info-light dark:hover:bg-neutral-700 rounded transition-colors"
           title="절차 진행"
         >
           <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -139,7 +139,7 @@ export function CaseCard({
         <Link
           href={getLawyerCasePath('assets', id)}
           prefetch={false}
-          className="flex items-center gap-1 px-2 py-1 text-xs text-green-600 hover:bg-green-50 dark:hover:bg-neutral-700 rounded transition-colors"
+          className="flex items-center gap-1 px-2 py-1 text-xs text-success hover:bg-success-light dark:hover:bg-neutral-700 rounded transition-colors"
           title="재산분할"
         >
           <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -151,7 +151,7 @@ export function CaseCard({
           <button
             type="button"
             onClick={() => onAction(id, 'ai-analyze')}
-            className="flex items-center gap-1 px-2 py-1 text-xs text-purple-600 hover:bg-purple-50 dark:hover:bg-neutral-700 rounded transition-colors"
+            className="flex items-center gap-1 px-2 py-1 text-xs text-secondary hover:bg-neutral-100 dark:hover:bg-neutral-700 rounded transition-colors"
             title="AI 분석"
           >
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

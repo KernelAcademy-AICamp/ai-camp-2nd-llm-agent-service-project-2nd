@@ -168,6 +168,7 @@ module.exports = {
         'slide-down': 'slide-down var(--transition-normal)',
         'scale-in': 'scale-in var(--transition-normal)',
         spin: 'spin 1s linear infinite',
+        'pulse-premium': 'pulse-premium 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
       },
     },
   },

@@ -7,7 +7,7 @@
 
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useId } from 'react';
 import { X, Users, AlertCircle, Loader2, Save, Trash2, CheckCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import type { PartyNode } from '@/types/party';
@@ -39,6 +39,7 @@ export function SpeakerMappingModal({
   onSaveSuccess,
 }: SpeakerMappingModalProps) {
   const [isSaving, setIsSaving] = useState(false);
+  const titleId = useId();
 
   // Extract speakers from evidence content
   const detectedSpeakers = useMemo(() => {
@@ -118,21 +119,27 @@ export function SpeakerMappingModal({
   const hasParties = parties.length > 0;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white dark:bg-neutral-800 rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] flex flex-col">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" aria-hidden="true">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        className="bg-white dark:bg-neutral-800 rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] flex flex-col"
+      >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-neutral-700">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-200 dark:border-neutral-700">
           <div className="flex items-center gap-2">
-            <Users className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+            <Users className="w-5 h-5 text-info" />
+            <h2 id={titleId} className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">
               화자 매핑
             </h2>
           </div>
           <button
             onClick={handleClose}
-            className="p-1 hover:bg-gray-100 dark:hover:bg-neutral-700 rounded transition-colors"
+            aria-label="닫기"
+            className="p-1 hover:bg-neutral-100 dark:hover:bg-neutral-700 rounded transition-colors"
           >
-            <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+            <X className="w-5 h-5 text-neutral-500 dark:text-neutral-400" />
           </button>
         </div>
 
@@ -141,18 +148,18 @@ export function SpeakerMappingModal({
           {/* T017: Empty party list warning */}
           {!hasParties ? (
             <div className="text-center py-8">
-              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center">
-                <AlertCircle className="w-8 h-8 text-yellow-600 dark:text-yellow-400" />
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-warning-light flex items-center justify-center">
+                <AlertCircle className="w-8 h-8 text-warning" />
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
+              <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100 mb-2">
                 인물관계도에 등록된 인물이 없습니다
               </h3>
-              <p className="text-gray-500 dark:text-gray-400 max-w-md mx-auto mb-4">
+              <p className="text-neutral-500 dark:text-neutral-400 max-w-md mx-auto mb-4">
                 화자 매핑을 설정하려면 먼저 &quot;인물관계&quot; 탭에서 당사자(원고, 피고 등)를 추가해주세요.
               </p>
               <button
                 onClick={onClose}
-                className="px-4 py-2 bg-gray-200 dark:bg-neutral-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-neutral-600 transition-colors"
+                className="px-4 py-2 bg-neutral-200 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300 rounded-lg hover:bg-neutral-300 dark:hover:bg-neutral-600 transition-colors"
               >
                 닫기
               </button>
@@ -160,24 +167,24 @@ export function SpeakerMappingModal({
           ) : (
             <>
               {/* Instructions */}
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+              <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-4">
                 대화에서 감지된 화자를 인물관계도의 인물과 연결하세요.
                 매핑된 화자는 사실관계 생성 시 실제 인물명으로 해석됩니다.
               </p>
 
               {/* Evidence filename */}
-              <div className="mb-4 p-3 bg-gray-50 dark:bg-neutral-900 rounded-lg">
-                <span className="text-xs text-gray-500 dark:text-gray-400">증거 파일: </span>
-                <span className="text-sm text-gray-700 dark:text-gray-300">{evidence.filename}</span>
+              <div className="mb-4 p-3 bg-neutral-50 dark:bg-neutral-900 rounded-lg">
+                <span className="text-xs text-neutral-500 dark:text-neutral-400">증거 파일: </span>
+                <span className="text-sm text-neutral-700 dark:text-neutral-300">{evidence.filename}</span>
               </div>
 
               {/* Detected speakers */}
               {detectedSpeakers.length === 0 ? (
-                <div className="text-center py-6 border border-dashed border-gray-300 dark:border-neutral-600 rounded-lg mb-4">
-                  <p className="text-gray-500 dark:text-gray-400">
+                <div className="text-center py-6 border border-dashed border-neutral-300 dark:border-neutral-600 rounded-lg mb-4">
+                  <p className="text-neutral-500 dark:text-neutral-400">
                     대화 형식의 화자가 감지되지 않았습니다.
                   </p>
-                  <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">
+                  <p className="text-sm text-neutral-400 dark:text-neutral-500 mt-1">
                     &quot;이름:&quot; 형식의 대화 내용이 필요합니다.
                   </p>
                 </div>
@@ -192,24 +199,24 @@ export function SpeakerMappingModal({
                         key={speaker}
                         className={`p-4 rounded-lg border ${
                           isMapped
-                            ? 'border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20'
-                            : 'border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-800'
+                            ? 'border-success/30 bg-success-light'
+                            : 'border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800'
                         }`}
                       >
                         <div className="flex items-center justify-between mb-2">
                           <div className="flex items-center gap-2">
-                            <span className="font-medium text-gray-900 dark:text-gray-100">
+                            <span className="font-medium text-neutral-900 dark:text-neutral-100">
                               &quot;{speaker}&quot;
                             </span>
                             {isMapped && (
-                              <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400" />
+                              <CheckCircle className="w-4 h-4 text-success" />
                             )}
                           </div>
                           {isMapped && (
                             <button
                               onClick={() => removeMappingItem(speaker)}
-                              className="p-1 text-red-500 hover:bg-red-100 dark:hover:bg-red-900/30 rounded transition-colors"
-                              title="매핑 해제"
+                              aria-label="매핑 해제"
+                              className="p-1 text-error hover:bg-error-light rounded transition-colors"
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>
@@ -230,9 +237,9 @@ export function SpeakerMappingModal({
                               removeMappingItem(speaker);
                             }
                           }}
-                          className="w-full px-3 py-2 border border-gray-300 dark:border-neutral-600 rounded-lg
-                                     bg-white dark:bg-neutral-700 text-gray-900 dark:text-gray-100
-                                     focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-lg
+                                     bg-white dark:bg-neutral-700 text-neutral-900 dark:text-neutral-100
+                                     focus:ring-2 focus:ring-primary focus:border-transparent"
                         >
                           <option value="">-- 인물 선택 --</option>
                           {parties.map((party) => (
@@ -250,15 +257,15 @@ export function SpeakerMappingModal({
 
               {/* Mapped count summary */}
               {detectedSpeakers.length > 0 && (
-                <div className="mt-4 text-sm text-gray-500 dark:text-gray-400">
+                <div className="mt-4 text-sm text-neutral-500 dark:text-neutral-400">
                   {Object.keys(mapping).length}명 / {detectedSpeakers.length}명 매핑됨
                 </div>
               )}
 
               {/* Validation errors */}
               {validationErrors.length > 0 && (
-                <div className="mt-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-                  <ul className="list-disc list-inside text-sm text-red-600 dark:text-red-400">
+                <div className="mt-4 p-3 bg-error-light border border-error/30 rounded-lg">
+                  <ul className="list-disc list-inside text-sm text-error">
                     {validationErrors.map((err, i) => (
                       <li key={i}>{err}</li>
                     ))}
@@ -271,13 +278,13 @@ export function SpeakerMappingModal({
 
         {/* Footer */}
         {hasParties && (
-          <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200 dark:border-neutral-700">
+          <div className="flex items-center justify-between px-6 py-4 border-t border-neutral-200 dark:border-neutral-700">
             <div>
               {Object.keys(mapping).length > 0 && (
                 <button
                   onClick={handleClearAndSave}
                   disabled={isSaving}
-                  className="px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors disabled:opacity-50"
+                  className="px-3 py-2 text-sm text-error hover:bg-error-light rounded-lg transition-colors disabled:opacity-50"
                 >
                   <Trash2 className="w-4 h-4 inline mr-1" />
                   모두 해제
@@ -288,16 +295,16 @@ export function SpeakerMappingModal({
               <button
                 onClick={handleClose}
                 disabled={isSaving}
-                className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100
-                           border border-gray-300 dark:border-neutral-600 rounded-lg transition-colors disabled:opacity-50"
+                className="px-4 py-2 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100
+                           border border-neutral-300 dark:border-neutral-600 rounded-lg transition-colors disabled:opacity-50"
               >
                 취소
               </button>
               <button
                 onClick={handleSave}
                 disabled={isSaving || !isDirty || !isValid}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg
-                           hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-2 bg-primary text-white rounded-lg
+                           hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isSaving ? (
                   <>

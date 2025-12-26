@@ -115,11 +115,13 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
             // Base styles
             'inline-flex items-center justify-center',
             'font-semibold rounded-lg',
-            'transition-colors duration-200',
+            'transition-all duration-200 ease-in-out',
+            // Tactile feedback
+            'hover:scale-[1.02] active:scale-[0.98]',
             // Focus styles (WCAG 2.1 AA)
             'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2',
             // Disabled styles
-            'disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none',
+            'disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none disabled:scale-100',
             // Minimum touch target (WCAG 2.1 AA: 44x44px)
             'min-h-[44px] min-w-[44px]',
             // Variant and size

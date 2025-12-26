@@ -112,7 +112,7 @@ vi .env
 ### 2. 의존성 설치
 
 ```bash
-# Python 3.11+ 필요
+# Python 3.12+ 필요
 pip install -r requirements.txt
 ```
 

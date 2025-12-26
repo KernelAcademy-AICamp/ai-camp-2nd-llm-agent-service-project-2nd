@@ -11,9 +11,9 @@ Per BACKEND_SERVICE_REPOSITORY_GUIDE.md:
 from . import auth
 from . import admin
 from . import cases
+from . import clients
 from . import evidence
 from . import lawyer_portal
-from . import lawyer_clients
 from . import lawyer_investigators
 from . import properties
 from . import settings
@@ -25,8 +25,8 @@ from . import dashboard
 from . import calendar
 
 __all__ = [
-    "auth", "admin", "cases", "evidence", "lawyer_portal",
-    "lawyer_clients", "lawyer_investigators", "properties",
+    "auth", "admin", "cases", "clients", "evidence", "lawyer_portal",
+    "lawyer_investigators", "properties",
     "settings", "party", "relationships", "evidence_links", "search",
     "dashboard", "calendar"
 ]

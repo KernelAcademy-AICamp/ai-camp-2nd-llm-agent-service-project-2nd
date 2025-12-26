@@ -8,6 +8,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Command } from 'cmdk';
 import { useRouter } from 'next/navigation';
+import { Spinner } from '@/components/primitives/Spinner/Spinner';
 import { useGlobalSearch } from '@/hooks/useGlobalSearch';
 import { useKeyboardShortcuts, getModifierKey } from '@/hooks/useKeyboardShortcuts';
 import { CATEGORY_CONFIG, type SearchCategory } from '@/types/search';
@@ -103,7 +104,7 @@ export function CommandPalette({ className }: CommandPaletteProps) {
           {/* Search Input */}
           <div className="flex items-center border-b dark:border-neutral-700 px-4">
             <svg
-              className="w-5 h-5 text-gray-400 mr-3"
+              className="w-5 h-5 text-neutral-400 mr-3"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -119,13 +120,13 @@ export function CommandPalette({ className }: CommandPaletteProps) {
               value={query}
               onValueChange={setQuery}
               placeholder="사건, 의뢰인, 증거 검색..."
-              className="flex-1 py-4 text-base outline-none placeholder-gray-400 dark:bg-neutral-800 dark:text-gray-100"
+              className="flex-1 py-4 text-base outline-none placeholder-neutral-400 dark:bg-neutral-800 dark:text-neutral-100"
               autoFocus
             />
             {isLoading && (
-              <div className="w-5 h-5 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin" />
+              <Spinner size="md" className="text-info" />
             )}
-            <kbd className="ml-3 px-2 py-1 text-xs font-mono bg-gray-100 dark:bg-neutral-700 text-gray-500 dark:text-gray-400 rounded">
+            <kbd className="ml-3 px-2 py-1 text-xs font-mono bg-neutral-100 dark:bg-neutral-700 text-neutral-500 dark:text-neutral-400 rounded">
               ESC
             </kbd>
           </div>
@@ -150,14 +151,14 @@ export function CommandPalette({ className }: CommandPaletteProps) {
                         key={event.id}
                         value={`event-${event.id}`}
                         onSelect={() => handleSelect(`/lawyer/calendar?event=${event.id}`)}
-                        className="flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-neutral-700 data-[selected=true]:bg-blue-50 data-[selected=true]:dark:bg-blue-900/30"
+                        className="flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer hover:bg-neutral-100 dark:hover:bg-neutral-700 data-[selected=true]:bg-info-light data-[selected=true]:dark:bg-info-light"
                       >
                         <span className="text-lg">📅</span>
                         <div className="flex-1">
-                          <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                          <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
                             {event.title}
                           </p>
-                          <p className="text-xs text-gray-500 dark:text-gray-400">{event.time}</p>
+                          <p className="text-xs text-neutral-500 dark:text-neutral-400">{event.time}</p>
                         </div>
                       </Command.Item>
                     ))}
@@ -169,26 +170,26 @@ export function CommandPalette({ className }: CommandPaletteProps) {
                   <Command.Item
                     value="new-case"
                     onSelect={() => handleSelect('/lawyer/cases/new')}
-                    className="flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-neutral-700 data-[selected=true]:bg-blue-50 data-[selected=true]:dark:bg-blue-900/30"
+                    className="flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer hover:bg-neutral-100 dark:hover:bg-neutral-700 data-[selected=true]:bg-info-light data-[selected=true]:dark:bg-info-light"
                   >
                     <span className="text-lg">➕</span>
-                    <span className="text-sm dark:text-gray-100">새 사건 등록</span>
+                    <span className="text-sm dark:text-neutral-100">새 사건 등록</span>
                   </Command.Item>
                   <Command.Item
                     value="dashboard"
                     onSelect={() => handleSelect('/lawyer/dashboard')}
-                    className="flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-neutral-700 data-[selected=true]:bg-blue-50 data-[selected=true]:dark:bg-blue-900/30"
+                    className="flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer hover:bg-neutral-100 dark:hover:bg-neutral-700 data-[selected=true]:bg-info-light data-[selected=true]:dark:bg-info-light"
                   >
                     <span className="text-lg">🏠</span>
-                    <span className="text-sm dark:text-gray-100">대시보드</span>
+                    <span className="text-sm dark:text-neutral-100">대시보드</span>
                   </Command.Item>
                   <Command.Item
                     value="calendar"
                     onSelect={() => handleSelect('/lawyer/calendar')}
-                    className="flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-neutral-700 data-[selected=true]:bg-blue-50 data-[selected=true]:dark:bg-blue-900/30"
+                    className="flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer hover:bg-neutral-100 dark:hover:bg-neutral-700 data-[selected=true]:bg-info-light data-[selected=true]:dark:bg-info-light"
                   >
                     <span className="text-lg">📆</span>
-                    <span className="text-sm dark:text-gray-100">캘린더</span>
+                    <span className="text-sm dark:text-neutral-100">캘린더</span>
                   </Command.Item>
                 </Command.Group>
 
@@ -200,10 +201,10 @@ export function CommandPalette({ className }: CommandPaletteProps) {
                         key={`recent-${index}`}
                         value={`recent-${term}`}
                         onSelect={() => setQuery(term)}
-                        className="flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-neutral-700 data-[selected=true]:bg-blue-50 data-[selected=true]:dark:bg-blue-900/30"
+                        className="flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer hover:bg-neutral-100 dark:hover:bg-neutral-700 data-[selected=true]:bg-info-light data-[selected=true]:dark:bg-info-light"
                       >
                         <span className="text-lg">🕐</span>
-                        <span className="text-sm text-gray-600 dark:text-gray-300">{term}</span>
+                        <span className="text-sm text-neutral-600 dark:text-neutral-300">{term}</span>
                       </Command.Item>
                     ))}
                   </Command.Group>
@@ -213,7 +214,7 @@ export function CommandPalette({ className }: CommandPaletteProps) {
 
             {/* Search results */}
             {query && !error && results.length === 0 && !isLoading && (
-              <Command.Empty className="py-8 text-center text-gray-500 dark:text-gray-400">
+              <Command.Empty className="py-8 text-center text-neutral-500 dark:text-neutral-400">
                 검색 결과가 없습니다
               </Command.Empty>
             )}
@@ -227,15 +228,15 @@ export function CommandPalette({ className }: CommandPaletteProps) {
                       key={item.id}
                       value={`${category}-${item.id}`}
                       onSelect={() => handleSelect(item.url)}
-                      className="flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-neutral-700 data-[selected=true]:bg-blue-50 data-[selected=true]:dark:bg-blue-900/30"
+                      className="flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer hover:bg-neutral-100 dark:hover:bg-neutral-700 data-[selected=true]:bg-info-light data-[selected=true]:dark:bg-info-light"
                     >
                       <span className={`text-lg ${config.color}`}>{config.icon}</span>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                        <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100 truncate">
                           {item.title}
                         </p>
                         {item.subtitle && (
-                          <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                          <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate">
                             {item.subtitle}
                           </p>
                         )}
@@ -248,17 +249,17 @@ export function CommandPalette({ className }: CommandPaletteProps) {
           </Command.List>
 
           {/* Footer */}
-          <div className="flex items-center justify-between px-4 py-2 border-t dark:border-neutral-700 bg-gray-50 dark:bg-neutral-900 text-xs text-gray-500 dark:text-gray-400">
+          <div className="flex items-center justify-between px-4 py-2 border-t dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900 text-xs text-neutral-500 dark:text-neutral-400">
             <div className="flex items-center gap-4">
               <span>
-                <kbd className="px-1.5 py-0.5 font-mono bg-gray-200 dark:bg-neutral-700 rounded">↑↓</kbd> 이동
+                <kbd className="px-1.5 py-0.5 font-mono bg-neutral-200 dark:bg-neutral-700 rounded">↑↓</kbd> 이동
               </span>
               <span>
-                <kbd className="px-1.5 py-0.5 font-mono bg-gray-200 dark:bg-neutral-700 rounded">Enter</kbd> 선택
+                <kbd className="px-1.5 py-0.5 font-mono bg-neutral-200 dark:bg-neutral-700 rounded">Enter</kbd> 선택
               </span>
             </div>
             <span>
-              <kbd className="px-1.5 py-0.5 font-mono bg-gray-200 dark:bg-neutral-700 rounded">{modKey} K</kbd> 검색
+              <kbd className="px-1.5 py-0.5 font-mono bg-neutral-200 dark:bg-neutral-700 rounded">{modKey} K</kbd> 검색
             </span>
           </div>
         </Command>

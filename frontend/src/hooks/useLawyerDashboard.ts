@@ -65,11 +65,11 @@ export function useLawyerDashboard(): UseLawyerDashboardResult {
       }
 
       if (response.data) {
-        // Debug: check if recent_cases have valid ids
-        if (response.data.recent_cases) {
+        // Debug: check if recent_cases have valid ids (dev only)
+        if (process.env.NODE_ENV === 'development' && response.data.recent_cases) {
           response.data.recent_cases.forEach((c, idx) => {
             if (!c.id) {
-              console.error(`[useLawyerDashboard] recent_cases[${idx}] missing id:`, c);
+              console.warn(`[useLawyerDashboard] recent_cases[${idx}] missing id:`, c);
             }
           });
         }

@@ -10,6 +10,9 @@ Generates realistic mock data for:
 - Calendar events
 - Invoices
 - Investigation records
+- Party nodes and relationships (인물관계도)
+- Consultations (상담 기록)
+- Draft documents (초안 문서)
 
 Usage:
     cd backend
@@ -39,6 +42,14 @@ from app.db.models import (  # noqa: E402
     Invoice, InvoiceStatus,
     InvestigationRecord, InvestigationRecordType,
     UserSettings,
+    # Party Graph models
+    PartyNode, PartyRelationship,
+    PartyType, RelationshipType,
+    # Consultation models
+    Consultation, ConsultationParticipant,
+    ConsultationType,
+    # Draft models
+    DraftDocument, DocumentType, DraftStatus,
 )
 
 # ============================================
@@ -340,6 +351,262 @@ def create_investigation_records(db: Session) -> list:
     return records
 
 
+def create_party_nodes(db: Session) -> list:
+    """Create sample party nodes for relationship graphs (인물관계도)"""
+    nodes = []
+
+    # Case 1 parties (홍길동 vs 심청)
+    parties_case1 = [
+        ("party_001", "case_divorce001", PartyType.PLAINTIFF, "홍길동", "홍○○", 1980, "회사원", 100, 100),
+        ("party_002", "case_divorce001", PartyType.DEFENDANT, "심청", "심○○", 1983, "주부", 400, 100),
+        ("party_003", "case_divorce001", PartyType.CHILD, "홍민수", None, 2015, "초등학생", 250, 250),
+        ("party_004", "case_divorce001", PartyType.THIRD_PARTY, "김철수", "김○○", 1978, "사업가", 600, 200),
+    ]
+
+    # Case 2 parties (강감찬 vs 배우자)
+    parties_case2 = [
+        ("party_005", "case_divorce002", PartyType.PLAINTIFF, "강감찬", "강○○", 1975, "의사", 100, 100),
+        ("party_006", "case_divorce002", PartyType.DEFENDANT, "이영희", "이○○", 1978, "간호사", 400, 100),
+        ("party_007", "case_divorce002", PartyType.THIRD_PARTY, "박지훈", "박○○", 1980, "병원동료", 600, 200),
+    ]
+
+    # Case 3 parties (신사임당 - 고액재산분할)
+    parties_case3 = [
+        ("party_008", "case_divorce003", PartyType.PLAINTIFF, "신사임당", "신○○", 1970, "사업가", 100, 100),
+        ("party_009", "case_divorce003", PartyType.DEFENDANT, "이율곡", "이○○", 1968, "교수", 400, 100),
+        ("party_010", "case_divorce003", PartyType.CHILD, "이현수", None, 1998, "대학생", 250, 250),
+        ("party_011", "case_divorce003", PartyType.CHILD, "이현지", None, 2001, "고등학생", 250, 350),
+    ]
+
+    # Case 4 parties (유관순 양육권)
+    parties_case4 = [
+        ("party_012", "case_divorce004", PartyType.PLAINTIFF, "유관순", "유○○", 1985, "교사", 100, 100),
+        ("party_013", "case_divorce004", PartyType.DEFENDANT, "김영훈", "김○○", 1982, "회계사", 400, 100),
+        ("party_014", "case_divorce004", PartyType.CHILD, "김소율", None, 2018, "유치원생", 250, 250),
+    ]
+
+    all_parties = parties_case1 + parties_case2 + parties_case3 + parties_case4
+
+    for party_id, case_id, p_type, name, alias, birth_year, occupation, pos_x, pos_y in all_parties:
+        node = PartyNode(
+            id=party_id,
+            case_id=case_id,
+            type=p_type,
+            name=name,
+            alias=alias,
+            birth_year=birth_year,
+            occupation=occupation,
+            position_x=pos_x,
+            position_y=pos_y,
+        )
+        nodes.append(node)
+
+    return nodes
+
+
+def create_party_relationships(db: Session) -> list:
+    """Create sample party relationships (관계)"""
+    relationships = []
+    now = datetime.now(timezone.utc)
+
+    rel_data = [
+        # Case 1: 홍길동-심청 혼인, 홍길동-홍민수 부모자녀, 심청-김철수 불륜
+        ("rel_001", "case_divorce001", "party_001", "party_002", RelationshipType.MARRIAGE,
+         now - timedelta(days=3650), None, "2014년 혼인, 결혼생활 10년"),
+        ("rel_002", "case_divorce001", "party_001", "party_003", RelationshipType.PARENT_CHILD,
+         now - timedelta(days=3285), None, "친자관계"),
+        ("rel_003", "case_divorce001", "party_002", "party_003", RelationshipType.PARENT_CHILD,
+         now - timedelta(days=3285), None, "친자관계"),
+        ("rel_004", "case_divorce001", "party_002", "party_004", RelationshipType.AFFAIR,
+         now - timedelta(days=365), None, "2023년경부터 불륜관계 시작"),
+
+        # Case 2: 강감찬-이영희 혼인, 이영희-박지훈 불륜
+        ("rel_005", "case_divorce002", "party_005", "party_006", RelationshipType.MARRIAGE,
+         now - timedelta(days=5475), None, "2009년 혼인, 결혼생활 15년"),
+        ("rel_006", "case_divorce002", "party_006", "party_007", RelationshipType.AFFAIR,
+         now - timedelta(days=730), None, "병원 동료로 만남, 2022년경 불륜"),
+
+        # Case 3: 신사임당-이율곡 혼인, 부모자녀 관계들
+        ("rel_007", "case_divorce003", "party_008", "party_009", RelationshipType.MARRIAGE,
+         now - timedelta(days=9490), None, "1998년 혼인, 결혼생활 26년"),
+        ("rel_008", "case_divorce003", "party_008", "party_010", RelationshipType.PARENT_CHILD,
+         now - timedelta(days=9490), None, "친자관계"),
+        ("rel_009", "case_divorce003", "party_008", "party_011", RelationshipType.PARENT_CHILD,
+         now - timedelta(days=8395), None, "친자관계"),
+        ("rel_010", "case_divorce003", "party_009", "party_010", RelationshipType.PARENT_CHILD,
+         now - timedelta(days=9490), None, "친자관계"),
+        ("rel_011", "case_divorce003", "party_009", "party_011", RelationshipType.PARENT_CHILD,
+         now - timedelta(days=8395), None, "친자관계"),
+        ("rel_012", "case_divorce003", "party_010", "party_011", RelationshipType.SIBLING,
+         None, None, "남매 관계"),
+
+        # Case 4: 유관순-김영훈 혼인, 부모자녀 관계
+        ("rel_013", "case_divorce004", "party_012", "party_013", RelationshipType.MARRIAGE,
+         now - timedelta(days=2920), None, "2016년 혼인"),
+        ("rel_014", "case_divorce004", "party_012", "party_014", RelationshipType.PARENT_CHILD,
+         now - timedelta(days=2190), None, "친자관계"),
+        ("rel_015", "case_divorce004", "party_013", "party_014", RelationshipType.PARENT_CHILD,
+         now - timedelta(days=2190), None, "친자관계"),
+    ]
+
+    for rel_id, case_id, source_id, target_id, rel_type, start_date, end_date, notes in rel_data:
+        rel = PartyRelationship(
+            id=rel_id,
+            case_id=case_id,
+            source_party_id=source_id,
+            target_party_id=target_id,
+            type=rel_type,
+            start_date=start_date,
+            end_date=end_date,
+            notes=notes,
+        )
+        relationships.append(rel)
+
+    return relationships
+
+
+def create_consultations(db: Session) -> tuple:
+    """Create sample consultation records (상담 기록)"""
+    consultations = []
+    participants_list = []
+    now = datetime.now(timezone.utc)
+
+    consult_data = [
+        # Case 1 consultations
+        ("consult_001", "case_divorce001", now - timedelta(days=30), "10:00", ConsultationType.IN_PERSON,
+         "초기 상담: 이혼 사유 및 재산분할 논의", "협의이혼 시도 후 실패, 재판이혼 진행 결정",
+         "user_lawyer001", [("홍길동", "client"), ("김변호사", "lawyer")]),
+        ("consult_002", "case_divorce001", now - timedelta(days=14), "14:00", ConsultationType.PHONE,
+         "증거자료 검토 상담", "카카오톡 대화 내역 및 사진 증거 검토 완료",
+         "user_lawyer001", [("홍길동", "client"), ("김변호사", "lawyer")]),
+        ("consult_003", "case_divorce001", now - timedelta(days=3), "11:00", ConsultationType.ONLINE,
+         "변론 준비 화상 상담", "1차 변론기일 준비, 쟁점 정리",
+         "user_lawyer001", [("홍길동", "client"), ("김변호사", "lawyer"), ("정사무장", "staff")]),
+
+        # Case 2 consultations
+        ("consult_004", "case_divorce002", now - timedelta(days=20), "15:00", ConsultationType.IN_PERSON,
+         "긴급 상담: 불륜 증거 확보", "목격자 진술 및 사진 증거 검토",
+         "user_lawyer001", [("강감찬", "client"), ("김변호사", "lawyer")]),
+        ("consult_005", "case_divorce002", now - timedelta(days=7), "09:00", ConsultationType.PHONE,
+         "위자료 청구 금액 논의", "3천만원 위자료 청구 결정",
+         "user_lawyer001", [("강감찬", "client"), ("김변호사", "lawyer")]),
+
+        # Case 3 consultations
+        ("consult_006", "case_divorce003", now - timedelta(days=15), "10:30", ConsultationType.IN_PERSON,
+         "재산분할 초기 상담", "고액 재산 목록 작성, 감정 필요 부동산 식별",
+         "user_lawyer002", [("신사임당", "client"), ("이변호사", "lawyer")]),
+        ("consult_007", "case_divorce003", now - timedelta(days=2), "14:30", ConsultationType.IN_PERSON,
+         "감정결과 설명 및 분할비율 논의", "부동산 감정가 15억, 50:50 분할 요청 예정",
+         "user_lawyer002", [("신사임당", "client"), ("이변호사", "lawyer"), ("최파라리걸", "staff")]),
+
+        # Case 4 consultations
+        ("consult_008", "case_divorce004", now - timedelta(days=10), "16:00", ConsultationType.IN_PERSON,
+         "양육권 변경 상담", "현 양육환경 문제점 논의, 변경 사유 정리",
+         "user_lawyer002", [("유관순", "client"), ("이변호사", "lawyer")]),
+    ]
+
+    for consult_id, case_id, date, time_str, c_type, summary, notes, created_by, ppts in consult_data:
+        consult = Consultation(
+            id=consult_id,
+            case_id=case_id,
+            date=date.date(),
+            time=datetime.strptime(time_str, "%H:%M").time(),
+            type=c_type,
+            summary=summary,
+            notes=notes,
+            created_by=created_by,
+        )
+        consultations.append(consult)
+
+        # Create participants
+        for ppt_name, ppt_role in ppts:
+            participant = ConsultationParticipant(
+                consultation_id=consult_id,
+                name=ppt_name,
+                role=ppt_role,
+            )
+            participants_list.append(participant)
+
+    return consultations, participants_list
+
+
+def create_draft_documents(db: Session) -> list:
+    """Create sample draft documents (초안 문서)"""
+    drafts = []
+
+    draft_data = [
+        # Case 1 drafts
+        ("draft_001", "case_divorce001", "이혼 소장 초안", DocumentType.COMPLAINT, DraftStatus.REVIEWED,
+         "user_lawyer001", {
+             "title": "소장",
+             "court": "서울가정법원",
+             "case_type": "이혼 등 청구",
+             "sections": [
+                 {"heading": "청구취지", "content": "1. 원고와 피고는 이혼한다.\n2. 사건 본인의 친권자 및 양육자를 원고로 지정한다."},
+                 {"heading": "청구원인", "content": "피고는 혼인 기간 중 제3자와 부정행위를 하였으며..."},
+                 {"heading": "입증방법", "content": "1. 카카오톡 대화 내역\n2. 목격자 진술서"},
+             ]
+         }),
+        ("draft_002", "case_divorce001", "준비서면 1차", DocumentType.BRIEF, DraftStatus.DRAFT,
+         "user_lawyer001", {
+             "title": "준비서면",
+             "sections": [
+                 {"heading": "1. 피고의 유책사유", "content": "피고는 2023년경부터 불륜관계를 유지하였음..."},
+                 {"heading": "2. 재산분할 청구", "content": "혼인 중 취득 재산에 대해 50% 분할 청구..."},
+             ]
+         }),
+
+        # Case 2 drafts
+        ("draft_003", "case_divorce002", "위자료 청구 소장", DocumentType.COMPLAINT, DraftStatus.REVIEWED,
+         "user_lawyer001", {
+             "title": "소장",
+             "court": "서울가정법원",
+             "case_type": "위자료 청구",
+             "sections": [
+                 {"heading": "청구취지", "content": "1. 피고는 원고에게 금 30,000,000원을 지급하라."},
+                 {"heading": "청구원인", "content": "피고는 혼인 기간 중 병원 동료와 부정행위..."},
+             ]
+         }),
+
+        # Case 3 drafts
+        ("draft_004", "case_divorce003", "재산분할 청구 소장", DocumentType.COMPLAINT, DraftStatus.DRAFT,
+         "user_lawyer002", {
+             "title": "소장",
+             "court": "서울가정법원",
+             "case_type": "재산분할 청구",
+             "sections": [
+                 {"heading": "청구취지", "content": "1. 피고는 원고에게 금 750,000,000원을 지급하라."},
+                 {"heading": "재산목록", "content": "1. 서울시 강남구 소재 아파트 (감정가 15억원)\n2. 예금 2억원"},
+             ]
+         }),
+
+        # Case 4 drafts
+        ("draft_005", "case_divorce004", "양육권 변경 신청서", DocumentType.MOTION, DraftStatus.DRAFT,
+         "user_lawyer002", {
+             "title": "양육자 변경 신청서",
+             "court": "서울가정법원",
+             "sections": [
+                 {"heading": "신청취지", "content": "사건 본인의 양육자를 피고에서 원고로 변경한다."},
+                 {"heading": "신청이유", "content": "피고의 양육환경이 사건 본인의 복리에 부적합함..."},
+             ]
+         }),
+    ]
+
+    for draft_id, case_id, title, doc_type, status, created_by, content in draft_data:
+        draft = DraftDocument(
+            id=draft_id,
+            case_id=case_id,
+            title=title,
+            document_type=doc_type,
+            status=status,
+            created_by=created_by,
+            content=content,
+        )
+        drafts.append(draft)
+
+    return drafts
+
+
 def create_user_settings(db: Session, users: list) -> list:
     """Create default settings for all users"""
     settings = []
@@ -379,6 +646,13 @@ def seed_database():
 
             # Clear existing data in order (respecting foreign keys)
             print("\nClearing existing data...")
+            # New models first (due to FK dependencies)
+            db.query(DraftDocument).delete()
+            db.query(ConsultationParticipant).delete()
+            db.query(Consultation).delete()
+            db.query(PartyRelationship).delete()
+            db.query(PartyNode).delete()
+            # Original models
             db.query(InvestigationRecord).delete()
             db.query(Invoice).delete()
             db.query(CalendarEvent).delete()
@@ -391,7 +665,7 @@ def seed_database():
             print("Existing data cleared.")
 
         # Create users
-        print("\n[1/7] Creating users...")
+        print("\n[1/11] Creating users...")
         all_user_data = ADMIN + LAWYERS + STAFF + CLIENTS + DETECTIVES
         users = []
         hashed_pw = hash_password(DEFAULT_PASSWORD)
@@ -412,7 +686,7 @@ def seed_database():
         print(f"  Created {len(users)} users")
 
         # Create cases
-        print("\n[2/7] Creating cases...")
+        print("\n[2/11] Creating cases...")
         cases = []
         for case_data in CASES:
             case = Case(
@@ -430,7 +704,7 @@ def seed_database():
         print(f"  Created {len(cases)} cases")
 
         # Create case members
-        print("\n[3/7] Creating case members...")
+        print("\n[3/11] Creating case members...")
         member_count = 0
         for case_data in CASES:
             for user_id, role in case_data["members"]:
@@ -446,7 +720,7 @@ def seed_database():
         print(f"  Created {member_count} case memberships")
 
         # Create messages
-        print("\n[4/7] Creating messages...")
+        print("\n[4/11] Creating messages...")
         messages = create_messages(db)
         for msg in messages:
             db.add(msg)
@@ -454,7 +728,7 @@ def seed_database():
         print(f"  Created {len(messages)} messages")
 
         # Create calendar events
-        print("\n[5/7] Creating calendar events...")
+        print("\n[5/11] Creating calendar events...")
         events = create_calendar_events(db)
         for event in events:
             db.add(event)
@@ -462,7 +736,7 @@ def seed_database():
         print(f"  Created {len(events)} calendar events")
 
         # Create invoices
-        print("\n[6/7] Creating invoices...")
+        print("\n[6/11] Creating invoices...")
         invoices = create_invoices(db)
         for invoice in invoices:
             db.add(invoice)
@@ -470,12 +744,47 @@ def seed_database():
         print(f"  Created {len(invoices)} invoices")
 
         # Create investigation records
-        print("\n[7/7] Creating investigation records...")
+        print("\n[7/11] Creating investigation records...")
         records = create_investigation_records(db)
         for record in records:
             db.add(record)
         db.commit()
         print(f"  Created {len(records)} investigation records")
+
+        # Create party nodes (인물관계도 노드)
+        print("\n[8/11] Creating party nodes...")
+        party_nodes = create_party_nodes(db)
+        for node in party_nodes:
+            db.add(node)
+        db.commit()
+        print(f"  Created {len(party_nodes)} party nodes")
+
+        # Create party relationships (인물관계도 관계)
+        print("\n[9/11] Creating party relationships...")
+        party_rels = create_party_relationships(db)
+        for rel in party_rels:
+            db.add(rel)
+        db.commit()
+        print(f"  Created {len(party_rels)} party relationships")
+
+        # Create consultations (상담 기록)
+        print("\n[10/11] Creating consultations...")
+        consultations, participants = create_consultations(db)
+        for consult in consultations:
+            db.add(consult)
+        db.commit()
+        for ppt in participants:
+            db.add(ppt)
+        db.commit()
+        print(f"  Created {len(consultations)} consultations with {len(participants)} participants")
+
+        # Create draft documents (초안 문서)
+        print("\n[11/11] Creating draft documents...")
+        drafts = create_draft_documents(db)
+        for draft in drafts:
+            db.add(draft)
+        db.commit()
+        print(f"  Created {len(drafts)} draft documents")
 
         # Summary
         print("\n" + "=" * 60)
@@ -495,6 +804,10 @@ Summary:
   - Calendar Events: {len(events)}
   - Invoices: {len(invoices)}
   - Investigation Records: {len(records)}
+  - Party Nodes: {len(party_nodes)}
+  - Party Relationships: {len(party_rels)}
+  - Consultations: {len(consultations)} ({len(participants)} participants)
+  - Draft Documents: {len(drafts)}
 
 Default login credentials:
   Email: kim.lawyer@leh.dev

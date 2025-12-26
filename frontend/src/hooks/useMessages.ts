@@ -112,12 +112,10 @@ export function useMessages({ caseId, recipientId }: UseMessagesOptions): UseMes
 
       ws.onopen = () => {
         setIsConnected(true);
-        console.log('WebSocket connected');
       };
 
       ws.onclose = () => {
         setIsConnected(false);
-        console.log('WebSocket disconnected');
 
         // Attempt reconnection
         reconnectTimeoutRef.current = setTimeout(() => {
@@ -217,7 +215,7 @@ export function useMessages({ caseId, recipientId }: UseMessagesOptions): UseMes
         break;
 
       default:
-        console.log('Unknown WebSocket message type:', data.type);
+        logger.warn('Unknown WebSocket message type:', { type: data.type });
     }
   }, [caseId, user?.id]);
 

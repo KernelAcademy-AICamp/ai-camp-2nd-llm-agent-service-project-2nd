@@ -52,6 +52,12 @@ class CaseMemberPermission(str, Enum):
     READ = "read"  # Viewer - can only view
     READ_WRITE = "read_write"  # Member - can view and edit
 
+    def to_role(self) -> CaseMemberRole:
+        """Converts CaseMemberPermission to CaseMemberRole."""
+        if self == CaseMemberPermission.READ_WRITE:
+            return CaseMemberRole.MEMBER
+        return CaseMemberRole.VIEWER
+
 
 class CaseMemberAdd(BaseModel):
     """Schema for adding a member to a case"""

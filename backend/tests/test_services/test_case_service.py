@@ -349,29 +349,29 @@ class TestCaseServiceMembers:
 
 
 class TestPermissionRoleConversion:
-    """Tests for permission-role conversion methods"""
+    """Tests for permission-role conversion using enum methods"""
 
     def test_permission_to_role_read(self):
         """Test READ permission converts to VIEWER role"""
-        result = CaseService._permission_to_role(CaseMemberPermission.READ)
+        result = CaseMemberPermission.READ.to_role()
         assert result == CaseMemberRole.VIEWER
 
     def test_permission_to_role_read_write(self):
         """Test READ_WRITE permission converts to MEMBER role"""
-        result = CaseService._permission_to_role(CaseMemberPermission.READ_WRITE)
+        result = CaseMemberPermission.READ_WRITE.to_role()
         assert result == CaseMemberRole.MEMBER
 
     def test_role_to_permission_owner(self):
         """Test OWNER role converts to READ_WRITE permission"""
-        result = CaseService._role_to_permission(CaseMemberRole.OWNER)
+        result = CaseMemberRole.OWNER.to_permission()
         assert result == CaseMemberPermission.READ_WRITE
 
     def test_role_to_permission_member(self):
         """Test MEMBER role converts to READ_WRITE permission"""
-        result = CaseService._role_to_permission(CaseMemberRole.MEMBER)
+        result = CaseMemberRole.MEMBER.to_permission()
         assert result == CaseMemberPermission.READ_WRITE
 
     def test_role_to_permission_viewer(self):
         """Test VIEWER role converts to READ permission"""
-        result = CaseService._role_to_permission(CaseMemberRole.VIEWER)
+        result = CaseMemberRole.VIEWER.to_permission()
         assert result == CaseMemberPermission.READ

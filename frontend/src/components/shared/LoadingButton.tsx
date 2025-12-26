@@ -10,6 +10,7 @@
 'use client';
 
 import React, { forwardRef, ButtonHTMLAttributes } from 'react';
+import { Spinner, SpinnerSize } from '@/components/primitives/Spinner/Spinner';
 
 export interface LoadingButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   /** Whether the button is in loading state */
@@ -23,33 +24,6 @@ export interface LoadingButtonProps extends ButtonHTMLAttributes<HTMLButtonEleme
   /** Full width button */
   fullWidth?: boolean;
 }
-
-/**
- * Spinner component for loading state
- */
-const Spinner: React.FC<{ className?: string }> = ({ className = '' }) => (
-  <svg
-    className={`animate-spin ${className}`}
-    xmlns="http://www.w3.org/2000/svg"
-    fill="none"
-    viewBox="0 0 24 24"
-    aria-hidden="true"
-  >
-    <circle
-      className="opacity-25"
-      cx="12"
-      cy="12"
-      r="10"
-      stroke="currentColor"
-      strokeWidth="4"
-    />
-    <path
-      className="opacity-75"
-      fill="currentColor"
-      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-    />
-  </svg>
-);
 
 /**
  * Get variant-specific classes
@@ -83,14 +57,8 @@ const getSizeClasses = (size: LoadingButtonProps['size']): string => {
 /**
  * Get spinner size based on button size
  */
-const getSpinnerSize = (size: LoadingButtonProps['size']): string => {
-  const sizes = {
-    sm: 'h-4 w-4',
-    md: 'h-5 w-5',
-    lg: 'h-6 w-6',
-  };
-
-  return sizes[size || 'md'];
+const getSpinnerSize = (size: LoadingButtonProps['size']): SpinnerSize => {
+  return size || 'md';
 };
 
 /**
@@ -157,7 +125,7 @@ export const LoadingButton = forwardRef<HTMLButtonElement, LoadingButtonProps>(
         aria-disabled={disabled || isLoading}
         {...props}
       >
-        {isLoading && <Spinner className={spinnerSize} />}
+        {isLoading && <Spinner size={spinnerSize} />}
         <span className={isLoading && !loadingText ? 'sr-only' : ''}>
           {isLoading && loadingText ? loadingText : children}
         </span>

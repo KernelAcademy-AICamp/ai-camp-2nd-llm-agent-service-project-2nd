@@ -17,6 +17,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
+import toast from 'react-hot-toast';
 import {
   Plus,
   Trash2,
@@ -132,7 +133,7 @@ export default function PropertyDivisionDashboard({
     try {
       const response = await createProperty(caseId, data);
       if (response.error) {
-        alert(`재산 추가 실패: ${response.error}`);
+        toast.error(`재산 추가 실패: ${response.error}`);
         return;
       }
       setShowAddForm(false);
@@ -149,12 +150,12 @@ export default function PropertyDivisionDashboard({
     try {
       const response = await deleteProperty(caseId, propertyId);
       if (response.error) {
-        alert(`삭제 실패: ${response.error}`);
+        toast.error(`삭제 실패: ${response.error}`);
         return;
       }
       await loadData();
     } catch {
-      alert('삭제 중 오류가 발생했습니다.');
+      toast.error('삭제 중 오류가 발생했습니다.');
     }
   };
 
@@ -162,9 +163,9 @@ export default function PropertyDivisionDashboard({
   const getOwnerStyle = (owner: string) => {
     switch (owner) {
       case 'plaintiff':
-        return 'bg-blue-100 text-blue-700';
+        return 'bg-info-light text-info';
       case 'defendant':
-        return 'bg-red-100 text-red-700';
+        return 'bg-error-light text-error';
       default:
         return 'bg-purple-100 text-purple-700';
     }
@@ -232,7 +233,7 @@ export default function PropertyDivisionDashboard({
                          focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
               <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                <span className="px-2 py-0.5 text-xs bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded">
+                <span className="px-2 py-0.5 text-xs bg-info-light text-info rounded">
                   원고
                 </span>
               </div>
@@ -253,7 +254,7 @@ export default function PropertyDivisionDashboard({
                          focus:ring-2 focus:ring-orange-500 focus:border-transparent"
               />
               <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                <span className="px-2 py-0.5 text-xs bg-orange-100 dark:bg-orange-900/50 text-orange-700 dark:text-orange-300 rounded">
+                <span className="px-2 py-0.5 text-xs bg-warning-light text-warning rounded">
                   피고
                 </span>
               </div>
@@ -263,9 +264,9 @@ export default function PropertyDivisionDashboard({
         {(plaintiffRatio || defendantRatio) && (
           <div className="mt-4 p-3 bg-neutral-50 dark:bg-neutral-700/50 rounded-lg">
             <p className="text-sm text-neutral-600 dark:text-neutral-400">
-              예상 분할: 원고 <span className="font-bold text-blue-600 dark:text-blue-400">{plaintiffRatio || '-'}</span>
+              예상 분할: 원고 <span className="font-bold text-info">{plaintiffRatio || '-'}</span>
               {' : '}
-              피고 <span className="font-bold text-orange-600 dark:text-orange-400">{defendantRatio || '-'}</span>
+              피고 <span className="font-bold text-warning">{defendantRatio || '-'}</span>
             </p>
           </div>
         )}
@@ -319,7 +320,7 @@ export default function PropertyDivisionDashboard({
                         {PROPERTY_OWNER_LABELS[property.owner]}
                       </span>
                       {property.is_premarital && (
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-yellow-100 dark:bg-yellow-900/50 text-yellow-700 dark:text-yellow-300">
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-warning-light text-warning">
                           특유재산
                         </span>
                       )}

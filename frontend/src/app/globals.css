@@ -216,4 +216,16 @@
     min-width: var(--touch-target-min);
     min-height: var(--touch-target-min);
   }
+
+  /* Glassmorphism utility */
+  .glass {
+    @apply backdrop-blur-md shadow-lg;
+    background-color: rgba(255, 255, 255, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+
+  .dark .glass {
+    background-color: rgba(23, 23, 23, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
 }

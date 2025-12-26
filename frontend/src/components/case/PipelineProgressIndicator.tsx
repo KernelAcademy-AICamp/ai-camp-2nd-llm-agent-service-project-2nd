@@ -103,19 +103,19 @@ const statusColors: Record<PipelineStatus, { bg: string; text: string; border: s
     border: 'border-gray-200 dark:border-neutral-700',
   },
   processing: {
-    bg: 'bg-blue-50 dark:bg-blue-900/20',
-    text: 'text-blue-600 dark:text-blue-400',
-    border: 'border-blue-200 dark:border-blue-700',
+    bg: 'bg-primary-light dark:bg-primary-light/10',
+    text: 'text-primary dark:text-primary',
+    border: 'border-primary-light dark:border-primary-light/30',
   },
   completed: {
-    bg: 'bg-green-50 dark:bg-green-900/20',
-    text: 'text-green-600 dark:text-green-400',
-    border: 'border-green-200 dark:border-green-700',
+    bg: 'bg-success-light dark:bg-success-light/10',
+    text: 'text-success dark:text-success',
+    border: 'border-success-light dark:border-success-light/30',
   },
   error: {
-    bg: 'bg-red-50 dark:bg-red-900/20',
-    text: 'text-red-600 dark:text-red-400',
-    border: 'border-red-200 dark:border-red-700',
+    bg: 'bg-error-light dark:bg-error-light/10',
+    text: 'text-error dark:text-error',
+    border: 'border-error-light dark:border-error-light/30',
   },
 };
 
@@ -124,7 +124,12 @@ function StageIcon({ stage, status }: { stage: PipelineStage; status: PipelineSt
   const colors = statusColors[status];
 
   if (status === 'processing') {
-    return <Loader2 className={`w-4 h-4 ${colors.text} animate-spin`} />;
+    return (
+      <div className="relative flex items-center justify-center">
+        <Loader2 className={`w-4 h-4 ${colors.text} animate-spin`} />
+        <div className={`absolute w-4 h-4 rounded-full ${colors.bg} animate-pulse-premium opacity-50`} />
+      </div>
+    );
   }
 
   if (status === 'completed') {

@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useState, useEffect, useRef } from 'react';
+import toast from 'react-hot-toast';
 import { Case } from '@/types/case';
 import { FileText, Clock, AlertCircle, CheckCircle2, ChevronDown, Trash2 } from 'lucide-react';
 import { deleteCase } from '@/lib/api/cases';
@@ -76,12 +77,12 @@ export default function CaseCard({ caseData, href, onStatusChange, onDelete }: C
     try {
       const response = await deleteCase(caseData.id);
       if (response.error) {
-        alert(`삭제 실패: ${response.error}`);
+        toast.error(`삭제 실패: ${response.error}`);
         return;
       }
       onDelete?.();
     } catch {
-      alert('삭제 중 오류가 발생했습니다.');
+      toast.error('삭제 중 오류가 발생했습니다.');
     } finally {
       setIsDeleting(false);
       setShowDeleteConfirm(false);

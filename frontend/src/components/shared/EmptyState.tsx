@@ -14,7 +14,7 @@
 'use client';
 
 import { ReactNode } from 'react';
-import { Inbox, FileText, FolderOpen, Search, Plus } from 'lucide-react';
+import { Inbox, FileText, FolderOpen, Search, Plus, Calendar, MessageSquare, Receipt, ShieldAlert } from 'lucide-react';
 import { Button } from '@/components/primitives';
 
 interface EmptyStateAction {
@@ -123,12 +123,18 @@ export function EmptyState({
       aria-label={title}
       className={`
         flex flex-col items-center justify-center text-center
+        animate-fade-in
         ${styles.container}
         ${className}
       `}
     >
       {/* Icon */}
-      <div className="mb-4 p-4 bg-neutral-100 dark:bg-neutral-800 rounded-full">
+      <div className={`
+        mb-4 p-4 rounded-full transition-all duration-500
+        bg-neutral-100 dark:bg-neutral-800/80
+        dark:backdrop-blur-sm dark:border dark:border-white/10
+        hover:scale-110 hover:shadow-lg
+      `}>
         {customIcon || (IconComponent && (
           <IconComponent
             className={`${styles.icon} text-neutral-400 dark:text-neutral-500`}
@@ -138,7 +144,7 @@ export function EmptyState({
       </div>
 
       {/* Title */}
-      <h3 className={`${styles.title} font-semibold text-neutral-900 dark:text-neutral-100 mb-2`}>
+      <h3 className={`${styles.title} font-semibold text-neutral-900 dark:text-neutral-100 mb-2 animate-slide-up`}>
         {title}
       </h3>
 
@@ -284,6 +290,138 @@ export function ErrorState({
         </Button>
       )}
     </div>
+  );
+}
+
+// ============================================
+// Specialized Empty States
+// ============================================
+
+export function EmptyCases({ onCreateCase }: { onCreateCase?: () => void }) {
+  return (
+    <EmptyState
+      icon="folder"
+      title="케이스가 없습니다"
+      description="새로운 케이스를 생성하여 증거 관리를 시작하세요."
+      primaryAction={onCreateCase ? {
+        label: '새 케이스 만들기',
+        onClick: onCreateCase,
+        icon: <Plus className="w-4 h-4 mr-2" />
+      } : undefined}
+    />
+  );
+}
+
+export function EmptyEvidence({ onUploadEvidence }: { onUploadEvidence?: () => void }) {
+  return (
+    <EmptyState
+      icon="file"
+      title="증거가 없습니다"
+      description="증거 파일을 업로드하여 AI 분석을 시작하세요."
+      primaryAction={onUploadEvidence ? {
+        label: '증거 업로드',
+        onClick: onUploadEvidence,
+        icon: <Plus className="w-4 h-4 mr-2" />
+      } : undefined}
+    />
+  );
+}
+
+export function EmptyCalendar({ onCreateEvent }: { onCreateEvent?: () => void }) {
+  return (
+    <EmptyState
+      customIcon={<Calendar className="w-14 h-14 text-neutral-400" />}
+      icon="custom"
+      title="일정이 없습니다"
+      description="새로운 일정을 등록하여 케이스 관련 이벤트를 관리하세요."
+      primaryAction={onCreateEvent ? {
+        label: '일정 추가',
+        onClick: onCreateEvent,
+        icon: <Plus className="w-4 h-4 mr-2" />
+      } : undefined}
+    />
+  );
+}
+
+export function EmptyMessages({ onStartConversation }: { onStartConversation?: () => void }) {
+  return (
+    <EmptyState
+      customIcon={<MessageSquare className="w-14 h-14 text-neutral-400" />}
+      icon="custom"
+      title="메시지가 없습니다"
+      description="아직 주고받은 메시지가 없습니다."
+      primaryAction={onStartConversation ? {
+        label: '대화 시작',
+        onClick: onStartConversation,
+        icon: <Plus className="w-4 h-4 mr-2" />
+      } : undefined}
+    />
+  );
+}
+
+export function EmptyInvoices({ onCreateInvoice }: { onCreateInvoice?: () => void }) {
+  return (
+    <EmptyState
+      customIcon={<Receipt className="w-14 h-14 text-neutral-400" />}
+      icon="custom"
+      title="청구서가 없습니다"
+      description="새로운 청구서를 생성하여 결제를 요청하세요."
+      primaryAction={onCreateInvoice ? {
+        label: '청구서 생성',
+        onClick: onCreateInvoice,
+        icon: <Plus className="w-4 h-4 mr-2" />
+      } : undefined}
+    />
+  );
+}
+
+export function EmptyInvestigations({ onViewAvailable }: { onViewAvailable?: () => void }) {
+  return (
+    <EmptyState
+      icon="search"
+      title="진행 중인 조사가 없습니다"
+      description="새로운 조사 의뢰를 수락하여 업무를 시작하세요."
+      primaryAction={onViewAvailable ? {
+        label: '의뢰 목록 보기',
+        onClick: onViewAvailable,
+        icon: <Plus className="w-4 h-4 mr-2" />
+      } : undefined}
+    />
+  );
+}
+
+export function EmptyNotifications() {
+  return (
+    <EmptyState
+      icon="inbox"
+      title="알림이 없습니다"
+      description="새로운 알림이 없습니다."
+    />
+  );
+}
+
+export function EmptySearchResults({ searchTerm, onClearSearch }: { searchTerm: string; onClearSearch?: () => void }) {
+  return (
+    <EmptyState
+      icon="search"
+      title="검색 결과가 없습니다"
+      description={`"${searchTerm}"에 대한 검색 결과가 없습니다. 다른 검색어를 시도해 보세요.`}
+      primaryAction={onClearSearch ? {
+        label: '검색 초기화',
+        onClick: onClearSearch,
+        icon: <Plus className="w-4 h-4 mr-2" />
+      } : undefined}
+    />
+  );
+}
+
+export function EmptyList({ itemType }: { itemType: string }) {
+  return (
+    <EmptyState
+      icon="inbox"
+      title={`${itemType}(이)가 없습니다`}
+      description={`표시할 ${itemType}(이)가 없습니다.`}
+    />
   );
 }
 

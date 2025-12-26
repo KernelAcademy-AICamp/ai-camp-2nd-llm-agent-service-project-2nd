@@ -36,7 +36,6 @@ from app.api import (  # noqa: E402
     evidence_links,
     fact_summary,
     lawyer_portal,
-    lawyer_clients,
     lawyer_investigators,
     license,
     messages,
@@ -259,8 +258,8 @@ app.include_router(drafts.router, prefix=f"{API_PREFIX}/cases/{{case_id}}/drafts
 app.include_router(lawyer_portal.router, prefix=f"{API_PREFIX}/lawyer", tags=["Lawyer Portal"])
 app.include_router(staff_progress.router, prefix=API_PREFIX, tags=["Staff Progress"])
 
-# 변호사 고객 관리 라우터 (005-lawyer-portal-pages US2)
-app.include_router(lawyer_clients.router, prefix=API_PREFIX, tags=["Lawyer Clients"])
+# 의뢰인 관리 라우터 (005-lawyer-portal-pages US2)
+app.include_router(clients.router, prefix=API_PREFIX, tags=["Clients"])
 
 # 변호사 탐정 관리 라우터 (005-lawyer-portal-pages US3)
 app.include_router(lawyer_investigators.router, prefix=API_PREFIX, tags=["Lawyer Investigators"])
@@ -326,121 +325,6 @@ app.include_router(consultation.router, prefix=API_PREFIX, tags=["Consultations"
 
 # LSSP 라우터 (Legal Service Standardization Protocol v2.01-v2.15)
 app.include_router(lssp_router, prefix=API_PREFIX, tags=["LSSP"])
-
-
-# ============================================
-# TEMPORARY: Database Debug Endpoints
-# Remove after migration is complete
-# SECURITY: Admin-only access required
-# ============================================
-
-
-@app.get("/admin/check-roles", tags=["Admin"])
-async def check_roles(admin_user=Depends(require_admin)):
-    """
-    Check current role values in database and enum type definition.
-    ADMIN ONLY - requires admin authentication.
-    """
-    from app.db.session import get_db
-    from sqlalchemy import text
-
-    db = next(get_db())
-    try:
-        # Check users (exclude sensitive data - only show id, email prefix, role)
-        result = db.execute(text("SELECT id, email, role::text as role FROM users"))
-        users = [
-            {"id": r[0], "email": r[1].split("@")[0] + "@***", "role": r[2]}
-            for r in result.fetchall()
-        ]
-
-        # Check enum type definition
-        enum_result = db.execute(text("""
-            SELECT e.enumlabel
-            FROM pg_type t
-            JOIN pg_enum e ON t.oid = e.enumtypid
-            WHERE t.typname = 'userrole'
-            ORDER BY e.enumsortorder
-        """))
-        enum_values = [r[0] for r in enum_result.fetchall()]
-
-        return {
-            "users": users,
-            "enum_values": enum_values
-        }
-    finally:
-        db.close()
-
-
-@app.post("/admin/migrate-enums", tags=["Admin"])
-async def migrate_enums_to_lowercase(admin_user=Depends(require_admin)):
-    """
-    Migrate all enum values from uppercase to lowercase.
-    Handles: userrole, userstatus, and other enums.
-    ADMIN ONLY - requires admin authentication.
-    """
-    from app.db.session import get_db
-    from sqlalchemy import text
-    import logging
-
-    logger = logging.getLogger(__name__)
-    db = next(get_db())
-    try:
-        steps = []
-
-        # Migration config: (enum_type, table, column, values)
-        migrations = [
-            ('userrole', 'users', 'role', ['lawyer', 'staff', 'admin', 'client', 'detective']),
-            ('userstatus', 'users', 'status', ['active', 'inactive']),
-        ]
-
-        for enum_type, table, column, values in migrations:
-            # Step 1: Add lowercase values to enum
-            for val in values:
-                try:
-                    db.execute(text(f"ALTER TYPE {enum_type} ADD VALUE IF NOT EXISTS '{val}'"))
-                    steps.append(f"Added {enum_type}.{val}")
-                except Exception:
-                    # Log error details server-side only
-                    logger.warning(f"Enum migration skipped: {enum_type}.{val}")
-                    steps.append(f"Skipped {enum_type}.{val}")
-            db.commit()
-
-            # Step 2: Update from UPPERCASE to lowercase
-            for val in values:
-                upper_val = val.upper()
-                try:
-                    result = db.execute(
-                        text(f"UPDATE {table} SET {column} = '{val}' WHERE {column}::text = '{upper_val}'")
-                    )
-                    db.commit()
-                    steps.append(f"Updated {result.rowcount} rows: {table}.{column} {upper_val} -> {val}")
-                except Exception:
-                    db.rollback()
-                    logger.error(f"Enum migration error: {table}.{column} {upper_val}")
-                    steps.append(f"Error {table}.{column} {upper_val}")
-
-        # Verify
-        check_result = db.execute(text("SELECT DISTINCT role::text, status::text FROM users"))
-        final_values = [{"role": r[0], "status": r[1]} for r in check_result.fetchall()]
-
-        return {
-            "status": "success",
-            "steps": steps,
-            "final_values": final_values
-        }
-    except Exception:
-        db.rollback()
-        logger.exception("Enum migration failed")
-        return {"status": "error", "message": "Migration failed. Check server logs."}
-    finally:
-        db.close()
-
-
-# Keep old endpoint for backwards compatibility
-@app.post("/admin/migrate-roles", tags=["Admin"])
-async def migrate_roles_redirect(admin_user=Depends(require_admin)):
-    """Redirects to migrate-enums endpoint. ADMIN ONLY."""
-    return await migrate_enums_to_lowercase(admin_user)
 
 
 # Note: Timeline router removed (002-evidence-timeline feature incomplete)

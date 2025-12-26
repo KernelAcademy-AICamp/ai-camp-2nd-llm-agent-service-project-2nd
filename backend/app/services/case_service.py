@@ -37,22 +37,6 @@ class CaseService:
         self.member_repo = CaseMemberRepository(db)
         self.user_repo = UserRepository(db)
 
-    @staticmethod
-    def _permission_to_role(permission: CaseMemberPermission) -> CaseMemberRole:
-        """Convert CaseMemberPermission to CaseMemberRole"""
-        if permission == CaseMemberPermission.READ_WRITE:
-            return CaseMemberRole.MEMBER
-        return CaseMemberRole.VIEWER
-
-    @staticmethod
-    def _role_to_permission(role: CaseMemberRole) -> CaseMemberPermission:
-        """Convert CaseMemberRole to CaseMemberPermission"""
-        if role == CaseMemberRole.OWNER:
-            return CaseMemberPermission.READ_WRITE
-        elif role == CaseMemberRole.MEMBER:
-            return CaseMemberPermission.READ_WRITE
-        return CaseMemberPermission.READ
-
     def create_case(self, case_data: CaseCreate, user_id: str) -> CaseOut:
         """
         Create a new case and add creator as owner
@@ -291,7 +275,7 @@ class CaseService:
 
         # Convert permissions to roles and add members
         members_to_add = [
-            (member.user_id, self._permission_to_role(member.permission))
+            (member.user_id, member.permission.to_role())
             for member in members
         ]
 
@@ -339,7 +323,7 @@ class CaseService:
                     user_id=member.user.id,
                     name=member.user.name,
                     email=member.user.email,
-                    permission=self._role_to_permission(member.role),
+                    permission=member.role.to_permission(),
                     role=member.role
                 ))
 

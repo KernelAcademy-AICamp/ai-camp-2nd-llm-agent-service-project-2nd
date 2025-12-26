@@ -133,6 +133,7 @@ class TestDraftPreviewSmoke:
     These tests validate draft generation connectivity.
     """
 
+    @patch('app.services.draft_service.get_case_fact_summary')
     @patch('app.services.draft_service.get_evidence_by_case')
     @patch('app.services.draft.rag_orchestrator.search_evidence_by_semantic')
     @patch('app.services.draft.rag_orchestrator.search_legal_knowledge')
@@ -145,6 +146,7 @@ class TestDraftPreviewSmoke:
         mock_legal: MagicMock,
         mock_evidence: MagicMock,
         mock_dynamo: MagicMock,
+        mock_fact_summary: MagicMock,
         client: TestClient,
         auth_headers: dict,
         test_case
@@ -158,6 +160,16 @@ class TestDraftPreviewSmoke:
 
         Note: Mocks external services to avoid dependencies in CI.
         """
+        # Mock fact summary (required since 016-draft-fact-summary)
+        # Note: _get_fact_summary_context expects 'ai_summary' or 'modified_summary' field
+        mock_fact_summary.return_value = {
+            "case_id": str(test_case.id),
+            "ai_summary": "테스트 사실관계 요약입니다.",
+            "key_facts": ["사실1", "사실2"],
+            "timeline": [],
+            "generated_at": "2024-01-15T10:00:00"
+        }
+
         # Mock evidence data
         mock_dynamo.return_value = [
             {

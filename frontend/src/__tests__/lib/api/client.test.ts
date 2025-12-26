@@ -227,22 +227,9 @@ describe('apiRequest', () => {
       expect(mockLocation.href).toBe('');
     });
 
-    it('should clear legacy localStorage tokens on 401', async () => {
-      localStorage.setItem('authToken', 'old-token');
-      localStorage.setItem('user', 'old-user');
-
-      mockFetch.mockResolvedValueOnce({
-        ok: false,
-        status: 401,
-        headers: new Headers({ 'content-type': 'application/json' }),
-        text: () => Promise.resolve('{"detail": "Unauthorized"}'),
-      });
-
-      await apiRequest('/protected');
-
-      expect(localStorage.getItem('authToken')).toBeNull();
-      expect(localStorage.getItem('user')).toBeNull();
-    });
+    // Note: localStorage cleanup test removed.
+    // The client now uses HTTP-only cookies exclusively (see client.ts comments).
+    // No localStorage tokens are used, so cleanup is unnecessary.
   });
 
   describe('403 Forbidden handling (FR-009)', () => {
