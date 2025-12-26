@@ -33,7 +33,7 @@ interface AuthContextType {
   isLoading: boolean;
 
   // Auth methods
-  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  login: (email: string, password: string) => Promise<{ success: boolean; error?: string; role?: UserRole; redirectPath?: string }>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
 }

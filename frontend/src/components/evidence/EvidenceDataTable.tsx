@@ -11,8 +11,7 @@
 import { useState } from 'react';
 import toast from 'react-hot-toast';
 import { logger } from '@/lib/logger';
-import { flexRender } from '@tanstack/react-table';
-import { ArrowUpDown, MoreVertical, Filter, RefreshCw } from 'lucide-react';
+import { ArrowUpDown, MoreVertical, Filter, RefreshCw, Sparkles } from 'lucide-react';
 import { Evidence } from '@/types/evidence';
 import type { PartyNode } from '@/types/party';
 import { useEvidenceTable } from '@/hooks/useEvidenceTable';

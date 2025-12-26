@@ -24,7 +24,6 @@ import { PartyGraph } from '@/components/party/PartyGraph';
 import { useCaseIdValidation, useEvidenceUpload } from '@/hooks';
 // New components for refactored UI
 import { AnalysisTab } from '@/components/case/AnalysisTab';
-import { CaseActionsDropdown } from '@/components/case/CaseActionsDropdown';
 // Evidence imports
 import EvidenceUpload from '@/components/evidence/EvidenceUpload';
 import EvidenceUploadModal from '@/components/evidence/EvidenceUploadModal';
@@ -65,8 +64,7 @@ import { EvidenceListCompact, type LegalEvidence } from '@/components/case/Evide
 import { UtilityBar, CaseStatus } from '@/components/shared/UtilityBar';
 // 016-draft-fact-summary: fact-summary 조회
 import { getFactSummary, generateFactSummary } from '@/lib/api/fact-summary';
-// Issue #423: Pipeline progress visualization
-import { PipelineProgressIndicator } from '@/components/case/PipelineProgressIndicator';
+// Issue #423: Pipeline progress visualization - moved to separate component
 // DataPanel compact lists for consultation and assets
 import { ConsultationListCompact } from '@/components/consultation/ConsultationListCompact';
 import { AssetListCompact } from '@/components/asset/AssetListCompact';
@@ -129,9 +127,9 @@ export default function LawyerCaseDetailClient({ id: paramId }: LawyerCaseDetail
   // Phase A.2: Use useCaseIdValidation hook for ID handling with timeout
   const { caseId, isIdMissing, idWaitTimedOut } = useCaseIdValidation(paramId);
 
-  // Derived paths
-  const detailPath = caseId ? getCaseDetailPath('lawyer', caseId) : '/lawyer/cases/detail';
-  const assetsPath = caseId ? getLawyerCasePath('assets', caseId) : '/lawyer/cases/assets';
+  // Derived paths (prefixed with _ as currently unused, may be needed for navigation)
+  const _detailPath = caseId ? getCaseDetailPath('lawyer', caseId) : '/lawyer/cases/detail';
+  const _assetsPath = caseId ? getLawyerCasePath('assets', caseId) : '/lawyer/cases/assets';
   const [caseDetail, setCaseDetail] = useState<CaseDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -167,11 +165,11 @@ export default function LawyerCaseDetailClient({ id: paramId }: LawyerCaseDetail
 
   // Consultation state (for DataPanel)
   const [consultationList, setConsultationList] = useState<Consultation[]>([]);
-  const [isLoadingConsultations, setIsLoadingConsultations] = useState(true);
+  const [, setIsLoadingConsultations] = useState(true);
 
   // Asset state (for DataPanel)
   const [assetList, setAssetList] = useState<Asset[]>([]);
-  const [isLoadingAssets, setIsLoadingAssets] = useState(true);
+  const [, setIsLoadingAssets] = useState(true);
 
   // 증거 필터 상태
   const [showFilterDropdown, setShowFilterDropdown] = useState(false);
@@ -638,7 +636,7 @@ export default function LawyerCaseDetailClient({ id: paramId }: LawyerCaseDetail
                       ...e,
                       legalNumber: e.legalNumber || `${e.submittedBy === 'defendant' ? '을' : e.submittedBy === 'third_party' ? '병' : '갑'}제${evidenceList.indexOf(e) + 1}호증`,
                     }))}
-                    onItemClick={(item) => console.log('Evidence clicked:', item)}
+                    onItemClick={(_item) => { /* TODO: Navigate to evidence detail */ }}
                   />
                 }
                 evidenceCount={evidenceList.length}
@@ -663,9 +661,7 @@ export default function LawyerCaseDetailClient({ id: paramId }: LawyerCaseDetail
                   <SimilarPrecedentList
                     caseId={caseId}
                     maxItems={5}
-                    onViewDetail={(precedent) => {
-                      console.log('View precedent:', precedent);
-                    }}
+                    onViewDetail={(_precedent) => { /* TODO: Open precedent detail modal */ }}
                   />
                 }
               />
